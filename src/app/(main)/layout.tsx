@@ -12,11 +12,11 @@ export default async function MainLayout({
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) redirect("/sign-in");
   return (
-    <div className="flex min-h-screen w-full bg-muted/40">
+    <div className="flex min-h-screen w-full bg-background">
       <Sidebar />
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 min-w-0">
         <Navbar />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

@@ -117,11 +117,10 @@ export function LayawayDialog({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="w-full text-lg h-14 font-bold shadow-sm border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer"
-          size="lg"
+          className="w-full h-[46px] font-bold text-[13px] border-input bg-card hover:bg-muted hover:border-primary hover:text-primary text-foreground cursor-pointer gap-2 transition-all duration-150"
           disabled={cartItems.length === 0}
         >
-          <Clock className="mr-2 h-5 w-5" />
+          <Clock className="h-4 w-4" />
           Apartar
         </Button>
       </DialogTrigger>
@@ -208,7 +207,7 @@ export function LayawayDialog({
           <Button variant="outline" onClick={() => setOpen(false)} disabled={processing}>
             Cancelar
           </Button>
-          <Button onClick={handleCreateLayaway} disabled={processing} className="bg-amber-500 hover:bg-amber-600 text-white">
+          <Button onClick={handleCreateLayaway} disabled={processing} className="cursor-pointer" style={{ background: "var(--tf-amber)", color: "white" }}>
             {processing ? "Procesando..." : "Confirmar Apartado"}
           </Button>
         </DialogFooter>

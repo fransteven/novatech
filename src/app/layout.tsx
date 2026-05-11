@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
-        <div className="flex min-h-screen w-full bg-background text-foreground">
+        <div className="flex min-h-screen w-full bg-background text-foreground transition-colors duration-200">
           {children}
         </div>
         <Toaster />

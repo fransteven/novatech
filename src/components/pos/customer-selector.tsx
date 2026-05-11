@@ -108,14 +108,14 @@ export function CustomerSelector({
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Cliente Asociado
+        <Label className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-[0.06em]">
+          Cliente asociado
         </Label>
         {selectedCustomer && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-5 px-2 text-xs text-muted-foreground"
+            className="h-5 px-2 text-[10.5px] text-muted-foreground hover:text-foreground"
             onClick={() => onSelect(null)}
           >
             <X className="h-3 w-3 mr-1" />
@@ -130,22 +130,36 @@ export function CustomerSelector({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between font-normal"
+            className="w-full justify-between font-normal h-auto py-2 px-3 border-input"
           >
-            {selectedCustomer ? (
-              <div className="flex items-center truncate">
-                <span className="truncate">{selectedCustomer.name}</span>
-                {selectedCustomer.documentId && (
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    ({selectedCustomer.documentId})
+            <div className="flex items-center gap-2.5 min-w-0">
+              {selectedCustomer ? (
+                <>
+                  <span
+                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11.5px] font-semibold text-white"
+                    style={{ background: "linear-gradient(135deg, oklch(0.7 0.14 200), oklch(0.65 0.18 305))" }}
+                  >
+                    {selectedCustomer.name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
                   </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-muted-foreground">
-                Consumidor Final (Venta Anónima)
-              </span>
-            )}
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="text-[13px] font-semibold text-foreground truncate">{selectedCustomer.name}</span>
+                    {selectedCustomer.documentId && (
+                      <span className="text-[11px] text-muted-foreground truncate">{selectedCustomer.documentId}</span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center bg-muted text-muted-foreground border border-border">
+                    <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+                  </span>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[13px] font-semibold text-foreground">Consumidor Final</span>
+                    <span className="text-[11px] text-muted-foreground">Venta anónima</span>
+                  </div>
+                </>
+              )}
+            </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -185,37 +199,44 @@ export function CustomerSelector({
                       onSelect(customer);
                       setOpen(false);
                     }}
+                    className="gap-2.5"
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedCustomer?.id === customer.id
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span>{customer.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <span
+                      className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-semibold text-white"
+                      style={{ background: "linear-gradient(135deg, oklch(0.7 0.14 200), oklch(0.65 0.18 305))" }}
+                    >
+                      {customer.name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
+                    </span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-[12.5px] font-semibold truncate">{customer.name}</span>
+                      <span className="text-[11px] text-muted-foreground truncate">
                         {customer.documentId} {customer.phone ? `• ${customer.phone}` : ""}
                       </span>
                     </div>
+                    <Check
+                      className={cn(
+                        "h-4 w-4 flex-shrink-0 text-primary",
+                        selectedCustomer?.id === customer.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
                   </CommandItem>
                 ))}
               </CommandGroup>
             </CommandList>
             
             {/* Action fija al final del popover */}
-            <div className="p-2 border-t bg-muted/30">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-sm h-8"
+            <div className="p-2 border-t border-border bg-muted/30">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-[13px] h-8 text-primary hover:text-primary hover:bg-accent/60 gap-2"
                 onClick={() => {
                   setCreateDialogOpen(true);
                   setOpen(false);
                 }}
               >
-                <UserPlus className="h-4 w-4 mr-2" />
+                <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                  <UserPlus className="h-3 w-3 text-accent-foreground" />
+                </span>
                 Registrar Cliente Nuevo
               </Button>
             </div>

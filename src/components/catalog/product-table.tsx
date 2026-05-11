@@ -13,7 +13,21 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Package, Pencil, Trash2, SlidersHorizontal, DollarSign, Tag } from "lucide-react";
+import {
+  Package,
+  Layers,
+  Trash2,
+  Search,
+  Download,
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  Archive,
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 declare module "@tanstack/react-table" {
@@ -33,7 +47,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ProductWithStock } from "@/services/product-service";
 import { toast } from "sonner";
 import { EditProductDialog } from "./edit-product-dialog";
@@ -54,21 +75,11 @@ interface ProductTableProps {
   data: ProductWithStock[];
 }
 
-const CATEGORY_COLORS = [
-  "bg-violet-100 text-violet-700",
-  "bg-sky-100 text-sky-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
-  "bg-indigo-100 text-indigo-700",
-];
-
-function getCategoryColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length];
+function categoryColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  return `oklch(0.65 0.16 ${hue})`;
 }
 
 export function ProductTable({ data }: ProductTableProps) {
@@ -76,47 +87,48 @@ export function ProductTable({ data }: ProductTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [tipoFilter, setTipoFilter] = React.useState<string[]>([]);
 
   const [editProduct, setEditProduct] = React.useState<ProductWithStock | null>(null);
   const [deleteProduct, setDeleteProduct] = React.useState<ProductWithStock | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  // Stats computed from data
-  const stats = React.useMemo(() => {
-    const totalProducts = data.length;
-    const activeCategories = new Set(data.map((p) => p.categoryId).filter(Boolean)).size;
-    const inventoryValue = data.reduce(
-      (sum, p) => sum + parseFloat(String(p.price)) * (p.stock || 0),
-      0,
-    );
-    return { totalProducts, activeCategories, inventoryValue };
-  }, [data]);
+  const maxStock = React.useMemo(
+    () => Math.max(...data.map((p) => p.stock || 0), 1),
+    [data],
+  );
 
   const columns: ColumnDef<ProductWithStock>[] = [
     {
       accessorKey: "name",
-      header: "Nombre",
+      header: "Producto",
       cell: ({ row }) => {
         const item = row.original;
+        const catName = item.categoryName || "";
+        const color = catName ? categoryColor(catName) : "oklch(0.65 0.12 260)";
+        const initials = item.name.slice(0, 2).toUpperCase();
         const attrs = item.attributes as Record<string, string> | null;
-        const attrEntries = attrs ? Object.entries(attrs).filter(([, v]) => v) : [];
+        const attrValues = attrs ? Object.values(attrs).filter(Boolean) : [];
+        const sub = item.description || attrValues.join(" · ");
         return (
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-              <Package className="h-4 w-4 md:h-5 md:w-5 text-slate-400" />
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0 text-[11px] font-bold leading-none"
+              style={{
+                background: `color-mix(in oklch, ${color} 15%, var(--tf-bg-muted))`,
+                color,
+                border: `1px solid color-mix(in oklch, ${color} 30%, var(--tf-border))`,
+              }}
+            >
+              {initials}
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-slate-900 truncate">{item.name}</div>
-              {attrEntries.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {attrEntries.map(([, value]) => (
-                    <span
-                      key={value}
-                      className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500"
-                    >
-                      {value}
-                    </span>
-                  ))}
+              <div className="text-[13.5px] font-semibold text-foreground truncate leading-tight">
+                {item.name}
+              </div>
+              {sub && (
+                <div className="text-[11.5px] text-muted-foreground truncate mt-0.5">
+                  {sub}
                 </div>
               )}
             </div>
@@ -125,30 +137,40 @@ export function ProductTable({ data }: ProductTableProps) {
       },
     },
     {
-      accessorKey: "categoryName",
-      header: "Categoría",
-      meta: { className: "hidden md:table-cell" },
+      accessorKey: "sku",
+      header: "SKU",
+      meta: { className: "hidden lg:table-cell" },
       cell: ({ row }) => {
-        const name = (row.getValue("categoryName") as string) || "Sin categoría";
-        const colorClass = getCategoryColor(name);
+        const sku = row.getValue("sku") as string | null;
         return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}
-          >
-            {name}
+          <span className="font-mono text-[12.5px] text-muted-foreground">
+            {sku || "—"}
           </span>
         );
       },
     },
     {
-      accessorKey: "price",
-      header: "Precio",
-      meta: { className: "w-28" },
+      accessorKey: "categoryName",
+      header: "Categoría",
+      meta: { className: "hidden md:table-cell" },
       cell: ({ row }) => {
-        const price = parseFloat(row.getValue("price"));
+        const name = (row.getValue("categoryName") as string) || null;
+        if (!name) {
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted border border-border text-[12px] text-muted-foreground font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 flex-shrink-0" />
+              Sin categoría
+            </span>
+          );
+        }
+        const color = categoryColor(name);
         return (
-          <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
-            {formatCurrency(price)}
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted border border-border text-[12px] text-muted-foreground font-medium">
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ background: color }}
+            />
+            {name}
           </span>
         );
       },
@@ -157,46 +179,123 @@ export function ProductTable({ data }: ProductTableProps) {
       accessorKey: "isSerialized",
       header: "Tipo",
       meta: { className: "hidden md:table-cell" },
+      filterFn: (row, _columnId, filterValue: string[]) => {
+        if (!filterValue || filterValue.length === 0) return true;
+        const val = row.getValue("isSerialized") ? "serialized" : "standard";
+        return filterValue.includes(val);
+      },
       cell: ({ row }) => {
-        const isSerialized = row.getValue("isSerialized");
+        const isSerialized = row.getValue("isSerialized") as boolean;
+        if (isSerialized) {
+          return (
+            <span
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11.5px] font-semibold whitespace-nowrap"
+              style={{ background: "var(--tf-accent-soft)", color: "var(--tf-accent)" }}
+            >
+              <Package className="h-3 w-3" />
+              Serializado
+            </span>
+          );
+        }
         return (
-          <Badge
-            variant={isSerialized ? "secondary" : "default"}
-            className={
-              isSerialized
-                ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-0"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-100 border-0"
-            }
+          <span
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[6px] text-[11.5px] font-semibold whitespace-nowrap"
+            style={{ background: "var(--tf-green-soft)", color: "var(--tf-green)" }}
           >
-            {isSerialized ? "Serializado" : "Estándar"}
-          </Badge>
+            <Layers className="h-3 w-3" />
+            Estándar
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "price",
+      header: () => <span className="w-full text-right block">Precio</span>,
+      meta: { className: "text-right" },
+      cell: ({ row }) => {
+        const price = parseFloat(row.getValue("price"));
+        return (
+          <div className="text-right font-mono font-semibold text-[13.5px] text-foreground">
+            {formatCurrency(price)}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "stock",
+      header: () => <span className="w-full text-right block">Stock</span>,
+      meta: { className: "text-right hidden sm:table-cell" },
+      cell: ({ row }) => {
+        const stock = (row.getValue("stock") as number) || 0;
+        const pct = Math.min(100, (stock / maxStock) * 100);
+        const barColor =
+          stock > 20
+            ? "var(--tf-green)"
+            : stock > 5
+            ? "var(--tf-amber)"
+            : "var(--tf-red)";
+        return (
+          <div className="flex flex-col items-end gap-1.5">
+            <span className="font-mono text-[13px] font-semibold text-foreground">
+              {stock}
+            </span>
+            <div
+              className="w-14 h-1 rounded-full overflow-hidden"
+              style={{ background: "var(--tf-bg-muted)" }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, background: barColor }}
+              />
+            </div>
+          </div>
         );
       },
     },
     {
       id: "actions",
-      meta: { className: "w-16" },
+      meta: { className: "w-12" },
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const product = row.original;
         return (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              title="Editar"
-              aria-label={`Editar ${product.name}`}
-              className="text-slate-400 hover:text-indigo-600 transition-colors p-1 rounded"
-              onClick={() => setEditProduct(product)}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              title="Eliminar"
-              aria-label={`Eliminar ${product.name}`}
-              className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded"
-              onClick={() => setDeleteProduct(product)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label="Acciones"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => setEditProduct(product)}>
+                  <Pencil className="h-3.5 w-3.5 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => toast.info("Duplicar — próximamente")}
+                >
+                  <Copy className="h-3.5 w-3.5 mr-2" />
+                  Duplicar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => toast.info("Archivar — próximamente")}
+                >
+                  <Archive className="h-3.5 w-3.5 mr-2" />
+                  Archivar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => setDeleteProduct(product)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         );
       },
@@ -206,7 +305,6 @@ export function ProductTable({ data }: ProductTableProps) {
   const handleDelete = React.useCallback(async () => {
     if (!deleteProduct) return;
     setIsDeleting(true);
-
     try {
       const result = await deleteProductAction(deleteProduct.id);
       if (result.success) {
@@ -214,7 +312,7 @@ export function ProductTable({ data }: ProductTableProps) {
       } else {
         toast.error(result.error || "No se pudo eliminar el producto");
       }
-    } catch (error) {
+    } catch {
       toast.error("Ocurrió un error inesperado al intentar eliminar el producto");
     } finally {
       setIsDeleting(false);
@@ -242,67 +340,105 @@ export function ProductTable({ data }: ProductTableProps) {
     initialState: { pagination: { pageSize: 10 } },
   });
 
+  React.useEffect(() => {
+    const col = table.getColumn("isSerialized");
+    if (!col) return;
+    col.setFilterValue(tipoFilter.length > 0 ? tipoFilter : undefined);
+  }, [tipoFilter, table]);
+
   const { pageIndex, pageSize } = table.getState().pagination;
   const filteredRows = table.getFilteredRowModel().rows;
   const totalFiltered = filteredRows.length;
   const from = totalFiltered === 0 ? 0 : pageIndex * pageSize + 1;
   const to = Math.min((pageIndex + 1) * pageSize, totalFiltered);
+  const pageCount = table.getPageCount();
+
+  const toggleTipo = (val: string) => {
+    setTipoFilter((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val],
+    );
+  };
 
   return (
     <>
-      {/* Main Table Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Card Header */}
-        <div className="px-4 md:px-6 py-4 md:py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-800">Listado de Productos</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[140px]">
-              <input
-                type="text"
-                placeholder="Buscar producto..."
-                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                onChange={(e) =>
-                  table.getColumn("name")?.setFilterValue(e.target.value)
-                }
-                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full outline-none"
-              />
-              <svg
-                className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-slate-600 border-slate-200 bg-slate-50 hover:bg-slate-100 gap-2 shrink-0"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">Filtrar</span>
-            </Button>
-          </div>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2.5 px-3 py-2.5 bg-card border border-border rounded-t-[14px] flex-wrap">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px] h-9 px-3 bg-muted/50 border border-transparent rounded-[8px] tf-focus-ring transition-all duration-150">
+          <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          <input
+            type="text"
+            placeholder="Buscar producto..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            onChange={(e) => table.getColumn("name")?.setFilterValue(e.target.value)}
+            className="flex-1 bg-transparent border-0 outline-none text-[13px] placeholder:text-muted-foreground/60"
+          />
         </div>
 
-        {/* Table */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-2 h-9 px-3 rounded-[8px] bg-card border border-input hover:bg-muted text-[13px] text-foreground transition-colors">
+              Tipo
+              {tipoFilter.length > 0 && (
+                <span className="bg-primary text-primary-foreground rounded-full text-[10.5px] px-1.5 py-px font-semibold leading-none">
+                  {tipoFilter.length}
+                </span>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-44">
+            <DropdownMenuCheckboxItem
+              checked={tipoFilter.includes("serialized")}
+              onCheckedChange={() => toggleTipo("serialized")}
+            >
+              Serializado
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={tipoFilter.includes("standard")}
+              onCheckedChange={() => toggleTipo("standard")}
+            >
+              Estándar
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="w-px h-6 bg-border" />
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 gap-1.5 text-[13px]"
+          onClick={() => toast.info("Exportar — próximamente")}
+        >
+          <Download className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Exportar</span>
+        </Button>
+
+        <span className="text-[12.5px] text-muted-foreground ml-auto tabular-nums whitespace-nowrap">
+          Mostrando{" "}
+          <b className="text-foreground">{totalFiltered === 0 ? 0 : from}</b>
+          {" – "}
+          <b className="text-foreground">{to}</b>
+          {" de "}
+          <b className="text-foreground">{totalFiltered}</b>
+        </span>
+      </div>
+
+      {/* Table */}
+      <div
+        className="bg-card border border-border border-t-0 rounded-b-[14px] overflow-hidden"
+        style={{ boxShadow: "var(--tf-shadow-sm)" }}
+      >
         <div className="overflow-x-auto">
-          <Table className="table-fixed w-full">
+          <Table className="w-full">
             <TableHeader>
-              <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+              <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                 {table.getHeaderGroups().map((headerGroup) =>
                   headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
                       className={cn(
-                        "px-3 md:px-6 py-3 md:py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider",
-                        header.column.columnDef.meta?.className
+                        "px-4 py-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.06em]",
+                        header.column.columnDef.meta?.className,
                       )}
                     >
                       {header.isPlaceholder
@@ -316,22 +452,23 @@ export function ProductTable({ data }: ProductTableProps) {
                 )}
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-slate-100">
+            <TableBody className="divide-y divide-border">
               {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row, i) => (
                   <TableRow
                     key={row.id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className="tf-row-enter hover:bg-muted/50 transition-colors"
+                    style={{ animationDelay: `${i * 22}ms` }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className={cn("px-3 md:px-6 py-3 md:py-4", cell.column.columnDef.meta?.className)}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
+                        className={cn(
+                          "px-4 py-3",
+                          cell.column.columnDef.meta?.className,
                         )}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -352,79 +489,69 @@ export function ProductTable({ data }: ProductTableProps) {
           </Table>
         </div>
 
-        {/* Pagination Footer */}
-        <div className="px-4 md:px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="text-sm text-slate-500 text-center sm:text-left">
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-card">
+          <div className="text-[12.5px] text-muted-foreground">
             {totalFiltered === 0 ? (
               "Sin resultados"
             ) : (
               <>
                 Mostrando{" "}
-                <span className="font-medium text-slate-700">{from}–{to}</span>{" "}
-                de{" "}
-                <span className="font-medium text-slate-700">{totalFiltered}</span>{" "}
-                productos
+                <b className="text-foreground">{from}</b>–
+                <b className="text-foreground">{to}</b>
+                {" de "}
+                <b className="text-foreground">{totalFiltered}</b>
               </>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+          <div className="flex items-center gap-1">
+            <button
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+              aria-label="Primera página"
+            >
+              <ChevronFirst className="h-3.5 w-3.5" />
+            </button>
+            <button
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-slate-300 text-slate-600 hover:bg-slate-50"
+              aria-label="Página anterior"
             >
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            {Array.from({ length: pageCount }, (_, i) => i).map((pageNum) => (
+              <button
+                key={pageNum}
+                className={cn(
+                  "w-7 h-7 rounded-[6px] text-[12.5px] transition-colors",
+                  pageNum === pageIndex
+                    ? "bg-primary text-primary-foreground font-semibold"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+                onClick={() => table.setPageIndex(pageNum)}
+              >
+                {pageNum + 1}
+              </button>
+            ))}
+            <button
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-slate-300 text-slate-600 hover:bg-slate-50"
+              aria-label="Página siguiente"
             >
-              Siguiente
-            </Button>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+            <button
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+              onClick={() => table.setPageIndex(pageCount - 1)}
+              disabled={!table.getCanNextPage()}
+              aria-label="Última página"
+            >
+              <ChevronLast className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </div>
-      </div>
-
-      {/* Stats Footer */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-slate-500">Total Productos</span>
-            <div className="bg-indigo-100 p-2 rounded-full">
-              <Package className="h-5 w-5 text-indigo-600" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.totalProducts}</div>
-          <p className="mt-1 text-xs text-slate-400 font-medium">Productos en el catálogo</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-slate-500">Categorías Activas</span>
-            <div className="bg-violet-100 p-2 rounded-full">
-              <Tag className="h-5 w-5 text-violet-600" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900">{stats.activeCategories}</div>
-          <p className="mt-1 text-xs text-slate-400 font-medium">Categorías con productos</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-slate-500">Valor de Inventario</span>
-            <div className="bg-green-100 p-2 rounded-full">
-              <DollarSign className="h-5 w-5 text-green-600" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900">
-            {formatCurrency(stats.inventoryValue)}
-          </div>
-          <p className="mt-1 text-xs text-slate-400 font-medium">Precio de venta × stock actual</p>
         </div>
       </div>
 

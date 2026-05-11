@@ -5,7 +5,7 @@ import { PosProductList } from "@/components/pos/pos-product-list";
 import { CustomerSelector, Customer } from "@/components/pos/customer-selector";
 import { LayawayDialog } from "@/components/pos/layaway-dialog";
 import { toast } from "sonner";
-import { Trash2, CreditCard, ShoppingCart } from "lucide-react";
+import { Trash2, CreditCard, ShoppingCart, MonitorCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -21,7 +21,7 @@ interface CartItem {
   isSerialized: boolean;
   quantity: number;
   unitCost: number;
-  availableQty?: number; // Track available quantity for validation
+  availableQty?: number;
 }
 
 export default function PosPage() {
@@ -31,9 +31,7 @@ export default function PosPage() {
 
   const handleAddToCart = (item: CartItem) => {
     setCartItems((prev) => {
-      // If serialized, it's always a new entry because productItemId is unique
       if (item.isSerialized) {
-        // Prevent double adding same serial if scanned twice
         if (prev.some((p) => p.productItemId === item.productItemId)) {
           toast.warning("Este serial ya está en el carrito");
           return prev;
@@ -41,24 +39,18 @@ export default function PosPage() {
         return [...prev, item];
       }
 
-      // If NOT serialized, check if same productId already exists with SAME price
       const existing = prev.find(
         (p) => p.productId === item.productId && p.price === item.price,
       );
 
       if (existing) {
-        // Check if adding one more would exceed available quantity
         const newQuantity = existing.quantity + 1;
-        if (
-          item.availableQty !== undefined &&
-          newQuantity > item.availableQty
-        ) {
+        if (item.availableQty !== undefined && newQuantity > item.availableQty) {
           toast.error(
             `Stock insuficiente. Disponible: ${item.availableQty}, en carrito: ${existing.quantity}`,
           );
           return prev;
         }
-
         return prev.map((p) =>
           p.productId === item.productId && p.price === item.price
             ? { ...p, quantity: newQuantity }
@@ -66,7 +58,6 @@ export default function PosPage() {
         );
       }
 
-      // Adding new item - check if available quantity is sufficient
       if (item.availableQty !== undefined && item.availableQty < 1) {
         toast.error(`${item.name} no tiene stock disponible`);
         return prev;
@@ -93,13 +84,13 @@ export default function PosPage() {
       const response = await processSaleAction({
         items: cartItems.map((item) => ({
           productId: item.productId,
-          productItemId: item.productItemId, // Allow null
+          productItemId: item.productItemId,
           price: item.price,
           quantity: item.quantity,
           isSerialized: item.isSerialized,
         })),
-        totalAmount: totalAmount,
-        userId: selectedCustomer?.id, // Enviar el ID del cliente seleccionado
+        totalAmount,
+        userId: selectedCustomer?.id,
       });
 
       if (response.success) {
@@ -107,108 +98,215 @@ export default function PosPage() {
           description: `Transacción #${response.saleId} registrada exitosamente.`,
         });
         setCartItems([]);
-        setSelectedCustomer(null); // Limpiar cliente tras venta
+        setSelectedCustomer(null);
       } else {
         toast.error("Error al procesar venta", {
           description: response.error,
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Error crítico en el checkout");
     } finally {
       setProcessing(false);
     }
   };
 
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0,
-  );
+  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
   const total = subtotal;
 
   return (
-    <div className="flex h-[calc(100vh-(--spacing(16))-1px)] gap-6 -m-4 p-4">
-      {/* Left Column: Product Search & Table */}
-      <div className="flex-3 min-w-0 bg-white rounded-xl border border-slate-200 p-6 flex flex-col shadow-sm">
-        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-900">
-          <ShoppingCart className="h-5 w-5" />
-          Terminal de Ventas
-        </h2>
+    <div className="flex h-[calc(100vh-(--spacing(16))-1px)] gap-5 -m-4 p-4">
+      {/* Left Column */}
+      <div
+        className="flex-[3] min-w-0  rounded-[14px] p-6 flex flex-col"
+        style={{ boxShadow: "var(--tf-shadow-sm)" }}
+      >
+        {/* Page header */}
+        <div className="flex items-end justify-between gap-4 mb-5">
+          <div>
+            <h1 className="flex items-center gap-3 text-[22px] font-bold tracking-[-0.025em] text-foreground m-0">
+              <span
+                className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-white flex-shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))",
+                  boxShadow: "0 6px 18px var(--tf-accent-ring)",
+                }}
+              >
+                <MonitorCheck className="h-5 w-5" />
+              </span>
+              Terminal de Ventas
+            </h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5 ml-[50px]">
+              Sesión activa · Modo barcode
+            </p>
+          </div>
+
+          {/* Status pill */}
+          <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+            <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border font-medium">
+              <span className="tf-live-dot" />
+              En línea
+            </span>
+          </div>
+        </div>
+
         <PosProductList onAddToCart={handleAddToCart} />
       </div>
 
-      {/* Right Column: Dynamic Cart */}
-      <div className="flex-2 min-w-[380px] max-w-[500px] flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 space-y-4">
-          <h3 className="font-semibold text-slate-800 flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              Carrito de Compras
-              <Badge
-                variant="secondary"
-                className="rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
-              >
-                {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+      {/* Right Column: Cart Panel */}
+      <div
+        className="flex-[2] min-w-[380px] max-w-[500px] flex flex-col bg-card border border-border rounded-[14px] overflow-hidden"
+        style={{ boxShadow: "var(--tf-shadow-md)" }}
+      >
+        {/* Cart header */}
+        <div
+          className="p-4 border-b border-border space-y-3"
+          style={{
+            background:
+              "linear-gradient(180deg, color-mix(in oklch, var(--tf-accent-soft) 35%, var(--tf-bg-elev)), var(--tf-bg-elev))",
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[15px] font-bold tracking-[-0.01em] text-foreground">
+              <ShoppingCart className="h-[17px] w-[17px]" />
+              Carrito
+              <Badge className="text-[11px] font-semibold py-0.5 px-2 rounded-full bg-primary text-primary-foreground border-0">
+                {itemCount}
               </Badge>
-            </span>
-          </h3>
+            </div>
+            {cartItems.length > 0 && (
+              <button
+                aria-label="Vaciar carrito"
+                className="w-7 h-7 rounded-[7px] flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-all duration-100"
+                onClick={() => setCartItems([])}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
           <CustomerSelector
             selectedCustomer={selectedCustomer}
             onSelect={setSelectedCustomer}
           />
         </div>
 
+        {/* Cart body */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="p-3 border-b border-slate-100 text-[10px] uppercase font-semibold tracking-wider text-slate-500 grid grid-cols-12 gap-2">
-            <div className="col-span-6">Producto / Especificaciones</div>
-            <div className="col-span-2 text-center">Cant.</div>
-            <div className="col-span-3 text-right">Subtotal</div>
-            <div className="col-span-1"></div>
+          {/* Column headings */}
+          <div className="px-4 py-2.5 border-b border-border grid grid-cols-[1fr_84px_70px_24px] gap-2 text-[10.5px] uppercase font-semibold tracking-[0.06em] text-muted-foreground">
+            <div>Producto</div>
+            <div className="text-center">Cant.</div>
+            <div className="text-right">Subtotal</div>
+            <div />
           </div>
 
           <ScrollArea className="flex-1">
             {cartItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400 px-8 text-center">
-                <ShoppingCart className="h-12 w-12 mb-4 opacity-20" />
-                <p className="font-medium text-slate-500">El carrito está vacío</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Escanea productos para agregarlos
+              <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="tf-empty-ring w-16 h-16 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground mb-4">
+                  <ShoppingCart className="h-6 w-6 opacity-40" />
+                </div>
+                <p className="text-[14px] font-semibold text-foreground m-0">El carrito está vacío</p>
+                <p className="text-[12.5px] text-muted-foreground mt-1">
+                  Escanea un código o busca un producto
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col divide-y divide-slate-100">
+              <div className="flex flex-col divide-y divide-border">
                 {cartItems.map((item, index) => (
                   <div
                     key={`${item.productItemId || item.productId}-${index}`}
-                    className={`grid grid-cols-12 gap-2 p-4 text-sm items-center hover:bg-slate-50 transition-colors border-l-4 ${item.isSerialized ? "border-l-indigo-400" : "border-l-transparent"}`}
+                    className="grid grid-cols-[1fr_84px_70px_24px] gap-2 px-4 py-3 items-center hover:bg-muted/50 transition-colors duration-100 rounded-[9px]"
                   >
-                    <div className="col-span-6 font-medium text-slate-800">
-                      <div className="truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                        <span className="font-mono">
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-semibold text-foreground truncate">
+                        {item.name}
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-mono text-[11px] text-muted-foreground">
                           {formatCurrency(item.price)}
                         </span>
-                        <span>•</span>
+                        <span className="text-muted-foreground/50">·</span>
                         <Badge
-                          variant={item.isSerialized ? "default" : "secondary"}
-                          className={`text-[8px] py-0 px-1 leading-none uppercase border-0 ${item.isSerialized ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-100" : "bg-slate-100 text-slate-600 hover:bg-slate-100"}`}
+                          className={`text-[8px] py-0 px-1.5 leading-none uppercase border-0 font-semibold ${item.isSerialized
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-muted text-muted-foreground"
+                            }`}
                         >
                           {item.isSerialized ? "Serial" : "Stock"}
                         </Badge>
                       </div>
                     </div>
-                    <div className="col-span-2 text-center font-semibold text-slate-700">
-                      {item.quantity}
+
+                    {/* Quantity stepper */}
+                    <div className="flex items-center justify-center">
+                      {item.isSerialized ? (
+                        <span className="text-center font-semibold text-[13px] text-foreground w-full text-center">
+                          {item.quantity}
+                        </span>
+                      ) : (
+                        <div className="inline-flex items-center bg-card border border-input rounded-[7px] overflow-hidden h-7">
+                          <button
+                            aria-label="Menos"
+                            className="w-6 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            onClick={() =>
+                              setCartItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index && p.quantity > 1
+                                    ? { ...p, quantity: p.quantity - 1 }
+                                    : p,
+                                ),
+                              )
+                            }
+                          >
+                            <span className="text-sm leading-none">−</span>
+                          </button>
+                          <span className="w-8 text-center font-mono text-[12.5px] font-semibold text-foreground">
+                            {item.quantity}
+                          </span>
+                          <button
+                            aria-label="Más"
+                            className="w-6 h-full flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            onClick={() =>
+                              setCartItems((prev) =>
+                                prev.map((p, i) => {
+                                  if (i !== index) return p;
+                                  const newQty = p.quantity + 1;
+                                  if (p.availableQty !== undefined && newQty > p.availableQty) {
+                                    toast.error(`Stock máximo: ${p.availableQty}`);
+                                    return p;
+                                  }
+                                  return { ...p, quantity: newQty };
+                                }),
+                              )
+                            }
+                          >
+                            <span className="text-sm leading-none">+</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div className="col-span-3 text-right font-bold text-slate-900">
-                      {formatCurrency(item.price * item.quantity)}
+
+                    <div className="text-right">
+                      <div className="text-[13px] font-bold text-foreground font-mono">
+                        {formatCurrency(item.price * item.quantity)}
+                      </div>
+                      {item.quantity > 1 && (
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {formatCurrency(item.price)} c/u
+                        </div>
+                      )}
                     </div>
-                    <div className="col-span-1 flex justify-end">
+
+                    <div className="flex justify-end">
                       <button
                         aria-label={`Eliminar ${item.name}`}
-                        className="text-slate-400 hover:text-red-500 transition-colors p-1 rounded"
+                        className="w-[22px] h-[22px] rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                         onClick={() => handleRemoveItem(index)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -218,20 +316,28 @@ export default function PosPage() {
           </ScrollArea>
         </div>
 
-        <div className="p-6 bg-slate-50/50 border-t border-slate-100 space-y-4">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-medium text-slate-700">{formatCurrency(subtotal)}</span>
-            </div>
-            <Separator className="my-2 bg-slate-200" />
-            <div className="flex justify-between text-2xl font-black text-slate-900">
-              <span>TOTAL</span>
-              <span>{formatCurrency(total)}</span>
-            </div>
+        {/* Totals */}
+        <div className="border-t border-border bg-muted/50 px-[18px] py-3.5 space-y-1">
+          <div className="flex justify-between items-center text-[13px] text-muted-foreground">
+            <span>Subtotal ({itemCount} ítem{itemCount !== 1 ? "s" : ""})</span>
+            <span className="text-foreground font-medium font-mono">{formatCurrency(subtotal)}</span>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
+        {/* Grand total */}
+        <div className="flex justify-between items-baseline px-[18px] py-3.5 bg-muted/50 border-t border-border">
+          <span className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-bold">
+            Total a cobrar
+          </span>
+          <span className="text-[32px] font-extrabold tracking-[-0.03em] text-foreground leading-none tabular-nums">
+            <span className="text-[18px] text-muted-foreground font-semibold align-super mr-0.5">$</span>
+            {total.toFixed(2)}
+          </span>
+        </div>
+
+        {/* Footer actions */}
+        <div className="p-3.5 bg-card border-t border-border">
+          <div className="grid grid-cols-2 gap-2">
             <LayawayDialog
               cartItems={cartItems}
               totalAmount={total}
@@ -243,17 +349,27 @@ export default function PosPage() {
             />
 
             <Button
-              className="w-full text-lg h-14 font-bold shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
-              size="lg"
+              className="w-full h-[46px] font-bold text-[14.5px] gap-2 cursor-pointer text-primary-foreground border-0"
               disabled={cartItems.length === 0 || processing}
               onClick={handleCheckout}
+              style={{
+                background:
+                  "linear-gradient(180deg, var(--tf-accent), oklch(0.52 0.2 270))",
+                boxShadow:
+                  "0 1px 0 inset oklch(1 0 0 / 0.25), 0 8px 20px var(--tf-accent-ring)",
+              }}
             >
               {processing ? (
                 "Procesando..."
               ) : (
                 <>
-                  <CreditCard className="mr-2 h-5 w-5" />
+                  <CreditCard className="h-4 w-4" />
                   Cobrar
+                  {cartItems.length > 0 && (
+                    <span className="font-extrabold font-mono tracking-[-0.01em]">
+                      {formatCurrency(total)}
+                    </span>
+                  )}
                 </>
               )}
             </Button>
