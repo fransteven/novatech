@@ -16,7 +16,6 @@ export const cashAccounts = pgTable("cash_accounts", {
   openingBalance: decimal("opening_balance", { precision: 14, scale: 2 }).notNull().default("0"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const cashMovements = pgTable("cash_movements", {
@@ -27,15 +26,16 @@ export const cashMovements = pgTable("cash_movements", {
   direction: text("direction").notNull(), // 'in' | 'out'
   amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
   sourceType: text("source_type").notNull(), // 'sale_payment' | 'layaway_deposit' | 'expense' | 'import_cost' | 'refund' | 'owner_payout' | 'transfer' | 'adjustment' | 'opening_balance'
-  sourceId: uuid("source_id"), // pointer to sale/layaway/expense/etc, no FK constraint
+  sourceId: uuid("source_id"), // intentionally no FK — polymorphic reference, resolved via sourceType
   paymentMethod: text("payment_method").default("cash"), // 'cash' | 'transfer' | 'card' | 'wallet'
   occurredAt: timestamp("occurred_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   referenceCode: text("reference_code"),
   notes: text("notes"),
   createdBy: text("created_by").references(() => user.id),
   status: text("status").notNull().default("posted"), // 'posted' | 'voided'
   voidedAt: timestamp("voided_at"),
-  voidedBy: text("voided_by"),
+  voidedBy: text("voided_by").references(() => user.id),
   voidReason: text("void_reason"),
 });
 
@@ -52,6 +52,10 @@ export const cashTransfers = pgTable("cash_transfers", {
   occurredAt: timestamp("occurred_at").notNull().defaultNow(),
   notes: text("notes"),
   createdBy: text("created_by").references(() => user.id),
+  status: text("status").notNull().default("posted"), // 'posted' | 'voided'
+  voidedAt: timestamp("voided_at"),
+  voidedBy: text("voided_by").references(() => user.id),
+  voidReason: text("void_reason"),
 });
 
 export const cashReconciliations = pgTable("cash_reconciliations", {
@@ -63,7 +67,7 @@ export const cashReconciliations = pgTable("cash_reconciliations", {
   periodEnd: timestamp("period_end").notNull(),
   expectedBalance: decimal("expected_balance", { precision: 14, scale: 2 }).notNull(),
   countedBalance: decimal("counted_balance", { precision: 14, scale: 2 }).notNull(),
-  difference: decimal("difference", { precision: 14, scale: 2 }).notNull(),
+  difference: decimal("difference", { precision: 14, scale: 2 }).notNull(), // must equal countedBalance - expectedBalance
   status: text("status").notNull().default("open"), // 'open' | 'closed'
   closedBy: text("closed_by").references(() => user.id),
   closedAt: timestamp("closed_at"),
