@@ -19,6 +19,7 @@ import {
   User,
   LogOut,
   Menu,
+  Wallet,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const operacion = [
 ];
 
 const analisis = [
+  { title: "Caja", href: "/cash", icon: Wallet },
   { title: "Ventas", href: "/sales", icon: TrendingUp },
   { title: "Ganancias", href: "/profits", icon: PiggyBank },
   { title: "Gastos", href: "/expenses", icon: Banknote },
