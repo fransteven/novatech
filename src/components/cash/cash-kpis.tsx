@@ -59,7 +59,7 @@ export function CashKpis({ totalBalance, totalIn, totalOut, netFlow }: CashKpisP
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <KpiCard
         label="Saldo Total"
-        value={<span className="text-[22px]">{formatCurrency(totalBalance)}</span>}
+        value={formatCurrency(totalBalance)}
         sub="Suma de todas las cuentas activas"
         icon={<Wallet className="h-[18px] w-[18px]" />}
         iconBg="oklch(0.58 0.19 265 / 0.15)"
@@ -68,7 +68,7 @@ export function CashKpis({ totalBalance, totalIn, totalOut, netFlow }: CashKpisP
       />
       <KpiCard
         label="Ingresos del Mes"
-        value={<span className="text-[22px]">{formatCurrency(totalIn)}</span>}
+        value={formatCurrency(totalIn)}
         sub="Entradas del mes actual"
         icon={<TrendingUp className="h-[18px] w-[18px]" />}
         iconBg="oklch(0.62 0.15 150 / 0.15)"
@@ -77,7 +77,7 @@ export function CashKpis({ totalBalance, totalIn, totalOut, netFlow }: CashKpisP
       />
       <KpiCard
         label="Egresos del Mes"
-        value={<span className="text-[22px]">{formatCurrency(totalOut)}</span>}
+        value={formatCurrency(totalOut)}
         sub="Salidas del mes actual"
         icon={<TrendingDown className="h-[18px] w-[18px]" />}
         iconBg="oklch(0.6 0.2 25 / 0.12)"
@@ -86,7 +86,7 @@ export function CashKpis({ totalBalance, totalIn, totalOut, netFlow }: CashKpisP
       />
       <KpiCard
         label="Flujo Neto"
-        value={<span className="text-[22px]">{formatCurrency(netFlow)}</span>}
+        value={formatCurrency(netFlow)}
         sub={netFlow >= 0 ? "Flujo positivo este mes" : "Flujo negativo este mes"}
         icon={<Activity className="h-[18px] w-[18px]" />}
         iconBg="oklch(0.72 0.15 70 / 0.15)"
