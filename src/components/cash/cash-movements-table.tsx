@@ -37,19 +37,7 @@ import { getCashMovementsAction } from "@/app/actions/cash-actions";
 import { CashAccountWithBalance } from "@/services/cash-service";
 import { formatCurrency } from "@/lib/formatters";
 
-type MovementRow = {
-  id: string;
-  accountId: string;
-  accountName: string;
-  direction: string;
-  amount: string;
-  sourceType: string;
-  paymentMethod: string | null;
-  occurredAt: Date;
-  referenceCode: string | null;
-  notes: string | null;
-  status: string;
-};
+type MovementRow = NonNullable<Awaited<ReturnType<typeof getCashMovementsAction>>["data"]>[number];
 
 const SOURCE_LABELS: Record<string, string> = {
   sale_payment: "Venta",
@@ -190,21 +178,24 @@ export function CashMovementsTable({
 
   const loadMovements = React.useCallback(async () => {
     setLoading(true);
-    if (selectedAccountId === "all") {
-      const results = await Promise.all(
-        accounts.map((a) => getCashMovementsAction(a.id, 100)),
-      );
-      const all = results.flatMap((r) => (r.data ?? []) as MovementRow[]);
-      all.sort(
-        (a, b) =>
-          new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-      );
-      setMovements(all.slice(0, 100));
-    } else {
-      const result = await getCashMovementsAction(selectedAccountId, 100);
-      setMovements((result.data ?? []) as MovementRow[]);
+    try {
+      if (selectedAccountId === "all") {
+        const results = await Promise.all(
+          accounts.map((a) => getCashMovementsAction(a.id, 100)),
+        );
+        const all = results.flatMap((r) => r.data ?? []);
+        all.sort(
+          (a, b) =>
+            new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+        );
+        setMovements(all.slice(0, 100));
+      } else {
+        const result = await getCashMovementsAction(selectedAccountId, 100);
+        setMovements(result.data ?? []);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [selectedAccountId, accounts]);
 
   React.useEffect(() => {
@@ -350,17 +341,11 @@ export function CashMovementsTable({
         {!loading && totalFiltered > 0 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-card">
             <span className="text-[12.5px] text-muted-foreground tabular-nums">
-              {totalFiltered === 0 ? (
-                "Sin resultados"
-              ) : (
-                <>
-                  Mostrando{" "}
-                  <b className="text-foreground">{from}</b>–
-                  <b className="text-foreground">{to}</b>
-                  {" de "}
-                  <b className="text-foreground">{totalFiltered}</b>
-                </>
-              )}
+              Mostrando{" "}
+              <b className="text-foreground">{from}</b>–
+              <b className="text-foreground">{to}</b>
+              {" de "}
+              <b className="text-foreground">{totalFiltered}</b>
             </span>
             <div className="flex items-center gap-1">
               <button
