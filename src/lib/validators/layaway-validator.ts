@@ -10,6 +10,8 @@ export const createLayawaySchema = z.object({
     message: "La fecha de vencimiento debe ser en el futuro",
   }),
   paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
+  accountId: z.string().uuid("ID de cuenta inválido").optional(),
+  referenceCode: z.string().optional(),
 });
 
 export const addLayawayPaymentSchema = z.object({
@@ -17,6 +19,8 @@ export const addLayawayPaymentSchema = z.object({
   amount: z.number().positive("El abono debe ser mayor a cero"),
   paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
   notes: z.string().optional(),
+  accountId: z.string().uuid("ID de cuenta inválido").optional(),
+  referenceCode: z.string().optional(),
 });
 
 export type CreateLayawayInput = z.infer<typeof createLayawaySchema>;

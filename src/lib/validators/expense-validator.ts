@@ -16,6 +16,8 @@ export const createExpenseSchema = z.object({
   paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
   date: z.date().optional(),
   relatedProductItemId: z.string().uuid().optional().nullable(),
+  accountId: z.string().uuid("ID de cuenta inválido").optional(),
+  referenceCode: z.string().optional(),
 });
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
