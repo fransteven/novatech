@@ -227,3 +227,86 @@ export const getCashMovements = async (accountId: string, limit = 50) => {
     .orderBy(desc(cashMovements.occurredAt))
     .limit(limit);
 };
+
+export type CashAccountWithBalance = {
+  id: string;
+  name: string;
+  type: string;
+  currency: string;
+  openingBalance: string;
+  balance: number;
+  isActive: boolean;
+};
+
+export const getCashAccountsWithBalance = async (): Promise<{
+  accounts: CashAccountWithBalance[];
+  totalBalance: number;
+}> => {
+  const accounts = await db
+    .select({
+      id: cashAccounts.id,
+      name: cashAccounts.name,
+      type: cashAccounts.type,
+      currency: cashAccounts.currency,
+      openingBalance: cashAccounts.openingBalance,
+      isActive: cashAccounts.isActive,
+      totalIn: sql<string>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'in' AND ${cashMovements.status} = 'posted' THEN ${cashMovements.amount}::numeric ELSE 0 END), 0)`,
+      totalOut: sql<string>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'out' AND ${cashMovements.status} = 'posted' THEN ${cashMovements.amount}::numeric ELSE 0 END), 0)`,
+    })
+    .from(cashAccounts)
+    .leftJoin(cashMovements, eq(cashMovements.accountId, cashAccounts.id))
+    .where(eq(cashAccounts.isActive, true))
+    .groupBy(cashAccounts.id)
+    .orderBy(cashAccounts.name);
+
+  const result: CashAccountWithBalance[] = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    type: a.type,
+    currency: a.currency ?? "COP",
+    openingBalance: a.openingBalance ?? "0",
+    balance:
+      parseFloat(a.openingBalance ?? "0") +
+      parseFloat(a.totalIn) -
+      parseFloat(a.totalOut),
+    isActive: a.isActive ?? true,
+  }));
+
+  const totalBalance = result.reduce((sum, a) => sum + a.balance, 0);
+  return { accounts: result, totalBalance };
+};
+
+export const getCashFlowSummary = async (
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<{
+  totalIn: number;
+  totalOut: number;
+  netFlow: number;
+  movementCount: number;
+}> => {
+  const result = await db
+    .select({
+      totalIn: sql<string>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'in' THEN ${cashMovements.amount}::numeric ELSE 0 END), 0)`,
+      totalOut: sql<string>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'out' THEN ${cashMovements.amount}::numeric ELSE 0 END), 0)`,
+      movementCount: sql<string>`COUNT(*)`,
+    })
+    .from(cashMovements)
+    .where(
+      and(
+        eq(cashMovements.status, "posted"),
+        sql`${cashMovements.occurredAt} >= ${periodStart}`,
+        sql`${cashMovements.occurredAt} <= ${periodEnd}`,
+      ),
+    )
+    .then((rows) => rows[0]);
+
+  const totalIn = parseFloat(result.totalIn);
+  const totalOut = parseFloat(result.totalOut);
+  return {
+    totalIn,
+    totalOut,
+    netFlow: totalIn - totalOut,
+    movementCount: parseInt(result.movementCount, 10),
+  };
+};
