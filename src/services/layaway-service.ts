@@ -3,6 +3,7 @@ import {
   layaways,
   layawayDetails,
   cashTransactions,
+  cashMovements,
   productItems,
   inventoryMovements,
   customers,
@@ -95,6 +96,21 @@ export const createLayaway = async (data: CreateLayawayInput) => {
         referenceId: newLayaway.id,
         notes: "Abono inicial",
       });
+
+      if (data.accountId) {
+        await tx.insert(cashMovements).values({
+          accountId: data.accountId,
+          direction: "in",
+          sourceType: "layaway_deposit",
+          sourceId: newLayaway.id,
+          paymentMethod: data.paymentMethod,
+          amount: data.initialDeposit.toString(),
+          referenceCode: data.referenceCode ?? null,
+          notes: "Abono inicial",
+          createdBy: null,
+          status: "posted",
+        });
+      }
     }
 
     return newLayaway;
@@ -169,6 +185,21 @@ export const addLayawayPayment = async (data: AddLayawayPaymentInput) => {
       referenceId: layaway.id,
       notes: data.notes || "Abono a apartado",
     });
+
+    if (data.accountId) {
+      await tx.insert(cashMovements).values({
+        accountId: data.accountId,
+        direction: "in",
+        sourceType: "layaway_deposit",
+        sourceId: layaway.id,
+        paymentMethod: data.paymentMethod,
+        amount: data.amount.toString(),
+        referenceCode: data.referenceCode ?? null,
+        notes: data.notes ?? "Abono a apartado",
+        createdBy: null,
+        status: "posted",
+      });
+    }
 
     // 3. ¿Se completó el pago?
     if (totalPaid + data.amount >= totalAmount) {

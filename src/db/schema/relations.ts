@@ -13,6 +13,12 @@ import { expenseCategories, expenses } from "./expenses";
 import { customers } from "./customers";
 import { layaways, layawayDetails } from "./layaways";
 import { importCosts } from "./imports";
+import {
+  cashAccounts,
+  cashMovements,
+  cashTransfers,
+  cashReconciliations,
+} from "./cash";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -153,6 +159,54 @@ export const importCostsRelations = relations(importCosts, ({ one }) => ({
   }),
   user: one(user, {
     fields: [importCosts.userId],
+    references: [user.id],
+  }),
+}));
+
+// --- Cash Flow Relations ---
+
+export const cashAccountsRelations = relations(cashAccounts, ({ many }) => ({
+  movements: many(cashMovements),
+  transfersFrom: many(cashTransfers, { relationName: "transferFrom" }),
+  transfersTo: many(cashTransfers, { relationName: "transferTo" }),
+  reconciliations: many(cashReconciliations),
+}));
+
+export const cashMovementsRelations = relations(cashMovements, ({ one }) => ({
+  account: one(cashAccounts, {
+    fields: [cashMovements.accountId],
+    references: [cashAccounts.id],
+  }),
+  createdByUser: one(user, {
+    fields: [cashMovements.createdBy],
+    references: [user.id],
+  }),
+}));
+
+export const cashTransfersRelations = relations(cashTransfers, ({ one }) => ({
+  fromAccount: one(cashAccounts, {
+    fields: [cashTransfers.fromAccountId],
+    references: [cashAccounts.id],
+    relationName: "transferFrom",
+  }),
+  toAccount: one(cashAccounts, {
+    fields: [cashTransfers.toAccountId],
+    references: [cashAccounts.id],
+    relationName: "transferTo",
+  }),
+  createdByUser: one(user, {
+    fields: [cashTransfers.createdBy],
+    references: [user.id],
+  }),
+}));
+
+export const cashReconciliationsRelations = relations(cashReconciliations, ({ one }) => ({
+  account: one(cashAccounts, {
+    fields: [cashReconciliations.accountId],
+    references: [cashAccounts.id],
+  }),
+  closedByUser: one(user, {
+    fields: [cashReconciliations.closedBy],
     references: [user.id],
   }),
 }));

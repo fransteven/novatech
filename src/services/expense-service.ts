@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { expenses, expenseCategories, user } from "@/db/schema";
+import { expenses, expenseCategories, user, cashMovements } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import {
   CreateExpenseInput,
@@ -30,19 +30,38 @@ export const getExpenses = async () => {
 export const createExpense = async (
   data: CreateExpenseInput & { userId: string },
 ) => {
-  const result = await db
-    .insert(expenses)
-    .values({
-      amount: data.amount.toString(),
-      description: data.description,
-      categoryId: data.categoryId,
-      paymentMethod: data.paymentMethod,
-      date: data.date || new Date(),
-      relatedProductItemId: data.relatedProductItemId,
-      userId: data.userId,
-    })
-    .returning();
-  return result[0];
+  return await db.transaction(async (tx) => {
+    const result = await tx
+      .insert(expenses)
+      .values({
+        amount: data.amount.toString(),
+        description: data.description,
+        categoryId: data.categoryId,
+        paymentMethod: data.paymentMethod,
+        date: data.date || new Date(),
+        relatedProductItemId: data.relatedProductItemId,
+        userId: data.userId,
+      })
+      .returning();
+    const expense = result[0];
+
+    if (data.accountId) {
+      await tx.insert(cashMovements).values({
+        accountId: data.accountId,
+        direction: "out",
+        sourceType: "expense",
+        sourceId: expense.id,
+        paymentMethod: data.paymentMethod ?? "cash",
+        amount: data.amount.toString(),
+        referenceCode: data.referenceCode ?? null,
+        notes: data.description,
+        createdBy: data.userId,
+        status: "posted",
+      });
+    }
+
+    return expense;
+  });
 };
 
 export const getExpenseCategories = async () => {
