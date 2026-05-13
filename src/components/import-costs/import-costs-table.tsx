@@ -34,6 +34,7 @@ interface ImportCostRow {
   baseUsdCost: string;
   totalCostPesos: string;
   catalogPrice: string | null;
+  mastercardDollarRate: string | null;
   mastercardCommissionPesos: string | null;
   casilleroPesos: string;
   productPesos: string;
@@ -65,6 +66,35 @@ const formatUSD = (value: string | null | undefined) => {
   }).format(parseFloat(value));
 };
 
+const formatTrm = (value: string | null | undefined) => {
+  if (!value || parseFloat(value) <= 0) return null;
+  return new Intl.NumberFormat("es-CO", {
+    maximumFractionDigits: 0,
+  }).format(parseFloat(value));
+};
+
+const TrmLine = ({
+  pesos,
+  trm,
+}: {
+  pesos: string | null;
+  trm: string | null;
+}) => {
+  if (!pesos || parseFloat(pesos) <= 0)
+    return <span className="text-muted-foreground">—</span>;
+  const trmFormatted = formatTrm(trm);
+  return (
+    <div className="leading-tight">
+      <div className="font-medium">{formatCOP(pesos)}</div>
+      {trmFormatted && (
+        <div className="text-[11px] text-muted-foreground font-mono">
+          @ {trmFormatted} / USD
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "purchaseDate",
@@ -80,9 +110,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
     cell: ({ row }) => {
       const name = row.getValue("productName") as string | null;
       const specs = row.original.specs;
-      const specValues = specs
-        ? Object.values(specs).filter(Boolean)
-        : [];
+      const specValues = specs ? Object.values(specs).filter(Boolean) : [];
       return (
         <div className="space-y-1">
           <span>{name || "—"}</span>
@@ -92,7 +120,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
                 <Badge
                   key={val}
                   variant="secondary"
-                  className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] py-0 px-1.5 font-medium"
+                  className="bg-slate-100 text-slate-700 border border-slate-200 text-[10px] py-0 px-1.5 font-medium"
                 >
                   {val}
                 </Badge>
@@ -102,13 +130,6 @@ export const columns: ColumnDef<ImportCostRow>[] = [
         </div>
       );
     },
-  },
-  {
-    accessorKey: "condition",
-    header: "Condición",
-    cell: ({ row }) => (
-      <Badge variant="outline">{row.getValue("condition")}</Badge>
-    ),
   },
   {
     accessorKey: "provider",
@@ -129,7 +150,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   },
   {
     accessorKey: "baseUsdCost",
-    header: "Costo USD",
+    header: "Costo producto",
     cell: ({ row }) => (
       <span className="font-mono text-sm">
         {formatUSD(row.getValue("baseUsdCost"))}
@@ -137,32 +158,43 @@ export const columns: ColumnDef<ImportCostRow>[] = [
     ),
   },
   {
+    accessorKey: "mastercardCommissionPesos",
+    header: "Comisión MC",
+    cell: ({ row }) => (
+      <TrmLine
+        pesos={row.original.mastercardCommissionPesos}
+        trm={row.original.mastercardDollarRate}
+      />
+    ),
+  },
+  {
+    accessorKey: "productPesos",
+    header: "Valor equipo",
+    cell: ({ row }) => (
+      <TrmLine
+        pesos={row.original.productPesos}
+        trm={row.original.productTrm}
+      />
+    ),
+  },
+  {
+    accessorKey: "casilleroPesos",
+    header: "Casillero",
+    cell: ({ row }) => (
+      <TrmLine
+        pesos={row.original.casilleroPesos}
+        trm={row.original.casilleroTrm}
+      />
+    ),
+  },
+  {
     accessorKey: "totalCostPesos",
-    header: "Costo Total (COP)",
+    header: "Costo total",
     cell: ({ row }) => (
       <span className="font-semibold">
         {formatCOP(row.getValue("totalCostPesos"))}
       </span>
     ),
-  },
-  {
-    id: "estimatedMargin",
-    header: "Margen Estimado",
-    cell: ({ row }) => {
-      const catalogPrice = parseFloat(row.original.catalogPrice ?? "0");
-      const totalCost = parseFloat(row.original.totalCostPesos ?? "0");
-      if (!catalogPrice || !totalCost) return "—";
-      const margin = catalogPrice - totalCost;
-      const marginPct = ((margin / catalogPrice) * 100).toFixed(1);
-      return (
-        <div className="text-sm">
-          <div className={margin >= 0 ? "text-green-600" : "text-red-600"}>
-            {formatCOP(margin.toString())}
-          </div>
-          <div className="text-muted-foreground text-[11px]">{marginPct}%</div>
-        </div>
-      );
-    },
   },
 ];
 
