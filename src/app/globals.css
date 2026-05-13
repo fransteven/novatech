@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme="dark"] *), &:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -46,77 +46,99 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ── TechFlow design tokens (light) ─────────────────────────── */
 :root {
-  --radius: 0.75rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --glass-bg: rgba(255, 255, 255, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Raw design tokens */
+  --tf-bg:           oklch(0.99 0.003 80);
+  --tf-bg-elev:      oklch(1 0 0);
+  --tf-bg-muted:     oklch(0.97 0.004 80);
+  --tf-border:       oklch(0.92 0.005 80);
+  --tf-border-strong:oklch(0.88 0.006 80);
+  --tf-fg:           oklch(0.18 0.01 260);
+  --tf-fg-muted:     oklch(0.46 0.012 260);
+  --tf-fg-subtle:    oklch(0.62 0.012 260);
+
+  --tf-accent:       oklch(0.58 0.19 265);
+  --tf-accent-fg:    oklch(0.99 0 0);
+  --tf-accent-soft:  oklch(0.95 0.04 265);
+  --tf-accent-ring:  oklch(0.58 0.19 265 / 0.25);
+
+  --tf-green:        oklch(0.62 0.15 150);
+  --tf-green-soft:   oklch(0.95 0.05 150);
+  --tf-amber:        oklch(0.72 0.15 70);
+  --tf-amber-soft:   oklch(0.96 0.06 70);
+  --tf-red:          oklch(0.6 0.2 25);
+  --tf-red-soft:     oklch(0.96 0.04 25);
+
+  --tf-shadow-sm: 0 1px 2px oklch(0.2 0.02 260 / 0.04);
+  --tf-shadow-md: 0 4px 12px oklch(0.2 0.02 260 / 0.06), 0 1px 3px oklch(0.2 0.02 260 / 0.04);
+  --tf-shadow-lg: 0 12px 32px oklch(0.2 0.02 260 / 0.1), 0 4px 8px oklch(0.2 0.02 260 / 0.05);
+
+  /* Shadcn semantic tokens mapped to design */
+  --radius: 0.625rem;
+
+  --background:          var(--tf-bg);
+  --foreground:          var(--tf-fg);
+  --card:                var(--tf-bg-elev);
+  --card-foreground:     var(--tf-fg);
+  --popover:             var(--tf-bg-elev);
+  --popover-foreground:  var(--tf-fg);
+  --primary:             var(--tf-accent);
+  --primary-foreground:  var(--tf-accent-fg);
+  --secondary:           var(--tf-bg-muted);
+  --secondary-foreground:var(--tf-fg);
+  --muted:               var(--tf-bg-muted);
+  --muted-foreground:    var(--tf-fg-muted);
+  --accent:              var(--tf-accent-soft);
+  --accent-foreground:   var(--tf-accent);
+  --destructive:         var(--tf-red);
+  --border:              var(--tf-border);
+  --input:               var(--tf-border-strong);
+  --ring:                var(--tf-accent);
+
+  --chart-1: var(--tf-accent);
+  --chart-2: var(--tf-green);
+  --chart-3: var(--tf-amber);
+  --chart-4: oklch(0.62 0.18 295);
+  --chart-5: oklch(0.65 0.16 200);
+
+  --sidebar:                   var(--tf-bg-elev);
+  --sidebar-foreground:        var(--tf-fg);
+  --sidebar-primary:           var(--tf-accent);
+  --sidebar-primary-foreground:var(--tf-accent-fg);
+  --sidebar-accent:            var(--tf-accent-soft);
+  --sidebar-accent-foreground: var(--tf-accent);
+  --sidebar-border:            var(--tf-border);
+  --sidebar-ring:              var(--tf-accent-ring);
 }
 
+/* ── Dark theme ──────────────────────────────────────────────── */
+[data-theme="dark"],
 .dark {
-  --background: oklch(15% 0 0);
-  --foreground: oklch(98.5% 0 0);
-  --card: oklch(20.5% 0 0);
-  --card-foreground: oklch(98.5% 0 0);
-  --glass-bg: rgba(0, 0, 0, 0.3);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --tf-bg:           oklch(0.16 0.01 260);
+  --tf-bg-elev:      oklch(0.2 0.012 260);
+  --tf-bg-muted:     oklch(0.22 0.012 260);
+  --tf-border:       oklch(0.28 0.012 260);
+  --tf-border-strong:oklch(0.34 0.014 260);
+  --tf-fg:           oklch(0.97 0.004 260);
+  --tf-fg-muted:     oklch(0.72 0.012 260);
+  --tf-fg-subtle:    oklch(0.58 0.012 260);
+
+  --tf-accent:       oklch(0.7 0.17 265);
+  --tf-accent-fg:    oklch(0.15 0.01 260);
+  --tf-accent-soft:  oklch(0.28 0.06 265);
+  --tf-accent-ring:  oklch(0.7 0.17 265 / 0.3);
+
+  --tf-green:        oklch(0.74 0.16 150);
+  --tf-green-soft:   oklch(0.28 0.06 150);
+  --tf-amber:        oklch(0.8 0.16 70);
+  --tf-amber-soft:   oklch(0.32 0.07 70);
+  --tf-red:          oklch(0.72 0.18 25);
+  --tf-red-soft:     oklch(0.3 0.08 25);
+
+  --tf-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --tf-shadow-md: 0 4px 12px oklch(0 0 0 / 0.35), 0 1px 3px oklch(0 0 0 / 0.25);
+  --tf-shadow-lg: 0 12px 32px oklch(0 0 0 / 0.45), 0 4px 8px oklch(0 0 0 / 0.3);
 }
 
 @layer base {
@@ -125,17 +147,127 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(at 0% 0%, hsla(210, 100%, 98%, 1) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(220, 100%, 97%, 1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(230, 100%, 98%, 1) 0, transparent 50%);
-    background-attachment: fixed;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
+  }
+  .mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-feature-settings: "ss01", "cv01";
   }
 }
 
-.dark body {
-  background-image:
-    radial-gradient(at 0% 0%, hsla(210, 30%, 20%, 1) 0, transparent 50%),
-    radial-gradient(at 50% 0%, hsla(220, 30%, 15%, 1) 0, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(230, 30%, 20%, 1) 0, transparent 50%);
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes tf-pulse {
+  0%   { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes tf-scan-pulse {
+  0%   { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1.4);  opacity: 0; }
+}
+@keyframes tf-pulse-live {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+@keyframes tf-row-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tf-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Utility classes ─────────────────────────────────────────── */
+@layer components {
+  /* Status badges */
+  .tf-badge-normal { background: var(--tf-green-soft); color: var(--tf-green); }
+  .tf-badge-low    { background: var(--tf-amber-soft); color: var(--tf-amber); }
+  .tf-badge-out    { background: var(--tf-red-soft);   color: var(--tf-red);   }
+
+  .tf-pulse-dot {
+    position: relative;
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+  }
+  .tf-pulse-dot::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.4;
+    animation: tf-pulse 1.6s ease-out infinite;
+  }
+
+  /* Table row stagger */
+  .tf-row-enter {
+    animation: tf-row-in 250ms cubic-bezier(.4,0,.2,1) backwards;
+  }
+
+  /* Active nav indicator rail */
+  .tf-nav-rail::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 8px; bottom: 8px;
+    width: 3px;
+    background: var(--tf-accent);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* KPI alert top stripe */
+  .tf-kpi-alert::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--tf-amber), transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  /* Focus glow ring */
+  .tf-focus-ring:focus-within {
+    border-color: var(--tf-accent) !important;
+    box-shadow: 0 0 0 4px var(--tf-accent-ring);
+  }
+
+  /* Scanner icon pulse ring */
+  .tf-scan-pulse {
+    position: relative;
+  }
+  .tf-scan-pulse::after {
+    content: "";
+    position: absolute; inset: -3px;
+    border-radius: 11px;
+    border: 1.5px solid var(--tf-accent);
+    opacity: 0.4;
+    animation: tf-scan-pulse 1.8s ease-out infinite;
+  }
+
+  /* Live status dot */
+  .tf-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--tf-green);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--tf-green) 25%, transparent);
+    animation: tf-pulse-live 2s ease-in-out infinite;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* Cart empty state dashed ring */
+  .tf-empty-ring {
+    position: relative;
+  }
+  .tf-empty-ring::after {
+    content: "";
+    position: absolute; inset: -6px;
+    border-radius: 20px;
+    border: 1.5px dashed var(--tf-border-strong);
+    opacity: 0.7;
+  }
 }

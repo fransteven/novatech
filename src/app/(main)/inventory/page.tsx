@@ -9,14 +9,20 @@ import {
   getStockSummary,
   searchInventoryStock,
 } from "@/services/inventory-service";
+import { revalidatePath } from "next/cache";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface InventoryPageProps {
   searchParams: Promise<{ query?: string }>;
 }
 
-export default async function InventoryPage({
-  searchParams,
-}: InventoryPageProps) {
+async function syncInventory() {
+  "use server";
+  revalidatePath("/inventory");
+}
+
+export default async function InventoryPage({ searchParams }: InventoryPageProps) {
   const { query } = await searchParams;
 
   const products = await getProducts();
@@ -26,19 +32,36 @@ export default async function InventoryPage({
     : await getStockSummary();
 
   return (
-    <div className="space-y-4 md:space-y-8 p-4 md:p-8">
+    <div className="max-w-[1480px] mx-auto px-4 md:px-8 py-7 pb-20">
       <PageHeader
         title="Gestión de Bodega"
-        description="Control de existencias y entradas de mercancía"
-        actions={<AddStockSheet products={products} />}
+        description="Control de existencias y entradas de mercancía. Monitorea niveles, registra ingresos y mantén tu inventario actualizado en tiempo real."
+        actions={
+          <>
+            <form action={syncInventory}>
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                className="h-[38px] px-[14px] text-[13.5px] font-medium"
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                Sincronizar
+              </Button>
+            </form>
+            <AddStockSheet products={products} />
+          </>
+        }
       />
 
       <InventoryKPIs stats={stats} />
 
-      <StockTable
-        stock={stock}
-        searchSlot={<InventorySearch />}
-      />
+      <div className="mt-6">
+        <StockTable
+          stock={stock}
+          searchSlot={<InventorySearch />}
+        />
+      </div>
     </div>
   );
 }

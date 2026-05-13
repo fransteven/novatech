@@ -202,15 +202,19 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
     <>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Registrar compra
+          <Button
+            size="lg"
+            className="h-[38px] px-[14px] text-[13.5px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+            style={{ boxShadow: "0 1px 0 inset oklch(1 0 0 / 0.2), var(--tf-shadow-sm), 0 4px 12px var(--tf-accent-ring)" }}
+          >
+            <Plus className="mr-2 h-4 w-4" strokeWidth={2.25} />
+            Registrar Ingreso
           </Button>
         </SheetTrigger>
-        <SheetContent className="flex flex-col overflow-y-auto sm:max-w-lg">
-          <SheetHeader className="space-y-2 pb-4">
-            <SheetTitle>Registrar Entrada / Compra</SheetTitle>
-            <SheetDescription>
+        <SheetContent className="flex flex-col overflow-y-auto sm:max-w-lg p-0 bg-card border-l border-border">
+          <SheetHeader className="px-6 pt-[22px] pb-[18px] border-b border-border">
+            <SheetTitle className="text-[18px] font-bold tracking-[-0.02em]">Registrar Entrada / Compra</SheetTitle>
+            <SheetDescription className="text-[13px] text-[color:var(--tf-fg-muted)] max-w-[380px]">
               Registra la entrada de mercancía a la bodega. Los campos se
               ajustan según el tipo de producto.
             </SheetDescription>
@@ -218,7 +222,7 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col gap-4 py-4"
+              className="flex flex-col gap-4 px-6 py-5 flex-1"
             >
               {/* Paso 1: Selección del Producto */}
               <FormField
@@ -327,8 +331,8 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
 
                   {/* Condición del Equipo (Solo para serializados) */}
                   {selectedProduct.isSerialized && (
-                    <div className="space-y-4 border rounded-md p-4 bg-muted/30">
-                      <h4 className="font-medium text-sm border-b pb-2">Condición de la Instancia</h4>
+                    <div className="space-y-4 border border-border rounded-[10px] p-3 bg-muted/30">
+                      <h4 className="font-medium text-sm border-b border-border pb-2">Condición de la Instancia</h4>
                       <div className="grid grid-cols-1 gap-4">
                         <FormField
                           control={form.control}
@@ -371,7 +375,7 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
 
                   {/* Consignment / Ownership Selection */}
                   {selectedProduct.isSerialized && (
-                    <div className="space-y-4 border rounded-md p-4">
+                    <div className="space-y-4 border border-border rounded-[10px] p-3">
                       <FormField
                         control={form.control}
                         name="ownerId"
@@ -468,13 +472,21 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
                 </>
               )}
 
-              <SheetFooter className="pt-4">
+              <SheetFooter className="pt-4 flex gap-[10px] justify-end border-t border-border mt-2 pb-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-[color:var(--tf-fg-muted)] hover:text-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancelar
+                </Button>
                 <Button
                   type="submit"
                   disabled={!selectedProduct}
-                  className="w-full"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
                 >
-                  Registrar Entrada
+                  Confirmar ingreso
                 </Button>
               </SheetFooter>
             </form>

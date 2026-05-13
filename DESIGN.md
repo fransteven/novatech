@@ -1,99 +1,111 @@
-# Design System Document
+# TechFlow Design System
 
-## 1. Overview & Creative North Star: "The Kinetic Ledger"
+> **Current version** — supersedes any prior emerald/no-indigo rule. Accent is now **indigo (OKLCH)**.
 
-This design system is a departure from the static, boxy nature of traditional enterprise software. Our Creative North Star is **The Kinetic Ledger**. It represents a fusion of high-end editorial clarity and the velocity of modern commerce.
+## Tokens
 
-We break the "template" look by prioritizing **white space as a structural element** rather than a void. By moving away from rigid grids and 1px borders, we create a fluid, sophisticated interface that feels "carved" out of a pure white canvas. The system uses intentional asymmetry, generous padding, and high-contrast typography to guide the eye, ensuring that efficiency never comes at the expense of elegance.
+All design tokens are OKLCH, defined as `--tf-*` CSS custom props in `src/app/globals.css`.
+Shadcn semantic names (`--primary`, `--muted`, `--border`, etc.) are mapped to `--tf-*` — update the design tokens, shadcn components follow automatically.
 
----
+### Colors
 
-## 2. Colors & Surface Philosophy
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--tf-bg` | `oklch(0.99 0.003 80)` | `oklch(0.16 0.01 260)` | Page background |
+| `--tf-bg-elev` | `oklch(1 0 0)` | `oklch(0.2 0.012 260)` | Cards, sidebar, panels |
+| `--tf-bg-muted` | `oklch(0.97 0.004 80)` | `oklch(0.22 0.012 260)` | Hover, table headers, muted zones |
+| `--tf-border` | `oklch(0.92 0.005 80)` | `oklch(0.28 0.012 260)` | Default borders |
+| `--tf-border-strong` | `oklch(0.88 0.006 80)` | `oklch(0.34 0.014 260)` | Input borders, strong dividers |
+| `--tf-fg` | `oklch(0.18 0.01 260)` | `oklch(0.97 0.004 260)` | Primary text |
+| `--tf-fg-muted` | `oklch(0.46 0.012 260)` | `oklch(0.72 0.012 260)` | Secondary text |
+| `--tf-fg-subtle` | `oklch(0.62 0.012 260)` | `oklch(0.58 0.012 260)` | Tertiary text, placeholders |
+| **`--tf-accent`** | `oklch(0.58 0.19 265)` | `oklch(0.7 0.17 265)` | **Primary action — indigo** |
+| `--tf-accent-fg` | `oklch(0.99 0 0)` | `oklch(0.15 0.01 260)` | Text on accent bg |
+| `--tf-accent-soft` | `oklch(0.95 0.04 265)` | `oklch(0.28 0.06 265)` | Accent hover surface |
+| `--tf-accent-ring` | `oklch(0.58 0.19 265 / 0.25)` | `oklch(0.7 0.17 265 / 0.3)` | Focus rings |
+| `--tf-green` | `oklch(0.62 0.15 150)` | `oklch(0.74 0.16 150)` | Normal/OK status |
+| `--tf-green-soft` | `oklch(0.95 0.05 150)` | `oklch(0.28 0.06 150)` | Green badge bg |
+| `--tf-amber` | `oklch(0.72 0.15 70)` | `oklch(0.8 0.16 70)` | Warning / low stock |
+| `--tf-amber-soft` | `oklch(0.96 0.06 70)` | `oklch(0.32 0.07 70)` | Amber badge bg |
+| `--tf-red` | `oklch(0.6 0.2 25)` | `oklch(0.72 0.18 25)` | Error / out of stock |
+| `--tf-red-soft` | `oklch(0.96 0.04 25)` | `oklch(0.3 0.08 25)` | Red badge bg |
 
-The palette is vibrant and professional, anchored by a deep primary blue and supported by high-visibility accents.
+### Typography
 
-### The Palette
-- **Primary Blue (`#0050d4`)**: Used for primary actions and brand presence.
-- **Success (`#vibrant-green`)**: Indicating healthy stock levels and growth.
-- **Warning (`#Bright-Orange`)**: Highlighting low stock or pending actions.
-- **Danger (`#b31b25`)**: Critical stock-outs or errors.
-- **Layout Background (`#ffffff`)**: A pure, stark white foundation.
+- **UI**: Inter (loaded via `next/font/google`)
+- **Monospace** (SKU, IMEI, prices): JetBrains Mono — use `className="mono"` or `font-mono`
+- Base size: 14px · Line height 1.5 · Letter spacing -0.005em
+- Headings: `text-[28px] font-bold tracking-[-0.025em]`
+- Metadata: `text-[10px]`
+- Actions: `text-sm`
 
-### The "No-Line" Rule
-To achieve a premium feel, **sectioning via 1px solid borders is prohibited.** Boundaries must be defined solely through:
-1. **Background Color Shifts:** Using `surface-container-low` sections against a `surface` background.
-2. **Tonal Transitions:** Utilizing subtle shifts in the Material Design surface tiers.
+### Spacing & Radius
 
-### Surface Hierarchy & Nesting
-Treat the UI as a series of physical layers. We use the surface-container tiers to define importance:
-- **`surface-container-lowest` (#ffffff):** Reserved for primary content cards and data tables to make them "pop" against the page.
-- **`surface` (#f5f7f9):** The standard background for the application canvas.
-- **`surface-container-high` (#dfe3e6):** Used for sidebar backgrounds or inactive regions.
+| Utility | Value |
+|---|---|
+| `--radius` (base) | 10px (`0.625rem`) |
+| `rounded-sm` | 6px |
+| `rounded` | 10px |
+| `rounded-lg` | 14px |
+| `rounded-xl` | 20px |
 
-### The "Glass & Gradient" Rule
-Floating elements (like modals or dropdowns) should utilize **Glassmorphism**. Use a semi-transparent `surface` color with a `backdrop-blur` of 12px to 20px. For main CTAs, apply a subtle linear gradient from `primary` to `primary-container` to provide a "soul" and depth that flat hex codes cannot replicate.
+### Shadows
 
----
+Use inline `style={{ boxShadow: 'var(--tf-shadow-sm)' }}` or `shadow-*` if Tailwind scale aligns.
 
-## 3. Typography
+- `--tf-shadow-sm` — subtle card resting state
+- `--tf-shadow-md` — hover lift, dropdowns
+- `--tf-shadow-lg` — sheets, overlays
 
-The system utilizes two distinct typefaces to create an editorial hierarchy.
+### Animations
 
-*   **Display & Headlines (Manrope):** A geometric sans-serif used for large-scale data and section titles. It conveys modern authority.
-    *   *Headline-LG (2rem):* For main dashboard headers.
-    *   *Display-SM (2.25rem):* For hero KPI numbers.
-*   **Body & Labels (Inter):** A highly legible, neutral sans-serif for operational data.
-    *   *Body-MD (0.875rem):* Standard data entry and table content.
-    *   *Label-MD (0.75rem):* For status chips and metadata.
+All transitions: `cubic-bezier(.4,0,.2,1)` — standard Material easing.
 
-Hierarchy is conveyed through **weight and scale contrast** rather than color alone. Headers should be Bold/Extra-Bold, while body text remains Regular/Medium.
+| Duration | Use |
+|---|---|
+| 100ms | Instant hover bg |
+| 150ms | Color, border transitions |
+| 200ms | Fade in/out |
+| 250ms | Row stagger, slide-in |
+| 280ms | Sheets, dialogs |
 
----
+Keyframes available: `tf-pulse`, `tf-row-in`, `tf-menu-in` (in globals.css).
 
-## 4. Elevation & Depth
+## Layout
 
-We eschew traditional drop shadows in favor of **Tonal Layering**.
+- **Sidebar expanded**: 264px
+- **Sidebar collapsed**: 72px
+- **Topbar height**: 60px (sticky, backdrop-blur glass)
+- **Page max-width**: 1480px, `px-8 py-7`
 
-*   **The Layering Principle:** Depth is achieved by "stacking." Place a `surface-container-lowest` card on a `surface-container-low` section. This creates a soft, natural lift.
-*   **Ambient Shadows:** If a "floating" effect is required for a modal or a primary KPI card, use an extra-diffused shadow: `box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);`.
-*   **The "Ghost Border" Fallback:** If accessibility requires a border, it must be a "Ghost Border" using `outline-variant` at 15% opacity. **100% opaque borders are forbidden.**
-*   **Backdrop Blur:** Use blurs on secondary navigation or overlay elements to let underlying colors bleed through, ensuring the layout feels integrated.
+## Component patterns
 
----
+### Sidebar
 
-## 5. Components
+- Brand logo: 36×36 gradient box (`linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))`)
+- Active item: `bg-accent text-accent-foreground font-semibold` + 3px left rail (`.tf-nav-rail`)
+- Collapsed: icons only, 72px wide
+- Footer: user-card with online dot + Cuenta/Salir buttons
 
-### Buttons
-- **Primary:** Gradient-filled (`primary` to `primary-dim`), `rounded-md`, white text.
-- **Secondary:** Transparent with a `primary` label and a ghost-border on hover.
-- **Tertiary:** Subtle `surface-container-high` background with no border.
+### KPI Cards
 
-### Minimalist KPI Cards
-KPIs must be borderless. Use `title-lg` for the metric and `body-sm` for the label. Separate metrics using vertical white space (32px+) or a very subtle vertical `surface-container-highest` divider that does not touch the top or bottom of the container.
+- `bg-card border border-border rounded-[14px] p-5` + hover `-translate-y-0.5`
+- Alert variant (low stock): add `.tf-kpi-alert` + `border-amber`
 
-### Modern Tables
-Tables follow a strict editorial layout:
-- **No Side Borders:** Data should feel like it is floating on the page.
-- **Horizontal Dividers Only:** Use `outline-variant` at 10% opacity for row separation.
-- **Row Hover:** Use a subtle `surface-container-low` background shift on hover to indicate interactivity.
+### Table
 
-### Sidebar Navigation
-- **Active State:** A solid `primary` vertical pill on the leading edge with a `primary-container` (at 10% opacity) background highlight.
-- **Icons:** Use `outline` tokens for inactive states and `primary` for active states.
+- Toolbar: `bg-card border border-border rounded-[10px_10px_0_0]`
+- Table wrap: `bg-card border border-border border-t-0 rounded-[0_0_10px_10px]`
+- Header: `bg-muted text-muted-foreground text-xs uppercase tracking-wide`
+- Row hover: `hover:bg-muted/50`
+- Row stagger: add `.tf-row-enter` + `animationDelay: i * 18ms`
 
-### Status Chips
-- **Success/Warning/Danger:** High-contrast background with a darker tone for text (e.g., `on-error-container` on `error-container`). Shapes must be `rounded-full` for an "app-like" feel.
+### Status Badges
 
----
+Three classes: `.tf-badge-normal` / `.tf-badge-low` / `.tf-badge-out`
+Add `.tf-pulse-dot` inside for animated dot on low/out states.
 
-## 6. Do's and Don'ts
+### Dark Mode
 
-### Do:
-- **Use White Space as a Tool:** If two elements feel cluttered, add more space rather than adding a line.
-- **Layer Your Surfaces:** Always place lighter surfaces on top of darker ones to imply elevation.
-- **Align to the Type Baseline:** Ensure your table data and labels feel mathematically grounded.
-
-### Don't:
-- **Never use 1px solid black or dark grey borders.** It breaks the "Kinetic Ledger" aesthetic.
-- **Avoid Flat Blue CTAs:** Always add a 2% gradient or a subtle inner-glow to make primary actions feel tactile.
-- **Don't Over-shadow:** If you can see the shadow clearly, it’s too dark. It should be felt, not seen.
+Toggle via `document.documentElement.dataset.theme = "dark" | "light"` + also add/remove `.dark` class.
+Persistent via `localStorage["tf-theme"]`.

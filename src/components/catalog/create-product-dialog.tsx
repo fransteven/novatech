@@ -94,7 +94,7 @@ export function CreateProductDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+        <Button>
           <Plus className="mr-2 h-4 w-4" />
           Nuevo Producto
         </Button>
