@@ -5,6 +5,7 @@ import {
   inventoryMovements,
   sales,
   saleDetails,
+  cashMovements,
 } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import type {
@@ -147,6 +148,7 @@ export const processSale = async ({
   items,
   totalAmount,
   userId,
+  payments,
 }: ProcessSaleInput) => {
   return await db.transaction(async (tx) => {
     // 1. Create the sale record
@@ -335,6 +337,24 @@ export const processSale = async ({
           : avgUnitCost!.toString(), // Using actual cost instead of sale price
         reason: `Sale #${sale.id}`,
       });
+    }
+
+    // Insert cash movements for each payment (if provided)
+    if (payments && payments.length > 0) {
+      for (const payment of payments) {
+        await tx.insert(cashMovements).values({
+          direction: "in",
+          sourceType: "sale_payment",
+          sourceId: sale.id,
+          accountId: payment.accountId,
+          paymentMethod: payment.method,
+          amount: payment.amount.toString(),
+          referenceCode: payment.referenceCode ?? null,
+          notes: payment.notes ?? null,
+          createdBy: userId ?? null,
+          status: "posted",
+        });
+      }
     }
 
     return { success: true, saleId: sale.id };
