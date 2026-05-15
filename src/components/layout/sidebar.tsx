@@ -20,6 +20,7 @@ import {
   LogOut,
   Menu,
   Wallet,
+  ShoppingCart,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const operacion = [
   { title: "Punto de Venta", href: "/pos", icon: Store },
   { title: "Inventario", href: "/inventory", icon: ClipboardList },
   { title: "Catálogo", href: "/catalog", icon: Package },
+  { title: "Compras", href: "/purchases", icon: ShoppingCart },
   { title: "Apartados", href: "/layaways", icon: CalendarClock },
   { title: "Peritaje iPhones", href: "/iphone-purchase-checklist", icon: Smartphone },
 ];
@@ -170,7 +172,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Settings2 className="h-4 w-4 text-white" />
             </div>
             <div>
-              <div className="text-[15px] font-semibold tracking-[-0.02em]">TechFlow</div>
+              <div className="text-[15px] font-semibold tracking-[-0.02em]">NovaTech</div>
               <div className="text-[11px] text-[color:var(--tf-fg-subtle)] font-medium">Suite de Comercio · v3.4</div>
             </div>
           </div>
@@ -203,7 +205,7 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold tracking-[-0.02em] whitespace-nowrap">TechFlow</div>
+              <div className="text-[15px] font-semibold tracking-[-0.02em] whitespace-nowrap">NovaTech</div>
               <div className="text-[11px] text-[color:var(--tf-fg-subtle)] font-medium whitespace-nowrap">Suite de Comercio · v3.4</div>
             </div>
           )}

@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { hash } from "@node-rs/bcrypt";
 
 async function seedAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@techflow.com";
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@novatech.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123456";
   const adminName = process.env.ADMIN_NAME || "Administrator";
 

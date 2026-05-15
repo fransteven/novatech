@@ -1,6 +1,6 @@
-# TechFlow
+# NovaTech
 
-TechFlow is a modern Point of Sale (POS) and Inventory Management System built with cutting-edge web technologies. It is designed to be fast, scalable, and easy to maintain.
+NovaTech is a modern Point of Sale (POS) and Inventory Management System built with cutting-edge web technologies. It is designed to be fast, scalable, and easy to maintain.
 
 ## 🚀 Tech Stack
 
@@ -17,7 +17,7 @@ TechFlow is a modern Point of Sale (POS) and Inventory Management System built w
 The project has been carefully modularized for better maintainability and scalability:
 
 ```text
-techflow/
+novatech/
 ├── public/                 # Static assets (images, icons)
 ├── scripts/                # Utility scripts (e.g., clean-db.ts)
 ├── drizzle/                # Drizzle database migrations and snapshots

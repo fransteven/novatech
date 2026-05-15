@@ -1,6 +1,6 @@
-# GEMINI.md - TechFlow Project Mandates
+# GEMINI.md - NovaTech Project Mandates
 
-Este archivo contiene las instrucciones y estándares prioritarios para el desarrollo de TechFlow.
+Este archivo contiene las instrucciones y estándares prioritarios para el desarrollo de NovaTech.
 
 ## 🚀 Uso de Skills del Proyecto
 

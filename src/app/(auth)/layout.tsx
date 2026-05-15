@@ -32,7 +32,7 @@ export default async function AuthLayout({
         </div>
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            TechFlow
+            NovaTech
           </h1>
           <p className="text-sm text-muted-foreground">
             Gestión inteligente de inventario
@@ -45,7 +45,7 @@ export default async function AuthLayout({
 
       {/* Footer Info (Optional) */}
       <div className="mt-8 text-center text-xs text-muted-foreground">
-        &copy; {new Date().getFullYear()} TechFlow Inc. Todos los derechos
+        &copy; {new Date().getFullYear()} NovaTech Inc. Todos los derechos
         reservados.
       </div>
     </div>

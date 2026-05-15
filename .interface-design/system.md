@@ -1,4 +1,4 @@
-# TechFlow Interface Design System
+# NovaTech Interface Design System
 
 ## Core Identity: "The Technical Terminal"
 

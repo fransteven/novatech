@@ -8,3 +8,4 @@ export * from "./schema/finances";
 export * from "./schema/imports";
 export * from "./schema/relations";
 export * from "./schema/cash";
+export * from "./schema/purchases";

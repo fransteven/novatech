@@ -19,7 +19,7 @@ There are no automated tests configured in this project.
 
 ## Architecture
 
-TechFlow is a **Next.js 15 App Router** POS and inventory management system for electronics retail (serialized items, IMEI tracking). The stack: Drizzle ORM → Neon (PostgreSQL) serverless, Better Auth, Radix UI + Tailwind CSS 4, Zustand for client state, Zod for validation.
+NovaTech is a **Next.js 15 App Router** POS and inventory management system for electronics retail (serialized items, IMEI tracking). The stack: Drizzle ORM → Neon (PostgreSQL) serverless, Better Auth, Radix UI + Tailwind CSS 4, Zustand for client state, Zod for validation.
 
 ### Strict data flow — never skip layers
 

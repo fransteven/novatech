@@ -92,7 +92,7 @@ export function Navbar() {
     >
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-[13px] text-[color:var(--tf-fg-muted)]">
-        <span>TechFlow</span>
+        <span>NovaTech</span>
         {sectionLabel && (
           <>
             <ChevronRight className="h-3.5 w-3.5 text-[color:var(--tf-fg-subtle)]" />
@@ -116,7 +116,7 @@ export function Navbar() {
       >
         <Search className="h-3.5 w-3.5 text-[color:var(--tf-fg-subtle)] shrink-0" />
         <input
-          placeholder="Buscar en TechFlow..."
+          placeholder="Buscar en NovaTech..."
           className="flex-1 bg-transparent border-0 outline-none text-[13px] placeholder:text-[color:var(--tf-fg-subtle)]"
           readOnly
         />

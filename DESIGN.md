@@ -1,4 +1,4 @@
-# TechFlow Design System
+# NovaTech Design System
 
 > **Current version** — supersedes any prior emerald/no-indigo rule. Accent is now **indigo (OKLCH)**.
 

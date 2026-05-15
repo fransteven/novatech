@@ -73,7 +73,7 @@ export default function SignUpPage() {
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">Crear Cuenta</CardTitle>
         <CardDescription>
-          Ingresa tus datos para registrarte en TechFlow
+          Ingresa tus datos para registrarte en NovaTech
         </CardDescription>
       </CardHeader>
       <CardContent>

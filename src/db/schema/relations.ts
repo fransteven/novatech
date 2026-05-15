@@ -19,6 +19,7 @@ import {
   cashTransfers,
   cashReconciliations,
 } from "./cash";
+import { providers, purchases, purchaseDetails } from "./purchases";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -34,6 +35,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   inventoryMovements: many(inventoryMovements),
   layawayDetails: many(layawayDetails),
   importCosts: many(importCosts),
+  purchaseDetails: many(purchaseDetails),
 }));
 
 export const productItemsRelations = relations(
@@ -51,6 +53,7 @@ export const productItemsRelations = relations(
     inventoryMovements: many(inventoryMovements),
     reservations: many(reservations),
     layawayDetails: many(layawayDetails),
+    purchaseDetails: many(purchaseDetails),
   }),
 );
 
@@ -165,11 +168,48 @@ export const importCostsRelations = relations(importCosts, ({ one }) => ({
 
 // --- Cash Flow Relations ---
 
+// --- Purchases Relations ---
+export const providersRelations = relations(providers, ({ many }) => ({
+  purchases: many(purchases),
+}));
+
+export const purchasesRelations = relations(purchases, ({ one, many }) => ({
+  provider: one(providers, {
+    fields: [purchases.providerId],
+    references: [providers.id],
+  }),
+  account: one(cashAccounts, {
+    fields: [purchases.accountId],
+    references: [cashAccounts.id],
+  }),
+  user: one(user, {
+    fields: [purchases.userId],
+    references: [user.id],
+  }),
+  purchaseDetails: many(purchaseDetails),
+}));
+
+export const purchaseDetailsRelations = relations(purchaseDetails, ({ one }) => ({
+  purchase: one(purchases, {
+    fields: [purchaseDetails.purchaseId],
+    references: [purchases.id],
+  }),
+  product: one(products, {
+    fields: [purchaseDetails.productId],
+    references: [products.id],
+  }),
+  productItem: one(productItems, {
+    fields: [purchaseDetails.productItemId],
+    references: [productItems.id],
+  }),
+}));
+
 export const cashAccountsRelations = relations(cashAccounts, ({ many }) => ({
   movements: many(cashMovements),
   transfersFrom: many(cashTransfers, { relationName: "transferFrom" }),
   transfersTo: many(cashTransfers, { relationName: "transferTo" }),
   reconciliations: many(cashReconciliations),
+  purchases: many(purchases),
 }));
 
 export const cashMovementsRelations = relations(cashMovements, ({ one }) => ({
