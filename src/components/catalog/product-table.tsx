@@ -75,6 +75,84 @@ interface ProductTableProps {
   data: ProductWithStock[];
 }
 
+const ATTR_LABEL: Record<string, string> = {
+  RAM: "RAM",
+  RAM_MEMORY: "RAM",
+  ALMACENAMIENTO: "Almacenamiento",
+  STORAGE: "Almacenamiento",
+  BATERIA: "Batería",
+  BATERÍA: "Batería",
+  BATTERY_PERCENTAGE: "% Batería",
+  COLOR: "Color",
+  PANTALLA: "Pantalla",
+  PROCESADOR: "Procesador",
+  CAMARA: "Cámara",
+  CÁMARA: "Cámara",
+  CAPACIDAD: "Capacidad",
+  MODELO: "Modelo",
+  MARCA: "Marca",
+  SISTEMA_OPERATIVO: "Sistema Op.",
+  CONECTIVIDAD: "Conectividad",
+  RED: "Red",
+  PESO: "Peso",
+  DIMENSIONES: "Dimensiones",
+  VOLTAJE: "Voltaje",
+};
+
+const ATTR_SUFFIX: Record<string, string> = {
+  RAM: "GB",
+  RAM_MEMORY: "GB",
+  ALMACENAMIENTO: "GB",
+  STORAGE: "GB",
+  CAPACIDAD: "GB",
+  BATERIA: "%",
+  BATERÍA: "%",
+};
+
+function fmtAttr(key: string, value: string) {
+  const k = key.toUpperCase();
+  return {
+    label: ATTR_LABEL[k] ?? key,
+    display: `${value}${ATTR_SUFFIX[k] ?? ""}`,
+  };
+}
+
+function AttrChips({
+  attrs,
+  max,
+  className,
+}: {
+  attrs: Record<string, string>;
+  max?: number;
+  className?: string;
+}) {
+  const entries = Object.entries(attrs).filter(([, v]) => Boolean(v));
+  const visible = max != null ? entries.slice(0, max) : entries;
+  const rest = max != null ? entries.length - max : 0;
+  if (entries.length === 0) return <span className="text-muted-foreground text-[12px]">—</span>;
+  return (
+    <div className={cn("flex flex-wrap gap-1", className)}>
+      {visible.map(([k, v]) => {
+        const { label, display } = fmtAttr(k, v);
+        return (
+          <span
+            key={k}
+            className="inline-flex items-center gap-[3px] px-[6px] py-[2px] rounded-md bg-muted border border-border text-[11px] leading-none whitespace-nowrap"
+          >
+            <span className="text-muted-foreground font-medium">{label}</span>
+            <span className="text-foreground font-semibold">{display}</span>
+          </span>
+        );
+      })}
+      {rest > 0 && (
+        <span className="inline-flex items-center px-[6px] py-[2px] rounded-md bg-muted border border-border text-[11px] text-muted-foreground leading-none">
+          +{rest}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function categoryColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
@@ -108,12 +186,10 @@ export function ProductTable({ data }: ProductTableProps) {
         const color = catName ? categoryColor(catName) : "oklch(0.65 0.12 260)";
         const initials = item.name.slice(0, 2).toUpperCase();
         const attrs = item.attributes as Record<string, string> | null;
-        const attrValues = attrs ? Object.values(attrs).filter(Boolean) : [];
-        const sub = item.description || attrValues.join(" · ");
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <div
-              className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0 text-[11px] font-bold leading-none"
+              className="w-9 h-9 rounded-[9px] flex items-center justify-center flex-shrink-0 text-[11px] font-bold leading-none mt-0.5"
               style={{
                 background: `color-mix(in oklch, ${color} 15%, var(--tf-bg-muted))`,
                 color,
@@ -122,13 +198,19 @@ export function ProductTable({ data }: ProductTableProps) {
             >
               {initials}
             </div>
-            <div className="min-w-0">
-              <div className="text-[13.5px] font-semibold text-foreground truncate leading-tight">
+            <div className="min-w-0 space-y-1">
+              <div className="text-[13.5px] font-semibold text-foreground leading-tight">
                 {item.name}
               </div>
-              {sub && (
-                <div className="text-[11.5px] text-muted-foreground truncate mt-0.5">
-                  {sub}
+              {item.description && (
+                <div className="text-[11.5px] text-muted-foreground truncate">
+                  {item.description}
+                </div>
+              )}
+              {/* Attribute chips — visible only on mobile (md hides the dedicated column) */}
+              {attrs && Object.keys(attrs).length > 0 && (
+                <div className="md:hidden pt-0.5">
+                  <AttrChips attrs={attrs} max={3} />
                 </div>
               )}
             </div>
@@ -137,16 +219,15 @@ export function ProductTable({ data }: ProductTableProps) {
       },
     },
     {
-      accessorKey: "sku",
-      header: "SKU",
-      meta: { className: "hidden lg:table-cell" },
+      accessorKey: "attributes",
+      header: "Atributos",
+      meta: { className: "hidden md:table-cell" },
       cell: ({ row }) => {
-        const sku = row.getValue("sku") as string | null;
-        return (
-          <span className="font-mono text-[12.5px] text-muted-foreground">
-            {sku || "—"}
-          </span>
-        );
+        const attrs = row.getValue("attributes") as Record<string, string> | null;
+        if (!attrs || Object.keys(attrs).length === 0) {
+          return <span className="text-muted-foreground text-[12px]">—</span>;
+        }
+        return <AttrChips attrs={attrs} />;
       },
     },
     {
