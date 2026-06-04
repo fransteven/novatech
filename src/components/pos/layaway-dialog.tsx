@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { Clock, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { createLayawayAction } from "@/app/actions/layaway-actions";
+import { getCashAccountsAction } from "@/app/actions/cash-actions";
 import { Customer } from "./customer-selector";
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,14 @@ export function LayawayDialog({
   const [processing, setProcessing] = useState(false);
   const [deposit, setDeposit] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer" | "card">("cash");
+  const [accountId, setAccountId] = useState<string>("");
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    getCashAccountsAction().then((res) => {
+      if (res.success && res.data) setAccounts(res.data);
+    });
+  }, []);
 
   // Por defecto, apartado a 30 días
   const defaultDate = new Date();
@@ -84,6 +93,10 @@ export function LayawayDialog({
       toast.error("El abono no puede ser mayor al total de la compra");
       return;
     }
+    if (deposit > 0 && !accountId) {
+      toast.error("Selecciona una cuenta para registrar el abono");
+      return;
+    }
 
     setProcessing(true);
 
@@ -95,6 +108,7 @@ export function LayawayDialog({
         initialDeposit: deposit,
         paymentMethod,
         expiresAt: new Date(expiresAt),
+        ...(deposit > 0 && accountId ? { accountId } : {}),
       });
 
       if (response.success) {
@@ -184,21 +198,40 @@ export function LayawayDialog({
             </div>
 
             {deposit > 0 && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right text-xs">Método (Abono)</Label>
-                <div className="col-span-3">
-                  <Select value={paymentMethod} onValueChange={(v: "cash" | "transfer" | "card") => setPaymentMethod(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Efectivo</SelectItem>
-                      <SelectItem value="transfer">Transferencia</SelectItem>
-                      <SelectItem value="card">Tarjeta / Datáfono</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-xs">Método (Abono)</Label>
+                  <div className="col-span-3">
+                    <Select value={paymentMethod} onValueChange={(v: "cash" | "transfer" | "card") => setPaymentMethod(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Efectivo</SelectItem>
+                        <SelectItem value="transfer">Transferencia</SelectItem>
+                        <SelectItem value="card">Tarjeta / Datáfono</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right text-xs">Cuenta</Label>
+                  <div className="col-span-3">
+                    <Select value={accountId} onValueChange={setAccountId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una cuenta..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((acc) => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -6,6 +6,8 @@ import { addLayawayPaymentAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
 import { DollarSign } from "lucide-react";
 
+type CashAccount = { id: string; name: string };
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +33,7 @@ interface LayawayPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  accounts: CashAccount[];
 }
 
 export function LayawayPaymentDialog({
@@ -39,10 +42,12 @@ export function LayawayPaymentDialog({
   open,
   onOpenChange,
   onSuccess,
+  accounts,
 }: LayawayPaymentDialogProps) {
   const [processing, setProcessing] = useState(false);
   const [amount, setAmount] = useState<number | "">("");
   const [method, setMethod] = useState<string>("cash");
+  const [accountId, setAccountId] = useState<string>("");
 
   const handlePayment = async () => {
     if (!layawayId || !amount || amount <= 0) {
@@ -53,6 +58,10 @@ export function LayawayPaymentDialog({
       toast.error("El abono supera el saldo de la deuda");
       return;
     }
+    if (!accountId) {
+      toast.error("Selecciona una cuenta para registrar el abono");
+      return;
+    }
 
     setProcessing(true);
     try {
@@ -60,6 +69,7 @@ export function LayawayPaymentDialog({
         layawayId,
         amount: Number(amount),
         paymentMethod: method,
+        accountId,
         notes: amount === balance ? "Liquidación final de apartado" : "Abono a apartado",
       });
 
@@ -67,6 +77,7 @@ export function LayawayPaymentDialog({
         toast.success(amount === balance ? "Apartado Completado. Inventario y Venta registrados." : "Abono registrado exitosamente");
         setAmount("");
         setMethod("cash");
+        setAccountId("");
         onSuccess();
         onOpenChange(false);
       } else {
@@ -115,6 +126,21 @@ export function LayawayPaymentDialog({
                 <SelectItem value="cash">Efectivo</SelectItem>
                 <SelectItem value="transfer">Transferencia</SelectItem>
                 <SelectItem value="card">Tarjeta / Datáfono</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-4">
+            <Label className="w-24 text-right">Cuenta</Label>
+            <Select value={accountId} onValueChange={setAccountId}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Selecciona una cuenta..." />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((acc) => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

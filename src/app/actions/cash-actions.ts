@@ -177,7 +177,7 @@ export async function createCashMovementAction(data: unknown) {
     accountId: z.string().uuid("ID de cuenta inválido"),
     direction: z.enum(["in", "out"]),
     amount: z.coerce.number().positive("El monto debe ser positivo"),
-    sourceType: z.enum(["adjustment", "opening_balance", "owner_payout"]),
+    sourceType: z.enum(["adjustment", "opening_balance", "shareholder_distribution"]),
     paymentMethod: z
       .enum(["cash", "transfer", "card", "wallet"])
       .default("cash"),

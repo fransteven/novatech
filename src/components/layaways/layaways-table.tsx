@@ -51,8 +51,14 @@ interface Layaway {
   balance: number;
 }
 
+interface CashAccount {
+  id: string;
+  name: string;
+}
+
 interface LayawaysTableProps {
   data: Layaway[];
+  accounts: CashAccount[];
 }
 
 function getEffectiveStatus(layaway: Layaway): string {
@@ -62,7 +68,7 @@ function getEffectiveStatus(layaway: Layaway): string {
   return "active";
 }
 
-export function LayawaysTable({ data }: LayawaysTableProps) {
+export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -335,6 +341,7 @@ export function LayawaysTable({ data }: LayawaysTableProps) {
         layawayId={selectedLayaway?.id || null}
         balance={selectedLayaway?.balance || 0}
         onSuccess={() => setPaymentOpen(false)}
+        accounts={accounts}
       />
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>

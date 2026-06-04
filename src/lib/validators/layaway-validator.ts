@@ -19,7 +19,7 @@ export const addLayawayPaymentSchema = z.object({
   amount: z.number().positive("El abono debe ser mayor a cero"),
   paymentMethod: z.enum(["cash", "transfer", "card"]).default("cash"),
   notes: z.string().optional(),
-  accountId: z.string().uuid("ID de cuenta inválido").optional(),
+  accountId: z.string().uuid("Selecciona una cuenta"),
   referenceCode: z.string().optional(),
 });
 

@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI agents when working with code in this repository.
 
 ## Commands
 
@@ -72,16 +72,6 @@ Better Auth (`src/lib/auth.ts` / `src/lib/auth-client.ts`). All protected routes
 - Functional components with arrow functions
 - Naming: component files `kebab-case`, functions/variables `camelCase`, DB columns `snake_case`
 - Tailwind CSS following Shadcn/UI conventions; base UI primitives live in `src/components/ui/`
-
-## Interface design system
-
-For critical workflows (inspection, certification), follow the **"Technical Terminal"** patterns defined in `.interface-design/system.md`:
-
-1. **Sequential Phase Blocking** — lock future phases with blur + lock icon overlay until current phase passes
-2. **Kill Switch** — destructive `Alert` banner that freezes the terminal when a critical item fails
-3. **Contextual Protocol Sheets** — `Sheet` side panel (info icon trigger) with Técnica de Inspección / Criterio de Rechazo / Recomendación Pro sections
-
-Typography: `text-[10px]` for metadata, `text-sm` for actions, monospace for technical data (IMEI, serial numbers). Cards: `p-4` / `p-6`. All inspection grids: `grid-cols-1 md:grid-cols-2`.
 
 ## Skills (.agents/skills/)
 

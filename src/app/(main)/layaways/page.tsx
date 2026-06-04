@@ -1,4 +1,5 @@
 import { getLayawaysAction } from "@/app/actions/layaway-actions";
+import { getCashAccountsAction } from "@/app/actions/cash-actions";
 import { LayawaysTable } from "@/components/layaways/layaways-table";
 import { Clock, DollarSign } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,7 +17,10 @@ const fmt = (amount: number) =>
   }).format(amount);
 
 export default async function LayawaysPage() {
-  const response = await getLayawaysAction();
+  const [response, accountsRes] = await Promise.all([
+    getLayawaysAction(),
+    getCashAccountsAction(),
+  ]);
 
   if (!response.success) {
     return (
@@ -34,6 +38,7 @@ export default async function LayawaysPage() {
   }
 
   const layaways = response.data || [];
+  const accounts = (accountsRes.success && accountsRes.data) ? accountsRes.data : [];
 
   const activeCount = layaways.filter(
     (l) => l.status === "active" && l.balance > 0,
@@ -66,7 +71,7 @@ export default async function LayawaysPage() {
         />
       </div>
 
-      <LayawaysTable data={layaways} />
+      <LayawaysTable data={layaways} accounts={accounts} />
     </div>
   );
 }

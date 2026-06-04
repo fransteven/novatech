@@ -43,8 +43,6 @@ interface Serial {
   notes?: string | null;
   unitCost?: string | number | null;
   createdAt: Date;
-  ownerType: string;
-  ownerName: string | null;
 }
 
 export function ProductDetailSheet({
@@ -144,7 +142,6 @@ export function ProductDetailSheet({
                       <TableHead>Condición</TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Propietario</TableHead>
                       <TableHead>Costo</TableHead>
                       <TableHead>Registro</TableHead>
                     </TableRow>
@@ -189,17 +186,6 @@ export function ProductDetailSheet({
                           {serial.sku || "—"}
                         </TableCell>
                         <TableCell>{getStatusBadge(serial.status)}</TableCell>
-                        <TableCell>
-                          {serial.ownerType === "consignment" ? (
-                            <Badge variant="outline" className="border-violet-500 text-violet-600 bg-violet-50 whitespace-nowrap">
-                              {serial.ownerName ?? "Consignación"}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="border-slate-400 text-slate-600 bg-slate-50">
-                              Masterplay
-                            </Badge>
-                          )}
-                        </TableCell>
                         <TableCell className="font-medium text-muted-foreground whitespace-nowrap">
                           {formatPrice(serial.unitCost)}
                         </TableCell>

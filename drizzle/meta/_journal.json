@@ -50,6 +50,20 @@
       "when": 1772982970992,
       "tag": "0006_fair_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1748650000000,
+      "tag": "0007_remove_consignment_add_shareholders",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780409972552,
+      "tag": "0008_remove_cash_transactions",
+      "breakpoints": true
     }
   ]
 }

@@ -11,14 +11,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-// --- TABLA: Propietarios para Consignación ---
-export const owners = pgTable("owners", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-
 //Es la ficha del producto en el catálogo general
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -58,9 +50,7 @@ export const productItems = pgTable("product_items", {
   sku: text("sku"),
   serialNumber: text("serial_number"), // imei or serial
   status: text("status").default("available").notNull(), // available, sold, reserved, defective
-  ownerType: text("owner_type").default("masterplay").notNull(), // 'masterplay' o 'consignment'
-  ownerId: uuid("owner_id").references(() => owners.id), // <-- Reemplaza a ownerName
-  baseCost: decimal("base_cost", { precision: 10, scale: 2 })
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 })
     .notNull()
     .default("0"),
 

@@ -70,8 +70,7 @@ export const PurchaseService = {
                 productId: detail.productId,
                 serialNumber: serial,
                 status: "available",
-                ownerType: "masterplay",
-                baseCost: detail.unitCost.toString(),
+                unitCost: detail.unitCost.toString(),
                 conditionDetails: detail.conditionDetails,
                 notes: detail.notes,
               })

@@ -46,10 +46,6 @@ export async function receiveStockAction(
       serials: validationResult.data.serials,
       batteryHealth: validationResult.data.batteryHealth,
       notes: validationResult.data.notes,
-      ownerType: validationResult.data.ownerType as
-        | "masterplay"
-        | "consignment",
-      ownerId: validationResult.data.ownerId,
     });
 
     revalidatePath("/inventory");

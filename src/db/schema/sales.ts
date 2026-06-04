@@ -24,7 +24,4 @@ export const saleDetails = pgTable("sale_details", {
     .notNull()
     .default("0"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  commissionAmount: decimal("commission_amount", { precision: 10, scale: 2 })
-    .notNull()
-    .default("0"),
 });

@@ -5,8 +5,6 @@ export const receiveStockSchema = z.object({
   quantity: z.number().int().positive("Quantity must be a positive number"),
   unitCost: z.number().min(0, "Unit cost must be a positive number or zero"),
   serials: z.array(z.string().min(1)).optional(),
-  ownerType: z.enum(["masterplay", "consignment"]).default("masterplay"),
-  ownerId: z.string().uuid().optional(),
   // Campos de condición para equipos serializados
   batteryHealth: z.number().min(1).max(100).optional(),
   notes: z.string().optional(),
@@ -21,8 +19,6 @@ export const receiveStockFormSchema = z.object({
   }),
   batteryHealth: z.coerce.number().min(1).max(100).optional(),
   notes: z.string().optional(),
-  ownerType: z.enum(["masterplay", "consignment"]).default("masterplay"),
-  ownerId: z.string().uuid("Seleccione un propietario").optional(),
 });
 
 export type ReceiveStockFormValues = z.infer<typeof receiveStockFormSchema>;

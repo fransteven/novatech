@@ -1,12 +1,16 @@
 import { relations } from "drizzle-orm";
 import { user } from "./auth";
 import {
+  shareholders,
+  shareholderDistributions,
+  shareholderDistributionItems,
+} from "./shareholders";
+import {
   categories,
   products,
   productItems,
   inventoryMovements,
   reservations,
-  owners,
 } from "./inventory";
 import { sales, saleDetails } from "./sales";
 import { expenseCategories, expenses } from "./expenses";
@@ -45,10 +49,6 @@ export const productItemsRelations = relations(
       fields: [productItems.productId],
       references: [products.id],
     }),
-    owner: one(owners, {
-      fields: [productItems.ownerId],
-      references: [owners.id],
-    }),
     saleDetails: many(saleDetails),
     inventoryMovements: many(inventoryMovements),
     reservations: many(reservations),
@@ -83,10 +83,6 @@ export const layawayDetailsRelations = relations(layawayDetails, ({ one }) => ({
     fields: [layawayDetails.productItemId],
     references: [productItems.id],
   }),
-}));
-
-export const ownersRelations = relations(owners, ({ many }) => ({
-  productItems: many(productItems),
 }));
 
 export const inventoryMovementsRelations = relations(
@@ -250,4 +246,29 @@ export const cashReconciliationsRelations = relations(cashReconciliations, ({ on
     references: [user.id],
   }),
 }));
+
+export const shareholdersRelations = relations(shareholders, ({ many }) => ({
+  distributionItems: many(shareholderDistributionItems),
+}));
+
+export const shareholderDistributionsRelations = relations(
+  shareholderDistributions,
+  ({ many }) => ({
+    items: many(shareholderDistributionItems),
+  }),
+);
+
+export const shareholderDistributionItemsRelations = relations(
+  shareholderDistributionItems,
+  ({ one }) => ({
+    distribution: one(shareholderDistributions, {
+      fields: [shareholderDistributionItems.distributionId],
+      references: [shareholderDistributions.id],
+    }),
+    shareholder: one(shareholders, {
+      fields: [shareholderDistributionItems.shareholderId],
+      references: [shareholders.id],
+    }),
+  }),
+);
 

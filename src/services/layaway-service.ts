@@ -2,7 +2,6 @@ import { db } from "@/db";
 import {
   layaways,
   layawayDetails,
-  cashTransactions,
   cashMovements,
   productItems,
   inventoryMovements,
@@ -26,13 +25,13 @@ export const getLayaways = async () => {
       customerName: customers.name,
       customerDocument: customers.documentId,
       customerPhone: customers.phone,
-      totalPaid: sql<number>`COALESCE(SUM(CAST(${cashTransactions.amount} AS DECIMAL)), 0)`.mapWith(Number),
+      totalPaid: sql<number>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'in' THEN CAST(${cashMovements.amount} AS DECIMAL) ELSE 0 END), 0)`.mapWith(Number),
     })
     .from(layaways)
     .leftJoin(customers, eq(layaways.customerId, customers.id))
     .leftJoin(
-      cashTransactions,
-      sql`${cashTransactions.referenceId} = ${layaways.id} AND ${cashTransactions.type} = 'layaway_deposit'`
+      cashMovements,
+      sql`${cashMovements.sourceId} = ${layaways.id} AND ${cashMovements.sourceType} = 'layaway_deposit' AND ${cashMovements.status} = 'posted'`
     )
     .groupBy(layaways.id, customers.name, customers.documentId, customers.phone)
     .orderBy(desc(layaways.createdAt));
@@ -89,28 +88,19 @@ export const createLayaway = async (data: CreateLayawayInput) => {
 
     // 4. Registrar el abono inicial en la caja si existe
     if (data.initialDeposit > 0) {
-      await tx.insert(cashTransactions).values({
-        type: "layaway_deposit",
+      if (!data.accountId) throw new Error("Se requiere una cuenta para registrar el abono inicial");
+      await tx.insert(cashMovements).values({
+        accountId: data.accountId,
+        direction: "in",
+        sourceType: "layaway_deposit",
+        sourceId: newLayaway.id,
+        paymentMethod: data.paymentMethod,
         amount: data.initialDeposit.toString(),
-        method: data.paymentMethod,
-        referenceId: newLayaway.id,
+        referenceCode: data.referenceCode ?? null,
         notes: "Abono inicial",
+        createdBy: null,
+        status: "posted",
       });
-
-      if (data.accountId) {
-        await tx.insert(cashMovements).values({
-          accountId: data.accountId,
-          direction: "in",
-          sourceType: "layaway_deposit",
-          sourceId: newLayaway.id,
-          paymentMethod: data.paymentMethod,
-          amount: data.initialDeposit.toString(),
-          referenceCode: data.referenceCode ?? null,
-          notes: "Abono inicial",
-          createdBy: null,
-          status: "posted",
-        });
-      }
     }
 
     return newLayaway;
@@ -136,20 +126,21 @@ export const getLayawayDetails = async (layawayId: string) => {
 
   const payments = await db
     .select({
-      id: cashTransactions.id,
-      amount: cashTransactions.amount,
-      method: cashTransactions.method,
-      createdAt: cashTransactions.createdAt,
-      notes: cashTransactions.notes,
+      id: cashMovements.id,
+      amount: cashMovements.amount,
+      method: cashMovements.paymentMethod,
+      createdAt: cashMovements.occurredAt,
+      notes: cashMovements.notes,
     })
-    .from(cashTransactions)
+    .from(cashMovements)
     .where(
       and(
-        eq(cashTransactions.referenceId, layawayId),
-        eq(cashTransactions.type, "layaway_deposit")
+        eq(cashMovements.sourceId, layawayId),
+        eq(cashMovements.sourceType, "layaway_deposit"),
+        eq(cashMovements.status, "posted")
       )
     )
-    .orderBy(desc(cashTransactions.createdAt));
+    .orderBy(desc(cashMovements.occurredAt));
 
   return { items: details, payments };
 };
@@ -167,10 +158,10 @@ export const addLayawayPayment = async (data: AddLayawayPaymentInput) => {
     if (layaway.status !== "active") throw new Error(`El apartado no está activo (Estado actual: ${layaway.status})`);
 
     const paidQuery = await tx
-      .select({ total: sql<number>`COALESCE(SUM(CAST(${cashTransactions.amount} AS DECIMAL)), 0)`.mapWith(Number) })
-      .from(cashTransactions)
-      .where(and(eq(cashTransactions.referenceId, layaway.id), eq(cashTransactions.type, "layaway_deposit")));
-    
+      .select({ total: sql<number>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'in' THEN CAST(${cashMovements.amount} AS DECIMAL) ELSE 0 END), 0)`.mapWith(Number) })
+      .from(cashMovements)
+      .where(and(eq(cashMovements.sourceId, layaway.id), eq(cashMovements.sourceType, "layaway_deposit"), eq(cashMovements.status, "posted")));
+
     const totalPaid = paidQuery[0]?.total || 0;
     const totalAmount = Number(layaway.totalAmount);
     const balance = totalAmount - totalPaid;
@@ -178,28 +169,18 @@ export const addLayawayPayment = async (data: AddLayawayPaymentInput) => {
     if (data.amount > balance) throw new Error("El abono supera el saldo pendiente");
 
     // 2. Registrar el pago
-    await tx.insert(cashTransactions).values({
-      type: "layaway_deposit",
+    await tx.insert(cashMovements).values({
+      accountId: data.accountId,
+      direction: "in",
+      sourceType: "layaway_deposit",
+      sourceId: layaway.id,
+      paymentMethod: data.paymentMethod,
       amount: data.amount.toString(),
-      method: data.paymentMethod,
-      referenceId: layaway.id,
-      notes: data.notes || "Abono a apartado",
+      referenceCode: data.referenceCode ?? null,
+      notes: data.notes ?? "Abono a apartado",
+      createdBy: null,
+      status: "posted",
     });
-
-    if (data.accountId) {
-      await tx.insert(cashMovements).values({
-        accountId: data.accountId,
-        direction: "in",
-        sourceType: "layaway_deposit",
-        sourceId: layaway.id,
-        paymentMethod: data.paymentMethod,
-        amount: data.amount.toString(),
-        referenceCode: data.referenceCode ?? null,
-        notes: data.notes ?? "Abono a apartado",
-        createdBy: null,
-        status: "posted",
-      });
-    }
 
     // 3. ¿Se completó el pago?
     if (totalPaid + data.amount >= totalAmount) {

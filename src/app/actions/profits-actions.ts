@@ -18,14 +18,20 @@ function parseDateRange(from?: string, to?: string) {
 export async function getProfitsDataAction(from?: string, to?: string) {
   try {
     const range = parseDateRange(from, to);
-    const [kpis, ownerPayouts, sellerCommissions] = await Promise.all([
-      profitsService.getProfitsKPIs(range),
-      profitsService.getOwnerPayouts(range),
-      profitsService.getSellerCommissions(range),
-    ]);
-    return { success: true, data: { kpis, ownerPayouts, sellerCommissions } };
+    const kpis = await profitsService.getProfitsKPIs(range);
+    return { success: true, data: { kpis } };
   } catch (error) {
     console.error("Error fetching profits data:", error);
     return { success: false, error: "Failed to fetch profits data" };
+  }
+}
+
+export async function getMonthlyProfitsAction(year: number) {
+  try {
+    const data = await profitsService.getMonthlyProfits(year);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching monthly profits:", error);
+    return { success: false, error: "Failed to fetch monthly profits" };
   }
 }

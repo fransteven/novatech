@@ -59,7 +59,7 @@ export const searchProduct = async (
       )
       .limit(1);
 
-    const itemCost = Number(costMovement[0]?.unitCost || productItem.baseCost || 0);
+    const itemCost = Number(costMovement[0]?.unitCost || productItem.unitCost || 0);
 
     return {
       productId: product.id,
@@ -106,7 +106,7 @@ export const searchProduct = async (
 
     // Calculamos un costo promedio aproximado de los items disponibles
     const avgCostQuery = await db
-      .select({ avgCost: sql<string>`AVG(${productItems.baseCost})` })
+      .select({ avgCost: sql<string>`AVG(${productItems.unitCost})` })
       .from(productItems)
       .where(
         and(
@@ -212,7 +212,7 @@ export const processSale = async ({
           )
           .limit(1);
 
-        itemCost = Number(costMovement[0]?.unitCost || productItem.baseCost || 0);
+        itemCost = Number(costMovement[0]?.unitCost || productItem.unitCost || 0);
         if (item.price < itemCost) {
           throw new Error(
             `El precio de venta no puede ser menor al costo del producto. Costo: $${itemCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
@@ -282,40 +282,15 @@ export const processSale = async ({
         }
       }
 
-      // Calculate Commission
-      let commission = 0;
-      if (item.isSerialized && item.productItemId) {
-        // We already fetched productItem earlier:
-        const [productItem] = await tx
-          .select({
-            ownerType: productItems.ownerType,
-            baseCost: productItems.baseCost,
-          })
-          .from(productItems)
-          .where(eq(productItems.id, item.productItemId))
-          .limit(1);
-
-        if (productItem?.ownerType === "consignment") {
-          const baseCost = Number(productItem.baseCost);
-          const salePrice = Number(item.price);
-          const grossProfit = salePrice - baseCost;
-
-          if (grossProfit > 0) {
-            commission = grossProfit * 0.4;
-          }
-        }
-      }
-
       // Insert sale detail
       await tx.insert(saleDetails).values({
         saleId: sale.id,
         productId: item.productId,
-        productItemId: item.productItemId || null, // Allow null for non-serialized
+        productItemId: item.productItemId || null,
         unitCost: item.isSerialized
           ? itemCost!.toString()
           : avgUnitCost!.toString(),
         price: item.price.toString(),
-        commissionAmount: commission.toString(),
       });
 
       // If product is serialized, update the product item status to 'sold'

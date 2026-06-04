@@ -39,7 +39,7 @@ const schema = z.object({
   accountId: z.string().uuid("Selecciona una cuenta"),
   direction: z.enum(["in", "out"]),
   amount: z.coerce.number().positive("Monto positivo requerido"),
-  sourceType: z.enum(["adjustment", "opening_balance", "owner_payout"]),
+  sourceType: z.enum(["adjustment", "opening_balance", "shareholder_distribution"]),
   paymentMethod: z.enum(["cash", "transfer", "card", "wallet"]).default("cash"),
   referenceCode: z.string().optional(),
   notes: z.string().optional(),
@@ -170,7 +170,7 @@ export function CreateMovementDialog({ accounts }: CreateMovementDialogProps) {
                     <SelectContent>
                       <SelectItem value="adjustment">Ajuste</SelectItem>
                       <SelectItem value="opening_balance">Saldo inicial</SelectItem>
-                      <SelectItem value="owner_payout">Pago a propietario</SelectItem>
+                      <SelectItem value="shareholder_distribution">Reparto a accionista</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

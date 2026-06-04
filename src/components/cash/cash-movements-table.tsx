@@ -47,7 +47,7 @@ const SOURCE_LABELS: Record<string, string> = {
   transfer: "Transferencia",
   adjustment: "Ajuste",
   opening_balance: "Saldo inicial",
-  owner_payout: "Pago propietario",
+  shareholder_distribution: "Reparto accionista",
   refund: "Devolución",
 };
 

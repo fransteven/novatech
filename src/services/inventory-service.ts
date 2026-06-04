@@ -3,7 +3,6 @@ import {
   products,
   productItems,
   inventoryMovements,
-  owners,
   sales,
   saleDetails,
 } from "@/db/schema";
@@ -15,13 +14,9 @@ export const receiveStock = async ({
   quantity,
   unitCost,
   serials,
-  ownerType = "masterplay",
-  ownerId,
   batteryHealth,
   notes,
 }: ReceiveStockInput & {
-  ownerType?: "masterplay" | "consignment";
-  ownerId?: string;
   batteryHealth?: number;
   notes?: string;
 }) => {
@@ -60,9 +55,7 @@ export const receiveStock = async ({
             productId,
             serialNumber: serial,
             status: "available",
-            ownerType,
-            ownerId: ownerType === "consignment" ? ownerId : null,
-            baseCost: unitCost.toString(),
+            unitCost: unitCost.toString(),
             conditionDetails,
             notes: notes || null,
           })
@@ -283,9 +276,7 @@ export const getProductSerials = async (productId: string) => {
       createdAt: productItems.createdAt,
       conditionDetails: productItems.conditionDetails,
       notes: productItems.notes,
-      unitCost: sql<number>`COALESCE(${inventoryMovements.unitCost}, ${productItems.baseCost})`.mapWith(Number),
-      ownerType: productItems.ownerType,
-      ownerName: owners.name,
+      unitCost: sql<number>`COALESCE(${inventoryMovements.unitCost}, ${productItems.unitCost})`.mapWith(Number),
     })
     .from(productItems)
     .leftJoin(
@@ -295,7 +286,6 @@ export const getProductSerials = async (productId: string) => {
         eq(inventoryMovements.type, "IN")
       )
     )
-    .leftJoin(owners, eq(productItems.ownerId, owners.id))
     .where(eq(productItems.productId, productId))
     .orderBy(desc(productItems.createdAt));
 };

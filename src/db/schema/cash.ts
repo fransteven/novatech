@@ -25,7 +25,7 @@ export const cashMovements = pgTable("cash_movements", {
     .notNull(),
   direction: text("direction").notNull(), // 'in' | 'out'
   amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
-  sourceType: text("source_type").notNull(), // 'sale_payment' | 'layaway_deposit' | 'expense' | 'import_cost' | 'refund' | 'owner_payout' | 'transfer' | 'adjustment' | 'opening_balance'
+  sourceType: text("source_type").notNull(), // 'sale_payment' | 'layaway_deposit' | 'expense' | 'import_cost' | 'refund' | 'shareholder_distribution' | 'transfer' | 'adjustment' | 'opening_balance'
   sourceId: uuid("source_id"), // intentionally no FK — polymorphic reference, resolved via sourceType
   paymentMethod: text("payment_method").default("cash"), // 'cash' | 'transfer' | 'card' | 'wallet'
   occurredAt: timestamp("occurred_at").notNull().defaultNow(),

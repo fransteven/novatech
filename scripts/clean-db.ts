@@ -8,16 +8,22 @@ async function main() {
   );
 
   try {
-    // Ejecutamos TRUNCATE en las tablas operativas con CASCADE
-    // Nos aseguramos de NO incluir user, session, account y verification
-    // Las tablas a truncar son: sale_details, sales, inventory_movements, reservations, expenses, product_items, products, categories, expense_categories
     await db.execute(
       sql`TRUNCATE TABLE sale_details, sales, inventory_movements, reservations, expenses, product_items, products, categories, expense_categories CASCADE;`,
     );
 
-    console.log(
-      "✅ Purga completada exitosamente. Las tablas operativas han sido vaciadas preservando la integridad referencial y las tablas de autenticación.",
+    console.log("✅ Purga completada. Seeding accionistas...");
+
+    // Seed shareholders (upsert by full_name to be idempotent)
+    await db.execute(
+      sql`INSERT INTO shareholders (full_name, email, ownership_pct, is_active)
+          VALUES
+            ('Juan Diego Torres', NULL, 50.00, true),
+            ('Frankly Estiven Chindicue Muñoz', NULL, 50.00, true)
+          ON CONFLICT DO NOTHING;`,
     );
+
+    console.log("✅ Accionistas seeded: Juan Diego Torres y Frankly Estiven Chindicue Muñoz (50% c/u).");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error durante la limpieza de la base de datos:", error);
