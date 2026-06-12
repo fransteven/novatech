@@ -13,7 +13,9 @@ export const cashAccounts = pgTable("cash_accounts", {
   name: text("name").notNull(),
   type: text("type").notNull(), // 'cash' | 'bank' | 'wallet' | 'card_processor'
   currency: text("currency").notNull().default("COP"),
-  openingBalance: decimal("opening_balance", { precision: 14, scale: 2 }).notNull().default("0"),
+  openingBalance: decimal("opening_balance", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -48,7 +50,9 @@ export const cashTransfers = pgTable("cash_transfers", {
     .references(() => cashAccounts.id)
     .notNull(),
   amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
-  feeAmount: decimal("fee_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  feeAmount: decimal("fee_amount", { precision: 14, scale: 2 })
+    .notNull()
+    .default("0"),
   occurredAt: timestamp("occurred_at").notNull().defaultNow(),
   notes: text("notes"),
   createdBy: text("created_by").references(() => user.id),
@@ -65,8 +69,14 @@ export const cashReconciliations = pgTable("cash_reconciliations", {
     .notNull(),
   periodStart: timestamp("period_start").notNull(),
   periodEnd: timestamp("period_end").notNull(),
-  expectedBalance: decimal("expected_balance", { precision: 14, scale: 2 }).notNull(),
-  countedBalance: decimal("counted_balance", { precision: 14, scale: 2 }).notNull(),
+  expectedBalance: decimal("expected_balance", {
+    precision: 14,
+    scale: 2,
+  }).notNull(),
+  countedBalance: decimal("counted_balance", {
+    precision: 14,
+    scale: 2,
+  }).notNull(),
   difference: decimal("difference", { precision: 14, scale: 2 }).notNull(), // must equal countedBalance - expectedBalance
   status: text("status").notNull().default("open"), // 'open' | 'closed'
   closedBy: text("closed_by").references(() => user.id),
