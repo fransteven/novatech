@@ -15,7 +15,14 @@ import {
 import { sales, saleDetails } from "./sales";
 import { expenseCategories, expenses } from "./expenses";
 import { customers } from "./customers";
-import { layaways, layawayDetails } from "./layaways";
+import {
+  layaways,
+  layawayDetails,
+  layawaySchedule,
+  layawayPayments,
+  riskHistory,
+  notifications,
+} from "./layaways";
 import { importCosts } from "./imports";
 import {
   cashAccounts,
@@ -68,6 +75,42 @@ export const layawaysRelations = relations(layaways, ({ one, many }) => ({
     references: [customers.id],
   }),
   layawayDetails: many(layawayDetails),
+  schedule: many(layawaySchedule),
+  payments: many(layawayPayments),
+  riskHistory: many(riskHistory),
+  notifications: many(notifications),
+}));
+
+export const layawayScheduleRelations = relations(layawaySchedule, ({ one }) => ({
+  layaway: one(layaways, {
+    fields: [layawaySchedule.layawayId],
+    references: [layaways.id],
+  }),
+}));
+
+export const layawayPaymentsRelations = relations(layawayPayments, ({ one }) => ({
+  layaway: one(layaways, {
+    fields: [layawayPayments.layawayId],
+    references: [layaways.id],
+  }),
+  createdByUser: one(user, {
+    fields: [layawayPayments.createdBy],
+    references: [user.id],
+  }),
+}));
+
+export const riskHistoryRelations = relations(riskHistory, ({ one }) => ({
+  layaway: one(layaways, {
+    fields: [riskHistory.layawayId],
+    references: [layaways.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  layaway: one(layaways, {
+    fields: [notifications.layawayId],
+    references: [layaways.id],
+  }),
 }));
 
 export const layawayDetailsRelations = relations(layawayDetails, ({ one }) => ({

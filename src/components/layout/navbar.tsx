@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Moon, Sun, Search, ChevronRight, LogOut, User as UserIcon, Settings } from "lucide-react";
+import { Moon, Sun, Search, ChevronRight, LogOut, User as UserIcon, Settings } from "lucide-react";
+import { NotificationsBell } from "@/components/layaways/notifications-bell";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 
@@ -138,18 +139,7 @@ export function Navbar() {
       </button>
 
       {/* Bell */}
-      <div className="relative">
-        <button
-          className="h-9 w-9 rounded-lg grid place-items-center text-[color:var(--tf-fg-muted)] hover:bg-muted hover:text-foreground transition-colors duration-150"
-          aria-label="Notificaciones"
-        >
-          <Bell className="h-[17px] w-[17px]" />
-        </button>
-        <span
-          className="absolute top-2 right-[9px] w-[7px] h-[7px] rounded-full border-2 border-card"
-          style={{ background: "var(--tf-red)" }}
-        />
-      </div>
+      <NotificationsBell />
 
       {/* Avatar dropdown */}
       <DropdownMenu>

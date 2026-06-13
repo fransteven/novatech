@@ -18,11 +18,13 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Eye, HandCoins, XCircle, Clock, Search, X } from "lucide-react";
 import { useState, useMemo } from "react";
 import { LayawayDetailsDialog } from "./layaway-details-dialog";
 import { LayawayPaymentDialog } from "./layaway-payment-dialog";
+import { CreditPaymentDialog } from "./credit-payment-dialog";
 import { cancelLayawayAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
 import {
@@ -40,10 +42,17 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 interface Layaway {
   id: string;
+  type: string;
   status: string;
+  subStatus: string | null;
   totalAmount: number;
   expiresAt: Date;
   createdAt: Date;
+  termMonths: number | null;
+  installmentAmount: number | null;
+  outstandingPrincipal: number | null;
+  riskScore: number | null;
+  riskLevel: string | null;
   customerName: string | null;
   customerDocument: string | null;
   customerPhone: string | null;
@@ -64,14 +73,23 @@ interface LayawaysTableProps {
 function getEffectiveStatus(layaway: Layaway): string {
   if (layaway.status === "completed" || layaway.balance <= 0) return "completed";
   if (layaway.status === "cancelled") return "cancelled";
-  if (new Date(layaway.expiresAt) < new Date()) return "overdue";
+  if (layaway.status === "defaulted") return "defaulted";
+  if (layaway.type === "credito" && layaway.subStatus === "en_mora") return "overdue";
+  if (layaway.type === "sin_interes" && new Date(layaway.expiresAt) < new Date()) return "overdue";
   return "active";
 }
+
+const RISK_BADGE: Record<string, { label: string; className: string }> = {
+  verde:    { label: "🟢 Bajo riesgo",     className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
+  amarillo: { label: "🟡 Riesgo medio",    className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
+  rojo:     { label: "🔴 Alto riesgo",     className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
+};
 
 export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [creditPaymentOpen, setCreditPaymentOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [selectedLayaway, setSelectedLayaway] = useState<Layaway | null>(null);
 
@@ -101,14 +119,26 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           const layaway = row.original;
           return (
             <div>
-              <div className="font-medium">
-                {layaway.customerName || "Sin Nombre"}
-              </div>
+              <div className="font-medium">{layaway.customerName || "Sin Nombre"}</div>
               <div className="text-xs text-muted-foreground">
                 {layaway.customerDocument}
                 {layaway.customerPhone ? ` • ${layaway.customerPhone}` : ""}
               </div>
             </div>
+          );
+        },
+      },
+      {
+        id: "type",
+        header: "Modalidad",
+        cell: ({ row }) => {
+          const l = row.original;
+          return l.type === "credito" ? (
+            <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">
+              Crédito {l.termMonths ? `${l.termMonths}m` : ""}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs text-muted-foreground">Sin interés</Badge>
           );
         },
       },
@@ -120,13 +150,18 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         ),
       },
       {
-        accessorKey: "expiresAt",
-        header: "Vencimiento",
-        cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
-            {new Date(row.getValue("expiresAt")).toLocaleDateString("es-ES")}
-          </span>
-        ),
+        id: "riskLevel",
+        header: "Riesgo",
+        cell: ({ row }) => {
+          const l = row.original;
+          if (l.type !== "credito" || !l.riskLevel) return <span className="text-muted-foreground text-xs">—</span>;
+          const badge = RISK_BADGE[l.riskLevel] ?? RISK_BADGE.verde;
+          return (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.className}`}>
+              {badge.label}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "totalAmount",
@@ -138,19 +173,23 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         ),
       },
       {
-        accessorKey: "totalPaid",
-        header: "Abonado",
-        cell: ({ row }) => (
-          <div className="text-right text-muted-foreground">
-            {formatCurrency(row.getValue("totalPaid"))}
-          </div>
-        ),
+        id: "saldoInsoluto",
+        header: "Saldo insoluto",
+        cell: ({ row }) => {
+          const l = row.original;
+          if (l.type !== "credito") return <span className="text-muted-foreground text-xs text-right block">—</span>;
+          return (
+            <div className="text-right font-bold text-primary">
+              {formatCurrency(l.outstandingPrincipal ?? 0)}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "balance",
-        header: "Saldo",
+        header: "Saldo total",
         cell: ({ row }) => (
-          <div className="text-right font-bold text-primary">
+          <div className="text-right text-muted-foreground">
             {formatCurrency(row.getValue("balance"))}
           </div>
         ),
@@ -160,13 +199,14 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         header: "Acciones",
         cell: ({ row }) => {
           const layaway = row.original;
+          const canPay = layaway.status === "active" && layaway.balance > 0;
           return (
             <div className="flex items-center justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 className="h-8 px-2"
-                aria-label="Ver detalles del apartado"
+                aria-label="Ver detalles"
                 onClick={() => {
                   setSelectedLayaway(layaway);
                   setDetailsOpen(true);
@@ -174,18 +214,23 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
               >
                 <Eye className="h-4 w-4 mr-1" /> Detalles
               </Button>
-              {layaway.status === "active" && layaway.balance > 0 && (
+              {canPay && (
                 <Button
                   variant="default"
                   size="sm"
                   className="h-8 px-2"
-                  aria-label="Registrar abono"
+                  aria-label="Registrar pago"
                   onClick={() => {
                     setSelectedLayaway(layaway);
-                    setPaymentOpen(true);
+                    if (layaway.type === "credito") {
+                      setCreditPaymentOpen(true);
+                    } else {
+                      setPaymentOpen(true);
+                    }
                   }}
                 >
-                  <HandCoins className="h-4 w-4 mr-1" /> Abonar
+                  <HandCoins className="h-4 w-4 mr-1" />
+                  {layaway.type === "credito" ? "Pagar" : "Abonar"}
                 </Button>
               )}
               {layaway.status === "active" && (
@@ -193,7 +238,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  aria-label="Cancelar apartado"
+                  aria-label="Cancelar"
                   onClick={() => {
                     setSelectedLayaway(layaway);
                     setCancelOpen(true);
@@ -207,7 +252,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         },
       },
     ],
-    [],
+    []
   );
 
   const table = useReactTable({
@@ -230,7 +275,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Filtrar apartados..."
+              placeholder="Filtrar apartados y créditos..."
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="pl-9 pr-9"
@@ -252,7 +297,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           </span>
         </div>
 
-        <div className="w-full">
+        <div className="w-full overflow-x-auto">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -261,10 +306,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -276,10 +318,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -291,13 +330,13 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                       icon={Clock}
                       headline={
                         globalFilter
-                          ? "No se encontraron apartados con ese filtro"
-                          : "No hay apartados registrados"
+                          ? "No se encontraron registros con ese filtro"
+                          : "No hay apartados ni créditos registrados"
                       }
                       description={
                         globalFilter
                           ? "Intenta con un término diferente"
-                          : "Los apartados aparecerán aquí cuando se creen desde el POS"
+                          : "Los apartados y créditos aparecerán aquí cuando se creen"
                       }
                       className="border-0"
                     />
@@ -328,11 +367,13 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         </div>
       </div>
 
+      {/* Diálogos */}
       <LayawayDetailsDialog
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         layawayId={selectedLayaway?.id || null}
         customerName={selectedLayaway?.customerName || null}
+        layawayType={selectedLayaway?.type ?? "sin_interes"}
       />
 
       <LayawayPaymentDialog
@@ -344,16 +385,25 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         accounts={accounts}
       />
 
+      {selectedLayaway?.type === "credito" && (
+        <CreditPaymentDialog
+          open={creditPaymentOpen}
+          onOpenChange={setCreditPaymentOpen}
+          layawayId={selectedLayaway?.id || null}
+          outstandingPrincipal={selectedLayaway?.outstandingPrincipal ?? 0}
+          installmentAmount={selectedLayaway?.installmentAmount ?? 0}
+          onSuccess={() => setCreditPaymentOpen(false)}
+          accounts={accounts}
+        />
+      )}
+
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              ¿Está seguro de cancelar este apartado?
-            </AlertDialogTitle>
+            <AlertDialogTitle>¿Está seguro de cancelar este apartado/crédito?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción es irreversible. Los productos reservados volverán a
-              estar disponibles en el inventario para ser vendidos a otros
-              clientes.
+              estar disponibles en el inventario.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

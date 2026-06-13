@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { getLayawayDetailsAction } from "@/app/actions/layaway-actions";
-
 import {
   Dialog,
   DialogContent,
@@ -13,12 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LayawayDetailsDialogProps {
   layawayId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customerName: string | null;
+  layawayType?: string;
 }
 
 interface LayawayItem {
@@ -37,19 +38,60 @@ interface LayawayPayment {
   amount: string | number;
 }
 
+interface ScheduleEntry {
+  id: string;
+  number: number;
+  dueDate: string | Date;
+  principal: string | number;
+  interest: string | number;
+  totalAmount: string | number;
+  remainingBalance: string | number;
+  status: string;
+  paidAt?: string | Date | null;
+}
+
+interface RiskHistoryEntry {
+  id: string;
+  previousScore: number;
+  newScore: number;
+  level: string;
+  reason: string;
+  occurredAt: string | Date;
+}
+
 interface LayawayDetails {
   items: LayawayItem[];
   payments: LayawayPayment[];
+  schedule: ScheduleEntry[];
+  riskHistory: RiskHistoryEntry[];
 }
+
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  pendiente: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  vencida:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  pagada:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+};
+
+const RISK_COLORS: Record<string, string> = {
+  verde:    "text-green-600 dark:text-green-400",
+  amarillo: "text-yellow-600 dark:text-yellow-400",
+  rojo:     "text-red-600 dark:text-red-400",
+};
 
 export function LayawayDetailsDialog({
   layawayId,
   open,
   onOpenChange,
   customerName,
+  layawayType = "sin_interes",
 }: LayawayDetailsDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [details, setDetails] = useState<LayawayDetails>({ items: [], payments: [] });
+  const [details, setDetails] = useState<LayawayDetails>({
+    items: [],
+    payments: [],
+    schedule: [],
+    riskHistory: [],
+  });
 
   useEffect(() => {
     let active = true;
@@ -70,24 +112,144 @@ export function LayawayDetailsDialog({
     return () => { active = false; };
   }, [open, layawayId]);
 
+  const isCredit = layawayType === "credito";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className={isCredit ? "sm:max-w-[720px]" : "sm:max-w-[500px]"}>
         <DialogHeader>
-          <DialogTitle>Detalles del Apartado</DialogTitle>
-          <DialogDescription>
-            Cliente: {customerName || "Desconocido"}
-          </DialogDescription>
+          <DialogTitle>
+            {isCredit ? "Detalle del Crédito" : "Detalle del Apartado"}
+          </DialogTitle>
+          <DialogDescription>Cliente: {customerName || "Desconocido"}</DialogDescription>
         </DialogHeader>
 
         {loading ? (
           <div className="py-6 text-center text-muted-foreground">Cargando...</div>
+        ) : isCredit ? (
+          <Tabs defaultValue="cronograma" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
+              <TabsTrigger value="pagos">Pagos</TabsTrigger>
+              <TabsTrigger value="riesgo">Riesgo</TabsTrigger>
+            </TabsList>
+
+            {/* Cronograma */}
+            <TabsContent value="cronograma" className="max-h-[400px] overflow-y-auto">
+              <div className="space-y-1 pt-2">
+                {/* Artículos */}
+                <div className="mb-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Artículos</p>
+                  {details.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm py-1">
+                      <span>{item.productName}{item.serialNumber ? ` (SN: ${item.serialNumber})` : ""}</span>
+                      <span className="font-medium">{formatCurrency(Number(item.agreedPrice) * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <Separator />
+                {/* Tabla de amortización */}
+                <div className="pt-2">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Tabla de amortización</p>
+                  {details.schedule.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sin cronograma generado.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b text-muted-foreground">
+                            <th className="text-left py-1.5 pr-2">#</th>
+                            <th className="text-left py-1.5 pr-2">Vencimiento</th>
+                            <th className="text-right py-1.5 pr-2">Capital</th>
+                            <th className="text-right py-1.5 pr-2">Interés</th>
+                            <th className="text-right py-1.5 pr-2">Total cuota</th>
+                            <th className="text-right py-1.5 pr-2">Saldo</th>
+                            <th className="text-center py-1.5">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {details.schedule.map((entry) => (
+                            <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
+                              <td className="py-1.5 pr-2 font-medium">{entry.number}</td>
+                              <td className="py-1.5 pr-2 text-muted-foreground">
+                                {new Date(entry.dueDate).toLocaleDateString("es-CO", {
+                                  day: "2-digit", month: "short", year: "numeric",
+                                })}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right">{formatCurrency(Number(entry.principal))}</td>
+                              <td className="py-1.5 pr-2 text-right text-muted-foreground">{formatCurrency(Number(entry.interest))}</td>
+                              <td className="py-1.5 pr-2 text-right font-medium">{formatCurrency(Number(entry.totalAmount))}</td>
+                              <td className="py-1.5 pr-2 text-right">{formatCurrency(Number(entry.remainingBalance))}</td>
+                              <td className="py-1.5 text-center">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE_STYLES[entry.status] ?? ""}`}>
+                                  {entry.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Pagos */}
+            <TabsContent value="pagos" className="max-h-[400px] overflow-y-auto">
+              <div className="pt-2 space-y-2">
+                {details.payments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin pagos registrados.</p>
+                ) : (
+                  details.payments.map((payment) => (
+                    <div key={payment.id} className="flex justify-between items-center text-sm bg-muted/30 p-2 rounded">
+                      <div>
+                        <span>{new Date(payment.createdAt).toLocaleDateString("es-CO")}</span>
+                        <span className="text-xs text-muted-foreground ml-2 capitalize">{payment.method}</span>
+                        {payment.notes && <span className="text-xs text-muted-foreground ml-2">— {payment.notes}</span>}
+                      </div>
+                      <Badge variant="secondary" className="font-mono">
+                        +{formatCurrency(Number(payment.amount))}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Riesgo */}
+            <TabsContent value="riesgo" className="max-h-[400px] overflow-y-auto">
+              <div className="pt-2 space-y-2">
+                {details.riskHistory.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin cambios de riesgo registrados.</p>
+                ) : (
+                  details.riskHistory.map((entry) => (
+                    <div key={entry.id} className="text-sm bg-muted/30 p-2 rounded space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(entry.occurredAt).toLocaleDateString("es-CO", {
+                            day: "2-digit", month: "short", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </span>
+                        <span className={`font-semibold text-sm ${RISK_COLORS[entry.level] ?? ""}`}>
+                          {entry.previousScore} → {entry.newScore} ({entry.level})
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{entry.reason}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         ) : (
+          /* Vista sin_interes (original) */
           <div className="space-y-6">
             <div>
               <h4 className="font-semibold text-sm mb-3">Artículos Apartados</h4>
               <div className="space-y-3">
-                {details.items.map((item: LayawayItem) => (
+                {details.items.map((item) => (
                   <div key={item.id} className="flex justify-between items-start text-sm border-b pb-2 last:border-0">
                     <div>
                       <p className="font-medium">{item.productName}</p>
@@ -110,11 +272,13 @@ export function LayawayDetailsDialog({
                 <p className="text-sm text-muted-foreground">Sin abonos registrados.</p>
               ) : (
                 <div className="space-y-2">
-                  {details.payments.map((payment: LayawayPayment) => (
+                  {details.payments.map((payment) => (
                     <div key={payment.id} className="flex justify-between items-center text-sm bg-muted/30 p-2 rounded">
                       <div className="flex flex-col">
                         <span>{new Date(payment.createdAt).toLocaleDateString("es-ES")}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{payment.method} - {payment.notes}</span>
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {payment.method} - {payment.notes}
+                        </span>
                       </div>
                       <Badge variant="secondary" className="font-mono">
                         +{formatCurrency(Number(payment.amount))}
