@@ -31,6 +31,7 @@ import {
   cashReconciliations,
 } from "./cash";
 import { providers, purchases, purchaseDetails } from "./purchases";
+import { leads, leadActivities } from "./leads";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -67,6 +68,7 @@ export const productItemsRelations = relations(
 // --- RELACIONES NUEVAS: Clientes y Apartados ---
 export const customersRelations = relations(customers, ({ many }) => ({
   layaways: many(layaways),
+  leads: many(leads),
 }));
 
 export const layawaysRelations = relations(layaways, ({ one, many }) => ({
@@ -286,6 +288,38 @@ export const cashReconciliationsRelations = relations(cashReconciliations, ({ on
   }),
   closedByUser: one(user, {
     fields: [cashReconciliations.closedBy],
+    references: [user.id],
+  }),
+}));
+
+// --- Lead Relations ---
+export const leadsRelations = relations(leads, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [leads.customerId],
+    references: [customers.id],
+  }),
+  product: one(products, {
+    fields: [leads.productId],
+    references: [products.id],
+  }),
+  layaway: one(layaways, {
+    fields: [leads.layawayId],
+    references: [layaways.id],
+  }),
+  createdByUser: one(user, {
+    fields: [leads.createdBy],
+    references: [user.id],
+  }),
+  activities: many(leadActivities),
+}));
+
+export const leadActivitiesRelations = relations(leadActivities, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadActivities.leadId],
+    references: [leads.id],
+  }),
+  createdByUser: one(user, {
+    fields: [leadActivities.createdBy],
     references: [user.id],
   }),
 }));

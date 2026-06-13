@@ -22,6 +22,7 @@ import {
   Wallet,
   ShoppingCart,
   Users,
+  Target,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const operacion = [
   { title: "Catálogo", href: "/catalog", icon: Package },
   { title: "Compras", href: "/purchases", icon: ShoppingCart },
   { title: "Apartados", href: "/layaways", icon: CalendarClock },
+  { title: "Leads", href: "/leads", icon: Target },
   { title: "Peritaje iPhones", href: "/iphone-purchase-checklist", icon: Smartphone },
 ];
 

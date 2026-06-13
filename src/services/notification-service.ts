@@ -7,12 +7,13 @@ import { db } from "@/db";
 import { notifications, layaways, layawaySchedule } from "@/db/schema";
 import { eq, isNull, or, sql, desc, and } from "drizzle-orm";
 
-export type NotificationType = "cuota_por_vencer" | "mora" | "riesgo_rojo";
+export type NotificationType = "cuota_por_vencer" | "mora" | "riesgo_rojo" | "seguimiento_lead";
 export type NotificationSeverity = "info" | "warning" | "danger";
 
 export interface CreateNotificationInput {
   type: NotificationType;
   layawayId?: string;
+  leadId?: string;
   title: string;
   message: string;
   severity: NotificationSeverity;
@@ -34,6 +35,7 @@ export async function createNotification(
     .values({
       type: input.type,
       layawayId: input.layawayId ?? null,
+      leadId: input.leadId ?? null,
       title: input.title,
       message: input.message,
       severity: input.severity,

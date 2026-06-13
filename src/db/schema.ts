@@ -9,3 +9,4 @@ export * from "./schema/relations";
 export * from "./schema/cash";
 export * from "./schema/purchases";
 export * from "./schema/shareholders";
+export * from "./schema/leads";

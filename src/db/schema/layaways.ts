@@ -109,9 +109,11 @@ export const riskHistory = pgTable("risk_history", {
 // --- NOTIFICACIONES IN-APP ---
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
-  // Tipo: 'cuota_por_vencer' | 'mora' | 'riesgo_rojo'
+  // Tipo: 'cuota_por_vencer' | 'mora' | 'riesgo_rojo' | 'seguimiento_lead'
   type: text("type").notNull(),
   layawayId: uuid("layaway_id").references(() => layaways.id),
+  // FK a lead (sin referencia ORM — evita circular import entre layaways ↔ leads)
+  leadId: uuid("lead_id"),
   title: text("title").notNull(),
   message: text("message").notNull(),
   severity: text("severity").notNull(), // 'info' | 'warning' | 'danger'
