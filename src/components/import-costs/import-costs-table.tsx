@@ -99,6 +99,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "purchaseDate",
     header: "Fecha",
+    meta: { mobileLabel: "Fecha" },
     cell: ({ row }) =>
       format(new Date(row.getValue("purchaseDate")), "dd MMM yyyy", {
         locale: es,
@@ -107,6 +108,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "productName",
     header: "Dispositivo",
+    meta: { mobileLabel: "Dispositivo" },
     cell: ({ row }) => {
       const name = row.getValue("productName") as string | null;
       const specs = row.original.specs;
@@ -134,11 +136,13 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "provider",
     header: "Proveedor",
+    meta: { mobileLabel: "Proveedor" },
     cell: ({ row }) => row.getValue("provider") || "—",
   },
   {
     accessorKey: "status",
     header: "Estado",
+    meta: { mobileLabel: "Estado" },
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
@@ -151,6 +155,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "baseUsdCost",
     header: "Costo producto",
+    meta: { mobileLabel: "Costo USD" },
     cell: ({ row }) => (
       <span className="font-mono text-sm">
         {formatUSD(row.getValue("baseUsdCost"))}
@@ -160,6 +165,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "mastercardCommissionPesos",
     header: "Comisión MC",
+    meta: { mobileLabel: "Comisión MC" },
     cell: ({ row }) => (
       <TrmLine
         pesos={row.original.mastercardCommissionPesos}
@@ -170,6 +176,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "productPesos",
     header: "Valor equipo",
+    meta: { mobileLabel: "Valor equipo" },
     cell: ({ row }) => (
       <TrmLine
         pesos={row.original.productPesos}
@@ -180,6 +187,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "casilleroPesos",
     header: "Casillero",
+    meta: { mobileLabel: "Casillero" },
     cell: ({ row }) => (
       <TrmLine
         pesos={row.original.casilleroPesos}
@@ -190,6 +198,7 @@ export const columns: ColumnDef<ImportCostRow>[] = [
   {
     accessorKey: "totalCostPesos",
     header: "Costo total",
+    meta: { mobileLabel: "Costo total" },
     cell: ({ row }) => (
       <span className="font-semibold">
         {formatCOP(row.getValue("totalCostPesos"))}
@@ -222,7 +231,7 @@ export function ImportCostsTable({ data }: ImportCostsTableProps) {
         />
       </div>
       <div className="w-full">
-        <Table>
+        <Table mobileCards>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -244,7 +253,10 @@ export function ImportCostsTable({ data }: ImportCostsTableProps) {
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

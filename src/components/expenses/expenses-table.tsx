@@ -40,6 +40,7 @@ export const columns: ColumnDef<Expense>[] = [
   {
     accessorKey: "date",
     header: "Fecha",
+    meta: { mobileLabel: "Fecha" },
     cell: ({ row }) => {
       return format(new Date(row.getValue("date")), "PPP", { locale: es });
     },
@@ -47,20 +48,24 @@ export const columns: ColumnDef<Expense>[] = [
   {
     accessorKey: "description",
     header: "Descripción",
+    meta: { mobileLabel: "Descripción" },
   },
   {
     accessorKey: "categoryName",
     header: "Categoría",
+    meta: { mobileLabel: "Categoría" },
     cell: ({ row }) => row.getValue("categoryName") || "Sin categoría",
   },
   {
     accessorKey: "userName",
     header: "Usuario",
+    meta: { mobileLabel: "Usuario" },
     cell: ({ row }) => row.getValue("userName") || "Desconocido",
   },
   {
     accessorKey: "paymentMethod",
     header: "Método",
+    meta: { mobileLabel: "Método" },
     cell: ({ row }) => {
       const method = row.getValue("paymentMethod") as string;
       const map: Record<string, string> = {
@@ -74,6 +79,7 @@ export const columns: ColumnDef<Expense>[] = [
   {
     accessorKey: "amount",
     header: "Monto",
+    meta: { mobileLabel: "Monto" },
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("amount"));
       const formatted = new Intl.NumberFormat("es-CO", {
@@ -112,7 +118,7 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
         />
       </div>
       <div className="w-full">
-        <Table>
+        <Table mobileCards>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -139,7 +145,10 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

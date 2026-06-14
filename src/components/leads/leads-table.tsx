@@ -144,8 +144,8 @@ export function LeadsTable({ data }: LeadsTableProps) {
           }
         />
       ) : (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
+        <div className="rounded-md border">
+          <Table mobileCards>
             <TableHeader>
               <TableRow>
                 <TableHead>Prospecto</TableHead>
@@ -160,7 +160,7 @@ export function LeadsTable({ data }: LeadsTableProps) {
             <TableBody>
               {filtered.map((lead) => (
                 <TableRow key={lead.id} className="group">
-                  <TableCell>
+                  <TableCell data-label="Prospecto">
                     <div>
                       <p className="font-medium text-sm">{lead.prospectName}</p>
                       <p className="text-xs text-muted-foreground">
@@ -168,17 +168,17 @@ export function LeadsTable({ data }: LeadsTableProps) {
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm">{lead.productDescription}</TableCell>
-                  <TableCell>
+                  <TableCell data-label="Producto" className="text-sm">{lead.productDescription}</TableCell>
+                  <TableCell data-label="Etapa">
                     <StageBadge stage={lead.stage} />
                   </TableCell>
-                  <TableCell className="text-right text-sm font-medium text-primary">
+                  <TableCell data-label="Precio" className="text-right text-sm font-medium text-primary">
                     {formatCurrency(lead.salePrice)}
                   </TableCell>
-                  <TableCell className="text-right text-sm text-green-600 dark:text-green-400">
+                  <TableCell data-label="Margen" className="text-right text-sm text-green-600 dark:text-green-400">
                     {formatCurrency(lead.margin)}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell data-label="Sin contacto" className="text-center">
                     {["ganado", "perdido"].includes(lead.stage) ? (
                       <span className="text-xs text-muted-foreground">—</span>
                     ) : (
@@ -196,12 +196,14 @@ export function LeadsTable({ data }: LeadsTableProps) {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label="">
+                    {/* Always visible on touch; fade on hover on desktop */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 h-7 w-7"
+                      className="sm:opacity-0 sm:group-hover:opacity-100 h-7 w-7"
                       onClick={() => handleViewDetail(lead)}
+                      aria-label={`Ver detalle de ${lead.prospectName}`}
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </Button>

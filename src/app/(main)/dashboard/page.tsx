@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     }).format(amount);
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1480px] mx-auto">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

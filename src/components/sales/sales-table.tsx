@@ -51,6 +51,7 @@ export function SalesTable({ data }: SalesTableProps) {
       {
         accessorKey: "date",
         header: "Fecha",
+        meta: { mobileLabel: "Fecha" },
         cell: ({ row }) => {
           return format(new Date(row.getValue("date")), "PPP p", {
             locale: es,
@@ -60,6 +61,7 @@ export function SalesTable({ data }: SalesTableProps) {
       {
         accessorKey: "id",
         header: "ID Venta",
+        meta: { mobileLabel: "ID" },
         cell: ({ row }) => (
           <span className="font-mono text-xs">{row.getValue("id")}</span>
         ),
@@ -67,11 +69,13 @@ export function SalesTable({ data }: SalesTableProps) {
       {
         accessorKey: "userName",
         header: "Vendedor",
+        meta: { mobileLabel: "Vendedor" },
         cell: ({ row }) => row.getValue("userName") || "Sistema",
       },
       {
         accessorKey: "status",
         header: "Estado",
+        meta: { mobileLabel: "Estado" },
         cell: ({ row }) => {
           const status = row.getValue("status") as string;
           return (
@@ -86,6 +90,7 @@ export function SalesTable({ data }: SalesTableProps) {
       {
         accessorKey: "totalAmount",
         header: "Total",
+        meta: { mobileLabel: "Total" },
         cell: ({ row }) => {
           const amount = parseFloat(row.getValue("totalAmount"));
           const formatted = new Intl.NumberFormat("es-CO", {
@@ -99,6 +104,7 @@ export function SalesTable({ data }: SalesTableProps) {
       {
         id: "actions",
         header: "Acciones",
+        meta: { mobileLabel: "" },
         cell: ({ row }) => {
           return (
             <Button
@@ -138,7 +144,7 @@ export function SalesTable({ data }: SalesTableProps) {
         />
       </div>
       <div className="w-full">
-        <Table>
+        <Table mobileCards>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -165,7 +171,10 @@ export function SalesTable({ data }: SalesTableProps) {
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

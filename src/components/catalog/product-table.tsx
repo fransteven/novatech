@@ -34,6 +34,7 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className?: string;
+    mobileLabel?: string;
   }
 }
 
@@ -180,6 +181,7 @@ export function ProductTable({ data }: ProductTableProps) {
     {
       accessorKey: "name",
       header: "Producto",
+      meta: { mobileLabel: "Producto" },
       cell: ({ row }) => {
         const item = row.original;
         const catName = item.categoryName || "";
@@ -292,7 +294,7 @@ export function ProductTable({ data }: ProductTableProps) {
     {
       accessorKey: "price",
       header: () => <span className="w-full text-right block">Precio</span>,
-      meta: { className: "text-right" },
+      meta: { className: "text-right", mobileLabel: "Precio" },
       cell: ({ row }) => {
         const price = parseFloat(row.getValue("price"));
         return (
@@ -305,7 +307,7 @@ export function ProductTable({ data }: ProductTableProps) {
     {
       accessorKey: "stock",
       header: () => <span className="w-full text-right block">Stock</span>,
-      meta: { className: "text-right hidden sm:table-cell" },
+      meta: { className: "text-right hidden sm:table-cell", mobileLabel: "Stock" },
       cell: ({ row }) => {
         const stock = (row.getValue("stock") as number) || 0;
         const pct = Math.min(100, (stock / maxStock) * 100);
@@ -335,7 +337,7 @@ export function ProductTable({ data }: ProductTableProps) {
     },
     {
       id: "actions",
-      meta: { className: "w-12" },
+      meta: { className: "w-12", mobileLabel: "" },
       header: () => <span className="sr-only">Acciones</span>,
       cell: ({ row }) => {
         const product = row.original;
@@ -509,8 +511,8 @@ export function ProductTable({ data }: ProductTableProps) {
         className="bg-card border border-border border-t-0 rounded-b-[14px] overflow-hidden"
         style={{ boxShadow: "var(--tf-shadow-sm)" }}
       >
-        <div className="overflow-x-auto">
-          <Table className="w-full">
+        <div className="md:overflow-x-auto">
+          <Table mobileCards className="w-full">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                 {table.getHeaderGroups().map((headerGroup) =>
@@ -548,6 +550,7 @@ export function ProductTable({ data }: ProductTableProps) {
                           "px-4 py-3",
                           cell.column.columnDef.meta?.className,
                         )}
+                        data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>

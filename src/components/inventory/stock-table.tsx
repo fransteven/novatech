@@ -42,6 +42,7 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className?: string;
+    mobileLabel?: string;
   }
 }
 
@@ -197,7 +198,7 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
       {
         accessorKey: "sku",
         header: "Código / SKU",
-        meta: { className: "w-[140px]" },
+        meta: { className: "w-[140px]", mobileLabel: "SKU" },
         cell: ({ row }) => (
           <span className="mono text-[12.5px] text-[color:var(--tf-fg-muted)]">
             {row.original.sku || "—"}
@@ -207,6 +208,7 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
       {
         accessorKey: "productName",
         header: "Producto",
+        meta: { mobileLabel: "Producto" },
         cell: ({ row }) => {
           const item = row.original;
           const attrs = item.attributes as Record<string, string> | null;
@@ -235,7 +237,7 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
       {
         accessorKey: "stockTotal",
         header: "Stock",
-        meta: { className: "w-[160px]" },
+        meta: { className: "w-[160px]", mobileLabel: "Stock" },
         cell: ({ row }) => {
           const qty = row.getValue("stockTotal") as number;
           const s: StockStatus = qty <= 0 ? "out" : row.original.status === "low" ? "low" : "normal";
@@ -260,7 +262,7 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
       {
         accessorKey: "status",
         header: "Estado",
-        meta: { className: "w-[110px]" },
+        meta: { className: "w-[110px]", mobileLabel: "Estado" },
         cell: ({ row }) => (
           <StatusBadge status={row.getValue("status")} stock={row.original.stockTotal} />
         ),
@@ -268,14 +270,14 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
       {
         accessorKey: "avgCost",
         header: "Costo Prom.",
-        meta: { className: "w-[120px] hidden md:table-cell" },
+        meta: { className: "w-[120px] hidden md:table-cell", mobileLabel: "Costo Prom." },
         cell: ({ row }) => (
           <span className="mono text-[13px] font-medium">{formatCurrency(row.getValue("avgCost"))}</span>
         ),
       },
       {
         id: "actions",
-        meta: { className: "w-[50px]" },
+        meta: { className: "w-[50px]", mobileLabel: "" },
         header: () => <span className="sr-only">Acciones</span>,
         cell: ({ row }) => (
           <div className="flex justify-end">
@@ -351,8 +353,8 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
 
       {/* Table */}
       <div className="bg-card border border-border border-t-0 rounded-[0_0_10px_10px] overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table className="w-full" style={{ fontSize: "13.5px", borderCollapse: "collapse" }}>
+        <div className="md:overflow-x-auto">
+          <Table mobileCards className="w-full" style={{ fontSize: "13.5px", borderCollapse: "collapse" }}>
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted border-b border-border">
                 {table.getHeaderGroups().map((hg) =>
@@ -396,6 +398,7 @@ export function StockTable({ stock = [], searchSlot }: StockTableProps) {
                       <TableCell
                         key={cell.id}
                         className={cn("px-4 py-[14px] align-middle", cell.column.columnDef.meta?.className)}
+                        data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>

@@ -62,6 +62,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "occurredAt",
     header: "Fecha",
+    meta: { mobileLabel: "Fecha" },
     cell: ({ row }) => {
       const date = new Date(row.original.occurredAt);
       return (
@@ -78,6 +79,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "accountName",
     header: "Cuenta",
+    meta: { mobileLabel: "Cuenta" },
     cell: ({ row }) => (
       <span className="text-[13px] text-foreground">{row.original.accountName}</span>
     ),
@@ -85,6 +87,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "direction",
     header: "Tipo",
+    meta: { mobileLabel: "Tipo" },
     cell: ({ row }) => {
       const isIn = row.original.direction === "in";
       return (
@@ -115,6 +118,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "sourceType",
     header: "Origen",
+    meta: { mobileLabel: "Origen" },
     cell: ({ row }) => {
       const src = row.original.sourceType;
       return (
@@ -127,6 +131,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "amount",
     header: () => <span className="block w-full text-right">Monto</span>,
+    meta: { mobileLabel: "Monto" },
     cell: ({ row }) => {
       const isIn = row.original.direction === "in";
       return (
@@ -145,6 +150,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "paymentMethod",
     header: "Método",
+    meta: { mobileLabel: "Método" },
     cell: ({ row }) => {
       const method = row.original.paymentMethod;
       return (
@@ -157,6 +163,7 @@ const columns: ColumnDef<MovementRow>[] = [
   {
     accessorKey: "referenceCode",
     header: "Referencia",
+    meta: { mobileLabel: "Referencia" },
     cell: ({ row }) => (
       <span className="font-mono text-[12.5px] text-muted-foreground">
         {row.original.referenceCode ?? "—"}
@@ -240,7 +247,7 @@ export function CashMovementsTable({
             value={selectedAccountId}
             onValueChange={setSelectedAccountId}
           >
-            <SelectTrigger className="h-8 w-[160px] text-[13px]">
+            <SelectTrigger className="h-8 w-full sm:w-[160px] text-[13px]">
               <SelectValue placeholder="Todas las cuentas" />
             </SelectTrigger>
             <SelectContent>
@@ -260,7 +267,7 @@ export function CashMovementsTable({
               placeholder="Buscar..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-8 h-8 w-[180px] text-[13px]"
+              className="pl-8 h-8 w-full sm:w-[180px] text-[13px]"
             />
           </div>
         </div>
@@ -268,8 +275,8 @@ export function CashMovementsTable({
 
       {/* Table */}
       <div className="rounded-[0_0_10px_10px] overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
+        <div className="md:overflow-x-auto">
+          <Table mobileCards>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                 {table.getHeaderGroups().map((hg) =>
@@ -309,7 +316,11 @@ export function CashMovementsTable({
                     style={{ animationDelay: `${i * 18}ms` }}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-4 py-3">
+                      <TableCell
+                        key={cell.id}
+                        className="px-4 py-3"
+                        data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

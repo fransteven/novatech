@@ -109,12 +109,14 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         accessorKey: "createdAt",
         header: "Fecha",
+        meta: { mobileLabel: "Fecha" },
         cell: ({ row }) =>
           new Date(row.getValue("createdAt")).toLocaleDateString("es-ES"),
       },
       {
         accessorKey: "customerName",
         header: "Cliente",
+        meta: { mobileLabel: "Cliente" },
         cell: ({ row }) => {
           const layaway = row.original;
           return (
@@ -131,6 +133,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         id: "type",
         header: "Modalidad",
+        meta: { mobileLabel: "Modalidad" },
         cell: ({ row }) => {
           const l = row.original;
           return l.type === "credito" ? (
@@ -145,6 +148,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         id: "effectiveStatus",
         header: "Estado",
+        meta: { mobileLabel: "Estado" },
         cell: ({ row }) => (
           <StatusBadge status={getEffectiveStatus(row.original)} />
         ),
@@ -152,6 +156,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         id: "riskLevel",
         header: "Riesgo",
+        meta: { mobileLabel: "Riesgo" },
         cell: ({ row }) => {
           const l = row.original;
           if (l.type !== "credito" || !l.riskLevel) return <span className="text-muted-foreground text-xs">—</span>;
@@ -166,6 +171,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         accessorKey: "totalAmount",
         header: "Total",
+        meta: { mobileLabel: "Total" },
         cell: ({ row }) => (
           <div className="text-right font-medium">
             {formatCurrency(row.getValue("totalAmount"))}
@@ -175,6 +181,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         id: "saldoInsoluto",
         header: "Saldo insoluto",
+        meta: { mobileLabel: "S. insoluto" },
         cell: ({ row }) => {
           const l = row.original;
           if (l.type !== "credito") return <span className="text-muted-foreground text-xs text-right block">—</span>;
@@ -188,6 +195,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         accessorKey: "balance",
         header: "Saldo total",
+        meta: { mobileLabel: "Saldo" },
         cell: ({ row }) => (
           <div className="text-right text-muted-foreground">
             {formatCurrency(row.getValue("balance"))}
@@ -197,6 +205,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
       {
         id: "actions",
         header: "Acciones",
+        meta: { mobileLabel: "" },
         cell: ({ row }) => {
           const layaway = row.original;
           const canPay = layaway.status === "active" && layaway.balance > 0;
@@ -297,8 +306,8 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           </span>
         </div>
 
-        <div className="w-full overflow-x-auto">
-          <Table>
+        <div className="w-full md:overflow-x-auto">
+          <Table mobileCards>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -317,7 +326,10 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        data-label={cell.column.columnDef.meta?.mobileLabel ?? ""}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}

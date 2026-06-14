@@ -4,11 +4,19 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  mobileCards,
+  ...props
+}: React.ComponentProps<"table"> & { mobileCards?: boolean }) {
   return (
     <div
       data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto rounded-xl border bg-card shadow-sm", className)}
+      className={cn(
+        "relative w-full overflow-x-auto rounded-xl border bg-card shadow-sm",
+        mobileCards && "tf-table-cards",
+        className,
+      )}
     >
       <table
         data-slot="table"

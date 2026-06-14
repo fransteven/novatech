@@ -29,8 +29,8 @@ export function MonthlyProfitsTable({ data }: MonthlyProfitsTableProps) {
   );
 
   return (
-    <div className="rounded-[12px] border border-border overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="rounded-[12px] border border-border overflow-x-auto">
+      <table className="w-full text-sm min-w-[560px]">
         <thead className="bg-muted/50">
           <tr className="border-b border-border">
             <th className="px-4 py-3 text-left font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
