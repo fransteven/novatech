@@ -44,7 +44,7 @@ export async function createLead(data: CreateLeadInput, userId?: string) {
         productDescription: data.productDescription,
         costPrice: toDbString(data.costPrice),
         salePrice: toDbString(data.salePrice),
-        interestRate: toDbString(data.interestRate),
+        interestRate: data.interestRate.toFixed(4),
         termMonths: data.termMonths,
         customerId: data.customerId ?? null,
         productId: data.productId ?? null,
