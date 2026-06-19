@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const addContributionSchema = z.object({
+  shareholderId: z.string().uuid("ID de accionista inválido"),
+  amount: z.coerce.number().positive("El aporte debe ser mayor a 0"),
+  occurredAt: z.coerce.date().optional(),
+  notes: z.string().optional(),
+});
+
+export type AddContributionInput = z.infer<typeof addContributionSchema>;
+
 export const createDistributionSchema = z.object({
   periodYear: z
     .number()

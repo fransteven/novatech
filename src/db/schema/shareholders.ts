@@ -48,3 +48,15 @@ export const shareholderDistributionItems = pgTable(
     cashMovementId: uuid("cash_movement_id"),
   },
 );
+
+// Capital contributions per shareholder (auditable ledger)
+export const shareholderContributions = pgTable("shareholder_contributions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  shareholderId: uuid("shareholder_id")
+    .references(() => shareholders.id, { onDelete: "cascade" })
+    .notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  notes: text("notes"),
+  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

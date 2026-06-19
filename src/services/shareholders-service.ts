@@ -3,15 +3,56 @@ import {
   shareholders,
   shareholderDistributions,
   shareholderDistributionItems,
+  shareholderContributions,
 } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
+import { money, toDbString } from "@/lib/money";
+import type { AddContributionInput } from "@/lib/validators/shareholder-validator";
 
 export const getShareholders = async () => {
   return await db
+    .select({
+      id: shareholders.id,
+      fullName: shareholders.fullName,
+      email: shareholders.email,
+      ownershipPct: shareholders.ownershipPct,
+      isActive: shareholders.isActive,
+      createdAt: shareholders.createdAt,
+      totalContributed: sql<number>`COALESCE(SUM(CAST(${shareholderContributions.amount} AS DECIMAL)), 0)`
+        .mapWith(Number),
+    })
+    .from(shareholders)
+    .leftJoin(
+      shareholderContributions,
+      eq(shareholderContributions.shareholderId, shareholders.id),
+    )
+    .where(eq(shareholders.isActive, true))
+    .groupBy(shareholders.id)
+    .orderBy(shareholders.fullName);
+};
+
+export const addContribution = async (data: AddContributionInput) => {
+  const [shareholder] = await db
     .select()
     .from(shareholders)
-    .where(eq(shareholders.isActive, true))
-    .orderBy(shareholders.fullName);
+    .where(eq(shareholders.id, data.shareholderId));
+
+  if (!shareholder) throw new Error("Accionista no encontrado");
+  if (!shareholder.isActive) throw new Error("El accionista no está activo");
+
+  const amount = money(data.amount);
+
+  const [contribution] = await db
+    .insert(shareholderContributions)
+    .values({
+      shareholderId: data.shareholderId,
+      amount: toDbString(amount),
+      notes: data.notes,
+      occurredAt: data.occurredAt ?? new Date(),
+    })
+    .returning();
+
+  return contribution;
 };
 
 export const getDistributions = async () => {

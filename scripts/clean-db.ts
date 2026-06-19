@@ -24,6 +24,19 @@ async function main() {
     );
 
     console.log("✅ Accionistas seeded: Juan Diego Torres y Frankly Estiven Chindicue Muñoz (50% c/u).");
+
+    // Seed historical capital contributions
+    await db.execute(
+      sql`
+        INSERT INTO shareholder_contributions (shareholder_id, amount, notes, occurred_at)
+        SELECT id, 23142000, 'Aporte inicial', NOW() FROM shareholders WHERE full_name = 'Frankly Estiven Chindicue Muñoz'
+        UNION ALL
+        SELECT id,  4000000, 'Aporte inicial', NOW() FROM shareholders WHERE full_name = 'Juan Diego Torres'
+        ON CONFLICT DO NOTHING
+      `,
+    );
+
+    console.log("✅ Aportes iniciales seeded: Frankly 23.142.000 — Juan Diego 4.000.000.");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error durante la limpieza de la base de datos:", error);

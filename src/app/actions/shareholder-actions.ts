@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import * as shareholdersService from "@/services/shareholders-service";
-import { createDistributionSchema } from "@/lib/validators/shareholder-validator";
+import {
+  createDistributionSchema,
+  addContributionSchema,
+} from "@/lib/validators/shareholder-validator";
 
 export async function getShareholdersAction() {
   try {
@@ -40,6 +43,25 @@ export async function createDistributionAction(input: unknown) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create distribution",
+    };
+  }
+}
+
+export async function addContributionAction(input: unknown) {
+  const result = addContributionSchema.safeParse(input);
+  if (!result.success) {
+    return { success: false, error: result.error.issues[0].message };
+  }
+
+  try {
+    const data = await shareholdersService.addContribution(result.data);
+    revalidatePath("/accionistas");
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error adding contribution:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error al registrar aporte",
     };
   }
 }
