@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Users,
   Target,
+  HandCoins,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const analisis = [
   { title: "Accionistas", href: "/accionistas", icon: Users },
   { title: "Gastos", href: "/expenses", icon: Banknote },
   { title: "Importaciones", href: "/import-costs", icon: PackageSearch },
+  { title: "Acreedores", href: "/acreedores", icon: HandCoins },
 ];
 
 type NavItem = { title: string; href: string; icon: React.ElementType };

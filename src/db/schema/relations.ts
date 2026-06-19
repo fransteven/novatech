@@ -4,6 +4,7 @@ import {
   shareholders,
   shareholderDistributions,
   shareholderDistributionItems,
+  shareholderContributions,
 } from "./shareholders";
 import {
   categories,
@@ -32,6 +33,7 @@ import {
 } from "./cash";
 import { providers, purchases, purchaseDetails } from "./purchases";
 import { leads, leadActivities } from "./leads";
+import { creditors, creditorMovements } from "./creditors";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -324,9 +326,44 @@ export const leadActivitiesRelations = relations(leadActivities, ({ one }) => ({
   }),
 }));
 
+// --- Creditors Relations ---
+export const creditorsRelations = relations(creditors, ({ one, many }) => ({
+  movements: many(creditorMovements),
+  createdByUser: one(user, {
+    fields: [creditors.createdBy],
+    references: [user.id],
+  }),
+}));
+
+export const creditorMovementsRelations = relations(creditorMovements, ({ one }) => ({
+  creditor: one(creditors, {
+    fields: [creditorMovements.creditorId],
+    references: [creditors.id],
+  }),
+  cashMovement: one(cashMovements, {
+    fields: [creditorMovements.cashMovementId],
+    references: [cashMovements.id],
+  }),
+  createdByUser: one(user, {
+    fields: [creditorMovements.createdBy],
+    references: [user.id],
+  }),
+}));
+
 export const shareholdersRelations = relations(shareholders, ({ many }) => ({
   distributionItems: many(shareholderDistributionItems),
+  contributions: many(shareholderContributions),
 }));
+
+export const shareholderContributionsRelations = relations(
+  shareholderContributions,
+  ({ one }) => ({
+    shareholder: one(shareholders, {
+      fields: [shareholderContributions.shareholderId],
+      references: [shareholders.id],
+    }),
+  }),
+);
 
 export const shareholderDistributionsRelations = relations(
   shareholderDistributions,
