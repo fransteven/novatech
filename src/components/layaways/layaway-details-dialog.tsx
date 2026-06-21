@@ -116,7 +116,7 @@ export function LayawayDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={isCredit ? "sm:max-w-[720px]" : "sm:max-w-[500px]"}>
+      <DialogContent className={`max-w-[95vw] p-4 sm:p-6 ${isCredit ? "sm:max-w-[720px]" : "sm:max-w-[500px]"}`}>
         <DialogHeader>
           <DialogTitle>
             {isCredit ? "Detalle del Crédito" : "Detalle del Apartado"}
@@ -127,7 +127,7 @@ export function LayawayDetailsDialog({
         {loading ? (
           <div className="py-6 text-center text-muted-foreground">Cargando...</div>
         ) : isCredit ? (
-          <Tabs defaultValue="cronograma" className="w-full">
+          <Tabs defaultValue="cronograma" className="w-full min-w-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
               <TabsTrigger value="pagos">Pagos</TabsTrigger>
@@ -154,33 +154,33 @@ export function LayawayDetailsDialog({
                   {details.schedule.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin cronograma generado.</p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs border-collapse">
+                    <div className="overflow-x-auto rounded-md border">
+                      <table className="w-full min-w-[640px] text-xs border-collapse">
                         <thead>
-                          <tr className="border-b text-muted-foreground">
-                            <th className="text-left py-1.5 pr-2">#</th>
-                            <th className="text-left py-1.5 pr-2">Vencimiento</th>
-                            <th className="text-right py-1.5 pr-2">Capital</th>
-                            <th className="text-right py-1.5 pr-2">Interés</th>
-                            <th className="text-right py-1.5 pr-2">Total cuota</th>
-                            <th className="text-right py-1.5 pr-2">Saldo</th>
-                            <th className="text-center py-1.5">Estado</th>
+                          <tr className="border-b text-muted-foreground bg-muted/40">
+                            <th className="text-left py-1.5 px-2 whitespace-nowrap">#</th>
+                            <th className="text-left py-1.5 px-2 whitespace-nowrap">Vencimiento</th>
+                            <th className="text-right py-1.5 px-2 whitespace-nowrap">Capital</th>
+                            <th className="text-right py-1.5 px-2 whitespace-nowrap">Interés</th>
+                            <th className="text-right py-1.5 px-2 whitespace-nowrap">Cuota</th>
+                            <th className="text-right py-1.5 px-2 whitespace-nowrap">Saldo</th>
+                            <th className="text-center py-1.5 px-2 whitespace-nowrap">Estado</th>
                           </tr>
                         </thead>
                         <tbody>
                           {details.schedule.map((entry) => (
                             <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
-                              <td className="py-1.5 pr-2 font-medium">{entry.number}</td>
-                              <td className="py-1.5 pr-2 text-muted-foreground">
+                              <td className="py-1.5 px-2 font-medium">{entry.number}</td>
+                              <td className="py-1.5 px-2 text-muted-foreground whitespace-nowrap">
                                 {new Date(entry.dueDate).toLocaleDateString("es-CO", {
                                   day: "2-digit", month: "short", year: "numeric",
                                 })}
                               </td>
-                              <td className="py-1.5 pr-2 text-right">{formatCurrency(Number(entry.principal))}</td>
-                              <td className="py-1.5 pr-2 text-right text-muted-foreground">{formatCurrency(Number(entry.interest))}</td>
-                              <td className="py-1.5 pr-2 text-right font-medium">{formatCurrency(Number(entry.totalAmount))}</td>
-                              <td className="py-1.5 pr-2 text-right">{formatCurrency(Number(entry.remainingBalance))}</td>
-                              <td className="py-1.5 text-center">
+                              <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.principal))}</td>
+                              <td className="py-1.5 px-2 text-right text-muted-foreground whitespace-nowrap">{formatCurrency(Number(entry.interest))}</td>
+                              <td className="py-1.5 px-2 text-right font-medium whitespace-nowrap">{formatCurrency(Number(entry.totalAmount))}</td>
+                              <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.remainingBalance))}</td>
+                              <td className="py-1.5 px-2 text-center">
                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE_STYLES[entry.status] ?? ""}`}>
                                   {entry.status}
                                 </span>

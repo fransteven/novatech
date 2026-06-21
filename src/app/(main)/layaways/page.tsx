@@ -24,7 +24,7 @@ export default async function LayawaysPage() {
 
   if (!response.success) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Apartados y Créditos</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />

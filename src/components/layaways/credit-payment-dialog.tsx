@@ -136,7 +136,7 @@ export function CreditPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="p-4 sm:p-6 sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Registrar Pago de Crédito</DialogTitle>
           <DialogDescription>
@@ -150,9 +150,9 @@ export function CreditPaymentDialog({
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="cuota">Cuota normal</TabsTrigger>
-            <TabsTrigger value="solo_interes">Solo interés</TabsTrigger>
-            <TabsTrigger value="abono_capital">Abono capital</TabsTrigger>
+            <TabsTrigger value="cuota" className="text-xs sm:text-sm">Cuota normal</TabsTrigger>
+            <TabsTrigger value="solo_interes" className="text-xs sm:text-sm">Solo interés</TabsTrigger>
+            <TabsTrigger value="abono_capital" className="text-xs sm:text-sm">Abono capital</TabsTrigger>
           </TabsList>
 
           {/* Cuota normal */}
@@ -160,8 +160,8 @@ export function CreditPaymentDialog({
             <p className="text-sm text-muted-foreground">
               Registra el pago completo de una cuota del cronograma ({formatCurrency(installmentAmount)}).
             </p>
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-right">Número de cuota</Label>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Número de cuota</Label>
               <Input
                 type="number"
                 min="1"
@@ -179,8 +179,8 @@ export function CreditPaymentDialog({
               <Info className="h-4 w-4 shrink-0 mt-0.5" />
               <span>La cuota <strong>NO avanza</strong> — el cliente solo paga el interés del periodo. El próximo mes vuelve a deber capital + interés de esa misma cuota.</span>
             </div>
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-right">Número de cuota</Label>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Número de cuota</Label>
               <Input
                 type="number"
                 min="1"
@@ -190,8 +190,8 @@ export function CreditPaymentDialog({
                 className="flex-1"
               />
             </div>
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-right">Monto interés</Label>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Monto interés</Label>
               <div className="relative flex-1">
                 <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -211,8 +211,8 @@ export function CreditPaymentDialog({
             <p className="text-sm text-muted-foreground">
               Reduce el saldo insoluto y regenera el cronograma.
             </p>
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-right">Monto abono</Label>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Monto abono</Label>
               <div className="relative flex-1">
                 <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -226,8 +226,8 @@ export function CreditPaymentDialog({
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Label className="w-32 text-right">Estrategia</Label>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Estrategia</Label>
               <Select value={capitalStrategy} onValueChange={(v) => setCapitalStrategy(v as typeof capitalStrategy)}>
                 <SelectTrigger className="flex-1">
                   <SelectValue />
@@ -247,8 +247,8 @@ export function CreditPaymentDialog({
 
         {/* Campos comunes */}
         <div className="space-y-4 pt-2 border-t">
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-right">Método</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label className="sm:w-32 sm:text-right">Método</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger className="flex-1">
                 <SelectValue />
@@ -260,8 +260,8 @@ export function CreditPaymentDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-right">Cuenta</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label className="sm:w-32 sm:text-right">Cuenta</Label>
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Selecciona una cuenta..." />
@@ -275,8 +275,8 @@ export function CreditPaymentDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-32 text-right">Referencia</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label className="sm:w-32 sm:text-right">Referencia</Label>
             <Input
               placeholder="Opcional"
               value={referenceCode}

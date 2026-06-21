@@ -92,7 +92,7 @@ export function LayawayPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent className="p-4 sm:p-6 sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Registrar Abono</DialogTitle>
           <DialogDescription>
@@ -101,8 +101,8 @@ export function LayawayPaymentDialog({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="flex items-center gap-4">
-            <Label htmlFor="amount" className="w-24 text-right">Monto a Pagar</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label htmlFor="amount" className="sm:w-24 sm:text-right">Monto a Pagar</Label>
             <div className="relative flex-1">
               <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -116,8 +116,8 @@ export function LayawayPaymentDialog({
               />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-24 text-right">Método</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label className="sm:w-24 sm:text-right">Método</Label>
             <Select value={method} onValueChange={setMethod}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Seleccionar..." />
@@ -129,8 +129,8 @@ export function LayawayPaymentDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-4">
-            <Label className="w-24 text-right">Cuenta</Label>
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+            <Label className="sm:w-24 sm:text-right">Cuenta</Label>
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Selecciona una cuenta..." />
