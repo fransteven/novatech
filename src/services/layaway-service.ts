@@ -572,8 +572,10 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
     if (!lay) throw new Error("Crédito no encontrado");
     if (lay.type !== "credito") throw new Error("Este apartado no es un crédito con interés");
 
-    // 2. Validar estado (máquina de estados)
-    assertTransition(lay.status as LayawayStatus, "active");
+    // 2. Validar que el crédito esté activo
+    if (lay.status !== "active") {
+      throw new Error(`El crédito no está activo (Estado: ${lay.status})`);
+    }
 
     // 3. Idempotencia
     const existing = await tx
