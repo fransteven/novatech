@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { formatCurrency } from "@/lib/formatters";
-import { registerCreditPaymentAction } from "@/app/actions/layaway-actions";
+import { registerCreditPaymentAction, getLayawayDetailsAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
 import { DollarSign, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,13 @@ interface CreditPaymentDialogProps {
   accounts: CashAccount[];
 }
 
+interface ScheduleRow {
+  number: number;
+  totalAmount: string | number;
+  paidAmount: string | number;
+  status: string;
+}
+
 export function CreditPaymentDialog({
   layawayId,
   outstandingPrincipal,
@@ -48,7 +55,7 @@ export function CreditPaymentDialog({
   accounts,
 }: CreditPaymentDialogProps) {
   const [processing, setProcessing] = useState(false);
-  const [tab, setTab] = useState<"cuota" | "solo_interes" | "abono_capital">("cuota");
+  const [tab, setTab] = useState<"cuota" | "solo_interes" | "abono_capital" | "abono_cuota">("cuota");
 
   // Cuota normal
   const [scheduleNumber, setScheduleNumber] = useState<number | "">("");
@@ -61,6 +68,11 @@ export function CreditPaymentDialog({
   const [capitalAmount, setCapitalAmount] = useState<number | "">("");
   const [capitalStrategy, setCapitalStrategy] = useState<"reduce_term" | "reduce_installment">("reduce_term");
 
+  // Abono a una cuota (parcial, no cambia el cronograma)
+  const [schedule, setSchedule] = useState<ScheduleRow[]>([]);
+  const [abonoCuotaNum, setAbonoCuotaNum] = useState<number | "">("");
+  const [abonoCuotaAmount, setAbonoCuotaAmount] = useState<number | "">("");
+
   // Comunes
   const [method, setMethod] = useState("cash");
   const [accountId, setAccountId] = useState("");
@@ -72,10 +84,34 @@ export function CreditPaymentDialog({
     setSoloInteresAmount("");
     setCapitalAmount("");
     setCapitalStrategy("reduce_term");
+    setAbonoCuotaNum("");
+    setAbonoCuotaAmount("");
     setMethod("cash");
     setAccountId("");
     setReferenceCode("");
   };
+
+  // Al abrir el diálogo o entrar a la tab "Abono cuota", carga el cronograma
+  // y sugiere por defecto la primera cuota pendiente (la "siguiente cuota").
+  useEffect(() => {
+    if (!open || !layawayId || tab !== "abono_cuota") return;
+    let active = true;
+    getLayawayDetailsAction(layawayId).then((res) => {
+      if (!active || !res.success || !res.data) return;
+      const rows = (res.data.schedule ?? []) as ScheduleRow[];
+      setSchedule(rows);
+      const nextPending = rows.find((r) => r.status !== "pagada");
+      if (nextPending && !abonoCuotaNum) setAbonoCuotaNum(nextPending.number);
+    });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, layawayId, tab]);
+
+  const selectedCuota = schedule.find((r) => r.number === abonoCuotaNum);
+  const cuotaTotal = selectedCuota ? Number(selectedCuota.totalAmount) : 0;
+  const cuotaPaid = selectedCuota ? Number(selectedCuota.paidAmount) : 0;
+  const cuotaRemaining = Math.max(cuotaTotal - cuotaPaid, 0);
+  const cuotaAfterAbono = Math.max(cuotaRemaining - Number(abonoCuotaAmount || 0), 0);
 
   const handleSubmit = async () => {
     if (!layawayId) return;
@@ -99,6 +135,14 @@ export function CreditPaymentDialog({
         return;
       }
       payload = { ...payload, amount: Number(soloInteresAmount), scheduleNumber: Number(soloInteresScheduleNum) };
+    } else if (tab === "abono_cuota") {
+      if (!abonoCuotaNum) { toast.error("Selecciona el número de cuota"); return; }
+      if (!abonoCuotaAmount || Number(abonoCuotaAmount) <= 0) { toast.error("Ingresa el monto del abono"); return; }
+      if (Number(abonoCuotaAmount) > cuotaRemaining) {
+        toast.error(`El abono no puede superar el saldo de la cuota (${formatCurrency(cuotaRemaining)})`);
+        return;
+      }
+      payload = { ...payload, amount: Number(abonoCuotaAmount), scheduleNumber: Number(abonoCuotaNum) };
     } else if (tab === "abono_capital") {
       if (!capitalAmount || Number(capitalAmount) <= 0) { toast.error("Ingresa el monto del abono"); return; }
       if (Number(capitalAmount) >= outstandingPrincipal) {
@@ -119,6 +163,10 @@ export function CreditPaymentDialog({
             ? "Cuota registrada exitosamente"
             : tab === "solo_interes"
             ? "Pago de solo interés registrado. La cuota sigue pendiente."
+            : tab === "abono_cuota"
+            ? cuotaAfterAbono <= 0
+              ? "Abono registrado. Cuota completada."
+              : `Abono registrado. Falta ${formatCurrency(cuotaAfterAbono)} para completar la cuota.`
             : "Abono a capital aplicado. Cronograma regenerado."
         );
         resetForm();
@@ -149,9 +197,10 @@ export function CreditPaymentDialog({
         </DialogHeader>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="cuota" className="text-xs sm:text-sm">Cuota normal</TabsTrigger>
             <TabsTrigger value="solo_interes" className="text-xs sm:text-sm">Solo interés</TabsTrigger>
+            <TabsTrigger value="abono_cuota" className="text-xs sm:text-sm">Abono cuota</TabsTrigger>
             <TabsTrigger value="abono_capital" className="text-xs sm:text-sm">Abono capital</TabsTrigger>
           </TabsList>
 
@@ -204,6 +253,58 @@ export function CreditPaymentDialog({
                 />
               </div>
             </div>
+          </TabsContent>
+
+          {/* Abono a una cuota (parcial, no cambia el cronograma) */}
+          <TabsContent value="abono_cuota" className="space-y-4 pt-3">
+            <p className="text-sm text-muted-foreground">
+              Abona una parte de una cuota pendiente. El cronograma <strong>no cambia</strong>;
+              la cuota sigue pendiente hasta completar su valor total.
+            </p>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Número de cuota</Label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="Ej: 1"
+                value={abonoCuotaNum}
+                onChange={(e) => setAbonoCuotaNum(Number(e.target.value) || "")}
+                className="flex-1"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <Label className="sm:w-32 sm:text-right">Monto a abonar</Label>
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  min="1"
+                  max={cuotaRemaining || undefined}
+                  placeholder="Monto a abonar"
+                  value={abonoCuotaAmount}
+                  onChange={(e) => setAbonoCuotaAmount(Number(e.target.value) || "")}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            {selectedCuota && (
+              <div className="text-sm bg-muted/30 p-2 rounded space-y-0.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cuota total</span>
+                  <span>{formatCurrency(cuotaTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Abonado</span>
+                  <span>{formatCurrency(cuotaPaid)}</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span>Falta {abonoCuotaAmount ? "(luego de este abono)" : ""}</span>
+                  <span className="text-primary">
+                    {formatCurrency(abonoCuotaAmount ? cuotaAfterAbono : cuotaRemaining)}
+                  </span>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* Abono a capital */}

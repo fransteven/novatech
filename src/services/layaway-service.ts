@@ -28,7 +28,7 @@ import type {
   RegisterCreditPaymentInput,
 } from "@/lib/validators/layaway-validator";
 import { generateSchedule } from "@/lib/credit/amortization";
-import { applyCuota, applySoloInteres, applyAbonoCapital } from "@/lib/credit/payments";
+import { applyCuota, applySoloInteres, applyAbonoCapital, applyAbonoCuota } from "@/lib/credit/payments";
 import { computeRiskScore } from "@/lib/credit/risk";
 import { DEFAULT_RISK_CONFIG } from "@/lib/credit/risk-config";
 import { computeDpd } from "@/lib/credit/dpd";
@@ -90,6 +90,7 @@ async function recomputeCreditStatus(
     totalAmount: Number(s.totalAmount),
     remainingBalance: Number(s.remainingBalance),
     paidAt: s.paidAt,
+    paidAmount: Number(s.paidAmount ?? 0),
   }));
   const dpd = computeDpd(schedEntries, today);
 
@@ -603,6 +604,7 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
       totalAmount: Number(s.totalAmount),
       remainingBalance: Number(s.remainingBalance),
       paidAt: s.paidAt,
+      paidAmount: Number(s.paidAmount ?? 0),
     }));
 
     let principalPortion = 0;
@@ -625,6 +627,15 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
       const result = applySoloInteres(schedEntries, data.scheduleNumber);
       interestPortion = result.interest;
       // El cronograma NO avanza — newScheduleEntries permanece igual
+    } else if (data.type === "abono_cuota") {
+      if (!data.scheduleNumber) throw new Error("Se requiere el número de cuota");
+      const result = applyAbonoCuota(schedEntries, data.scheduleNumber, data.amount);
+      principalPortion = result.principalPortion;
+      interestPortion = result.interestPortion;
+      newScheduleEntries = result.schedule;
+      newOutstandingPrincipal = roundCOP(
+        sub(newOutstandingPrincipal, result.principalPortion)
+      ).toNumber();
     } else if (data.type === "abono_capital") {
       if (!data.capitalStrategy) throw new Error("Se requiere la estrategia de abono a capital");
       const result = applyAbonoCapital(
@@ -682,6 +693,24 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
             and(
               eq(layawaySchedule.layawayId, data.layawayId),
               eq(layawaySchedule.number, paid.number)
+            )
+          );
+      }
+    } else if (data.type === "abono_cuota") {
+      // Actualiza el acumulado de la cuota; solo marca 'pagada' si se completó
+      const updated = newScheduleEntries.find((e) => e.number === data.scheduleNumber);
+      if (updated) {
+        await tx
+          .update(layawaySchedule)
+          .set({
+            paidAmount: toDbString(updated.paidAmount),
+            status: updated.status,
+            paidAt: updated.paidAt,
+          })
+          .where(
+            and(
+              eq(layawaySchedule.layawayId, data.layawayId),
+              eq(layawaySchedule.number, updated.number)
             )
           );
       }

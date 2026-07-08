@@ -70,6 +70,8 @@ export const layawaySchedule = pgTable("layaway_schedule", {
   remainingBalance: decimal("remaining_balance", { precision: 12, scale: 2 }).notNull(),
   status: text("status").default("pendiente").notNull(), // 'pendiente' | 'pagada' | 'vencida'
   paidAt: timestamp("paid_at"),
+  // Acumulado de abonos parciales aplicados a esta cuota (sin cambiar el cronograma)
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default("0").notNull(),
 });
 
 // --- LEDGER DE PAGOS DE CRÉDITO (inmutable, idempotente) ---
@@ -78,7 +80,7 @@ export const layawayPayments = pgTable("layaway_payments", {
   layawayId: uuid("layaway_id")
     .references(() => layaways.id)
     .notNull(),
-  // Tipo: 'cuota' | 'solo_interes' | 'abono_capital' | 'abono_sin_interes'
+  // Tipo: 'cuota' | 'solo_interes' | 'abono_capital' | 'abono_cuota' | 'abono_sin_interes'
   type: text("type").notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   principalPortion: decimal("principal_portion", { precision: 12, scale: 2 }).default("0"),

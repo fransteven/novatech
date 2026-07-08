@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { sales, saleDetails, expenses } from "@/db/schema";
+import { sales, saleDetails, expenses, layawayPayments } from "@/db/schema";
 import { sql, and, gte, lte, eq } from "drizzle-orm";
 import { startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
@@ -36,18 +36,30 @@ export const getProfitsKPIs = async (range?: DateRange) => {
     .from(expenses)
     .where(and(gte(expenses.date, from), lte(expenses.date, to)));
 
+  const interestResult = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(CAST(${layawayPayments.interestPortion} AS DECIMAL)), 0)`,
+    })
+    .from(layawayPayments)
+    .where(and(
+      gte(layawayPayments.createdAt, from),
+      lte(layawayPayments.createdAt, to),
+    ));
+
   const totalRevenue = Number(revenueResult[0]?.totalRevenue ?? 0);
   const totalCost = Number(revenueResult[0]?.totalCost ?? 0);
   const totalSold = Number(revenueResult[0]?.totalSold ?? 0);
   const grossProfit = totalRevenue - totalCost;
   const totalExpenses = Number(expensesResult[0]?.total ?? 0);
-  const netProfit = grossProfit - totalExpenses;
+  const interestIncome = Number(interestResult[0]?.total ?? 0);
+  const netProfit = grossProfit + interestIncome - totalExpenses;
 
   return {
     totalRevenue,
     totalCost,
     grossProfit,
     totalExpenses,
+    interestIncome,
     netProfit,
     totalSold,
     grossMarginPct: totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0,
@@ -84,8 +96,21 @@ export const getMonthlyProfits = async (year: number) => {
     .where(and(gte(expenses.date, from), lte(expenses.date, to)))
     .groupBy(sql`EXTRACT(MONTH FROM ${expenses.date})`);
 
+  const interestRows = await db
+    .select({
+      month: sql<number>`EXTRACT(MONTH FROM ${layawayPayments.createdAt})`,
+      totalInterest: sql<number>`COALESCE(SUM(CAST(${layawayPayments.interestPortion} AS DECIMAL)), 0)`,
+    })
+    .from(layawayPayments)
+    .where(and(gte(layawayPayments.createdAt, from), lte(layawayPayments.createdAt, to)))
+    .groupBy(sql`EXTRACT(MONTH FROM ${layawayPayments.createdAt})`);
+
   const expensesByMonth = new Map(
     expenseRows.map((r) => [Number(r.month), Number(r.totalExpenses)]),
+  );
+
+  const interestByMonth = new Map(
+    interestRows.map((r) => [Number(r.month), Number(r.totalInterest)]),
   );
 
   const result: MonthlyProfit[] = Array.from({ length: 12 }, (_, i) => {
@@ -95,13 +120,15 @@ export const getMonthlyProfits = async (year: number) => {
     const cost = Number(row?.totalCost ?? 0);
     const grossProfit = revenue - cost;
     const totalExpenses = expensesByMonth.get(m) ?? 0;
+    const interestIncome = interestByMonth.get(m) ?? 0;
     return {
       month: m,
       revenue,
       cost,
       grossProfit,
       expenses: totalExpenses,
-      netProfit: grossProfit - totalExpenses,
+      interestIncome,
+      netProfit: grossProfit + interestIncome - totalExpenses,
     };
   });
 
@@ -115,5 +142,6 @@ export type MonthlyProfit = {
   cost: number;
   grossProfit: number;
   expenses: number;
+  interestIncome: number;
   netProfit: number;
 };

@@ -31,7 +31,7 @@ Skills are expert instructions. You must use them prior to any implementation ma
 
 ## 🏗️ Architecture & Strict Data Flow
 
-NovaTech is a **Next.js 15 App Router** POS and inventory management system for electronics retail (serialized items, IMEI tracking). The stack includes: Drizzle ORM → Neon (PostgreSQL) serverless, Better Auth, Radix UI + Tailwind CSS 4, Zustand for client state, and Zod for validation.
+NovaTech is a **Next.js 16 App Router** / **React 19** POS and inventory management system for electronics retail (serialized items, IMEI tracking). The stack includes: Drizzle ORM → Neon (PostgreSQL) serverless, Better Auth, Radix UI + Tailwind CSS 4, Zustand for client state, and Zod for validation.
 
 ### Strict Data Flow - Never Skip Layers
 
@@ -108,13 +108,15 @@ npm run build            # Push DB migrations + Next.js build
 npm run start            # Start production server
 npm run lint             # Run ESLint
 npm run db:clean         # Wipe the database (scripts/clean-db.ts)
+npm run test             # Run vitest in watch mode
+npm run test:run         # Run vitest once (CI / single pass)
 
 npx drizzle-kit push     # Push schema changes to the DB without rebuilding
 npx drizzle-kit studio   # Open Drizzle Studio to inspect the DB
 ```
 
 > [!NOTE]
-> There are no automated tests configured in this project. Use manual verification or temporary scripts in `scripts/` when needed.
+> Vitest is configured (`vitest.config.ts`). Use `npm run test:run` for a single-pass run. For ad-hoc data fixes or manual verification, use temporary scripts in `scripts/`.
 
 ---
 

@@ -4,6 +4,7 @@ import {
   TrendingDown,
   CircleDollarSign,
   ShoppingCart,
+  Percent,
 } from "lucide-react";
 import type { ProfitsKPIs } from "@/services/profits-service";
 
@@ -24,16 +25,24 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
     totalCost,
     grossProfit,
     totalExpenses,
+    interestIncome,
     netProfit,
   } = kpis;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
       <KpiCard
         icon={ShoppingCart}
-        title="Ingresos Totales"
+        title="Ingresos por Ventas"
         value={fmt(totalRevenue)}
         description="Total facturado en ventas"
+      />
+      <KpiCard
+        icon={Percent}
+        title="Ingresos por Intereses"
+        value={fmt(interestIncome)}
+        description="Intereses cobrados en créditos"
+        valueClassName="text-blue-600"
       />
       <KpiCard
         icon={TrendingDown}

@@ -16,6 +16,8 @@ export interface ScheduleEntry {
   remainingBalance: number;
   status: "pendiente" | "pagada" | "vencida";
   paidAt: Date | null;
+  // Acumulado de abonos parciales aplicados a esta cuota (ver applyAbonoCuota)
+  paidAmount: number;
 }
 
 export interface GenerateScheduleParams {
@@ -85,6 +87,7 @@ export function generateSchedule({
       remainingBalance: isLast ? 0 : newBalance.toNumber(),
       status: "pendiente",
       paidAt: null,
+      paidAmount: 0,
     });
 
     balance = isLast ? new Decimal(0) : newBalance;

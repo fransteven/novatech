@@ -48,6 +48,7 @@ interface ScheduleEntry {
   remainingBalance: string | number;
   status: string;
   paidAt?: string | Date | null;
+  paidAmount?: string | number;
 }
 
 interface RiskHistoryEntry {
@@ -155,7 +156,7 @@ export function LayawayDetailsDialog({
                     <p className="text-sm text-muted-foreground">Sin cronograma generado.</p>
                   ) : (
                     <div className="overflow-x-auto rounded-md border">
-                      <table className="w-full min-w-[640px] text-xs border-collapse">
+                      <table className="w-full min-w-[720px] text-xs border-collapse">
                         <thead>
                           <tr className="border-b text-muted-foreground bg-muted/40">
                             <th className="text-left py-1.5 px-2 whitespace-nowrap">#</th>
@@ -163,30 +164,50 @@ export function LayawayDetailsDialog({
                             <th className="text-right py-1.5 px-2 whitespace-nowrap">Capital</th>
                             <th className="text-right py-1.5 px-2 whitespace-nowrap">Interés</th>
                             <th className="text-right py-1.5 px-2 whitespace-nowrap">Cuota</th>
+                            <th className="text-right py-1.5 px-2 whitespace-nowrap">Abonado / Falta</th>
                             <th className="text-right py-1.5 px-2 whitespace-nowrap">Saldo</th>
                             <th className="text-center py-1.5 px-2 whitespace-nowrap">Estado</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {details.schedule.map((entry) => (
-                            <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
-                              <td className="py-1.5 px-2 font-medium">{entry.number}</td>
-                              <td className="py-1.5 px-2 text-muted-foreground whitespace-nowrap">
-                                {new Date(entry.dueDate).toLocaleDateString("es-CO", {
-                                  day: "2-digit", month: "short", year: "numeric",
-                                })}
-                              </td>
-                              <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.principal))}</td>
-                              <td className="py-1.5 px-2 text-right text-muted-foreground whitespace-nowrap">{formatCurrency(Number(entry.interest))}</td>
-                              <td className="py-1.5 px-2 text-right font-medium whitespace-nowrap">{formatCurrency(Number(entry.totalAmount))}</td>
-                              <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.remainingBalance))}</td>
-                              <td className="py-1.5 px-2 text-center">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_BADGE_STYLES[entry.status] ?? ""}`}>
-                                  {entry.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                          {details.schedule.map((entry) => {
+                            const paidAmount = Number(entry.paidAmount ?? 0);
+                            const isPartial = entry.status !== "pagada" && paidAmount > 0;
+                            return (
+                              <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
+                                <td className="py-1.5 px-2 font-medium">{entry.number}</td>
+                                <td className="py-1.5 px-2 text-muted-foreground whitespace-nowrap">
+                                  {new Date(entry.dueDate).toLocaleDateString("es-CO", {
+                                    day: "2-digit", month: "short", year: "numeric",
+                                  })}
+                                </td>
+                                <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.principal))}</td>
+                                <td className="py-1.5 px-2 text-right text-muted-foreground whitespace-nowrap">{formatCurrency(Number(entry.interest))}</td>
+                                <td className="py-1.5 px-2 text-right font-medium whitespace-nowrap">{formatCurrency(Number(entry.totalAmount))}</td>
+                                <td className="py-1.5 px-2 text-right whitespace-nowrap">
+                                  {isPartial ? (
+                                    <span className="text-amber-600 dark:text-amber-400">
+                                      {formatCurrency(paidAmount)} / falta {formatCurrency(Number(entry.totalAmount) - paidAmount)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                                <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.remainingBalance))}</td>
+                                <td className="py-1.5 px-2 text-center">
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                      isPartial
+                                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                        : STATUS_BADGE_STYLES[entry.status] ?? ""
+                                    }`}
+                                  >
+                                    {isPartial ? "parcial" : entry.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

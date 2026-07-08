@@ -59,7 +59,7 @@ export const addLayawayPaymentSchema = z.object({
 export const registerCreditPaymentSchema = z
   .object({
     layawayId: z.string().uuid("ID de crédito inválido"),
-    type: z.enum(["cuota", "solo_interes", "abono_capital"]),
+    type: z.enum(["cuota", "solo_interes", "abono_capital", "abono_cuota"]),
     amount: z.coerce.number().positive("El monto debe ser positivo"),
     scheduleNumber: z.number().int().positive().optional(),
     capitalStrategy: z.enum(["reduce_term", "reduce_installment"]).optional(),

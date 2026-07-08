@@ -23,9 +23,10 @@ export function MonthlyProfitsTable({ data }: MonthlyProfitsTableProps) {
       cost: acc.cost + row.cost,
       grossProfit: acc.grossProfit + row.grossProfit,
       expenses: acc.expenses + row.expenses,
+      interestIncome: acc.interestIncome + row.interestIncome,
       netProfit: acc.netProfit + row.netProfit,
     }),
-    { revenue: 0, cost: 0, grossProfit: 0, expenses: 0, netProfit: 0 },
+    { revenue: 0, cost: 0, grossProfit: 0, expenses: 0, interestIncome: 0, netProfit: 0 },
   );
 
   return (
@@ -44,6 +45,9 @@ export function MonthlyProfitsTable({ data }: MonthlyProfitsTableProps) {
             </th>
             <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Util. Bruta
+            </th>
+            <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
+              Intereses
             </th>
             <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Gastos
@@ -77,6 +81,9 @@ export function MonthlyProfitsTable({ data }: MonthlyProfitsTableProps) {
                   "—"
                 )}
               </td>
+              <td className="px-4 py-3 text-right text-[13px] text-blue-600">
+                {row.interestIncome > 0 ? fmt(row.interestIncome) : "—"}
+              </td>
               <td className="px-4 py-3 text-right text-[13px] text-muted-foreground">
                 {row.expenses > 0 ? fmt(row.expenses) : "—"}
               </td>
@@ -100,6 +107,7 @@ export function MonthlyProfitsTable({ data }: MonthlyProfitsTableProps) {
             <td className="px-4 py-3 text-right font-bold text-[13px] text-green-600">
               {fmt(totals.grossProfit)}
             </td>
+            <td className="px-4 py-3 text-right font-bold text-[13px] text-blue-600">{fmt(totals.interestIncome)}</td>
             <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.expenses)}</td>
             <td className={`px-4 py-3 text-right font-bold text-[13px] ${totals.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
               {fmt(totals.netProfit)}

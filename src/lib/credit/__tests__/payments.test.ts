@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyCuota, applySoloInteres, applyAbonoCapital } from "../payments";
+import { applyCuota, applySoloInteres, applyAbonoCapital, applyAbonoCuota } from "../payments";
 import { generateSchedule } from "../amortization";
 import type { ScheduleEntry } from "../amortization";
 
@@ -83,6 +83,64 @@ describe("applySoloInteres", () => {
     const schedule = makeSchedule();
     const paid = applyCuota(schedule, 1).schedule;
     expect(() => applySoloInteres(paid, 1)).toThrow();
+  });
+});
+
+describe("applyAbonoCuota", () => {
+  it("no marca la cuota como pagada si el abono es parcial", () => {
+    const schedule = makeSchedule(); // cuota 1 totalAmount ≈ 197,017
+    const cuota1Total = schedule[0].totalAmount;
+    const { schedule: after, fullyPaid } = applyAbonoCuota(schedule, 1, 100_000);
+    expect(fullyPaid).toBe(false);
+    expect(after[0].status).toBe("pendiente");
+    expect(after[0].paidAmount).toBe(100_000);
+    expect(after[0].paidAmount).toBeLessThan(cuota1Total);
+  });
+
+  it("el cronograma (fechas/montos) no cambia con un abono parcial", () => {
+    const schedule = makeSchedule();
+    const { schedule: after } = applyAbonoCuota(schedule, 1, 50_000);
+    expect(after.length).toBe(schedule.length);
+    expect(after[0].totalAmount).toBe(schedule[0].totalAmount);
+    expect(after[1].dueDate).toEqual(schedule[1].dueDate);
+  });
+
+  it("acumula abonos sucesivos y marca 'pagada' al completar el total", () => {
+    let schedule = makeSchedule();
+    const total = schedule[0].totalAmount;
+    const first = Math.floor(total / 2);
+    const second = total - first;
+
+    let result = applyAbonoCuota(schedule, 1, first);
+    schedule = result.schedule;
+    expect(result.fullyPaid).toBe(false);
+
+    result = applyAbonoCuota(schedule, 1, second);
+    expect(result.fullyPaid).toBe(true);
+    expect(result.schedule[0].status).toBe("pagada");
+    expect(result.schedule[0].paidAmount).toBe(total);
+  });
+
+  it("lanza error si el abono supera el saldo restante de la cuota", () => {
+    const schedule = makeSchedule();
+    const total = schedule[0].totalAmount;
+    expect(() => applyAbonoCuota(schedule, 1, total + 1)).toThrow();
+  });
+
+  it("lanza error si la cuota ya está pagada", () => {
+    const schedule = makeSchedule();
+    const paid = applyCuota(schedule, 1).schedule;
+    expect(() => applyAbonoCuota(paid, 1, 1_000)).toThrow();
+  });
+
+  it("reparte capital/interés proporcionalmente al split original de la cuota", () => {
+    const schedule = makeSchedule();
+    const cuota1 = schedule[0];
+    const monto = Math.floor(cuota1.totalAmount / 2);
+    const { principalPortion, interestPortion } = applyAbonoCuota(schedule, 1, monto);
+    expect(principalPortion + interestPortion).toBe(monto);
+    const expectedPrincipalRatio = cuota1.principal / cuota1.totalAmount;
+    expect(principalPortion / monto).toBeCloseTo(expectedPrincipalRatio, 1);
   });
 });
 

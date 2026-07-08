@@ -52,6 +52,74 @@ export function applyCuota(
 }
 
 // ---------------------------------------------------------------------------
+// applyAbonoCuota
+// ---------------------------------------------------------------------------
+
+export interface ApplyAbonoCuotaResult {
+  schedule: ScheduleEntry[];
+  principalPortion: number;
+  interestPortion: number;
+  fullyPaid: boolean;
+  newPaidAmount: number;
+}
+
+/**
+ * Abono parcial a la cuota `n` — NO cambia el cronograma.
+ *
+ * El acumulado (`paidAmount`) de la cuota crece con cada abono. La cuota
+ * solo pasa a 'pagada' cuando el acumulado alcanza el total de la cuota.
+ * El capital/interés del abono se reconoce de forma proporcional al split
+ * original de la cuota, para mantener el saldo insoluto y el ledger
+ * consistentes con los reportes de utilidad.
+ */
+export function applyAbonoCuota(
+  schedule: ScheduleEntry[],
+  n: number,
+  monto: number
+): ApplyAbonoCuotaResult {
+  const idx = schedule.findIndex((c) => c.number === n);
+  if (idx === -1) throw new Error(`Cuota ${n} no existe en el cronograma`);
+
+  const cuota = schedule[idx];
+  if (cuota.status === "pagada") {
+    throw new Error(`La cuota ${n} ya fue pagada`);
+  }
+  if (monto <= 0) {
+    throw new Error("El monto del abono debe ser positivo");
+  }
+
+  const paidSoFar = cuota.paidAmount ?? 0;
+  const remaining = roundCOP(money(cuota.totalAmount).minus(paidSoFar)).toNumber();
+  if (monto > remaining) {
+    throw new Error(
+      `El abono (${monto}) supera el saldo de la cuota (${remaining}). ` +
+        "Usa 'Cuota normal' para saldarla."
+    );
+  }
+
+  const principalPortion = roundCOP(
+    money(monto).times(cuota.principal).dividedBy(cuota.totalAmount)
+  ).toNumber();
+  const interestPortion = roundCOP(money(monto).minus(principalPortion)).toNumber();
+
+  const newPaidAmount = roundCOP(money(paidSoFar).plus(monto)).toNumber();
+  const fullyPaid = newPaidAmount >= cuota.totalAmount;
+
+  const updated = schedule.map((c, i) =>
+    i === idx
+      ? {
+          ...c,
+          paidAmount: newPaidAmount,
+          status: fullyPaid ? ("pagada" as const) : c.status,
+          paidAt: fullyPaid ? new Date() : c.paidAt,
+        }
+      : c
+  );
+
+  return { schedule: updated, principalPortion, interestPortion, fullyPaid, newPaidAmount };
+}
+
+// ---------------------------------------------------------------------------
 // applySoloInteres
 // ---------------------------------------------------------------------------
 

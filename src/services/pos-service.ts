@@ -197,7 +197,7 @@ export const processSale = async ({
           );
         }
 
-        // MINIMUM PROFIT MARGIN VALIDATION for serialized items
+        // MINIMUM PRICE VALIDATION for serialized items (price >= cost)
         // Get the cost from inventory movements for this specific item
         const costMovement = await tx
           .select({
@@ -216,14 +216,6 @@ export const processSale = async ({
         if (item.price < itemCost) {
           throw new Error(
             `El precio de venta no puede ser menor al costo del producto. Costo: $${itemCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
-          );
-        }
-
-        const margin = (item.price - itemCost) / item.price;
-        if (margin < 0.09) {
-          const suggestedPrice = itemCost / 0.9;
-          throw new Error(
-            `El margen de beneficio debe ser al menos del 10%. Precio sugerido mínimo: $${suggestedPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })} (actual: ${(margin * 100).toFixed(2)}%)`,
           );
         }
       } else {
@@ -250,7 +242,7 @@ export const processSale = async ({
           );
         }
 
-        // MINIMUM PROFIT MARGIN VALIDATION for non-serialized items
+        // MINIMUM PRICE VALIDATION for non-serialized items (price >= cost)
         // Calculate Weighted Average Cost (WAC) from inventory movements
         avgUnitCost = await calculateProductWAC(item.productId, tx);
         if (item.price < avgUnitCost) {
@@ -263,21 +255,6 @@ export const processSale = async ({
 
           throw new Error(
             `El precio de venta no puede ser menor al costo del producto "${product?.name || item.productId}". Costo promedio: $${avgUnitCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
-          );
-        }
-
-        const margin = (item.price - avgUnitCost) / item.price;
-        if (margin < 0.2) {
-          // Get product name for better error message
-          const [product] = await tx
-            .select({ name: products.name })
-            .from(products)
-            .where(eq(products.id, item.productId))
-            .limit(1);
-
-          const suggestedPrice = avgUnitCost / 0.8;
-          throw new Error(
-            `El margen de beneficio para "${product?.name || item.productId}" debe ser al menos del 20%. Precio sugerido mínimo: $${suggestedPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })} (actual: ${(margin * 100).toFixed(1)}%)`,
           );
         }
       }
