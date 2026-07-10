@@ -313,6 +313,7 @@ export const getLayaways = async () => {
 export const createLayaway = async (data: CreateLayawayInput) => {
   return await db.transaction(async (tx) => {
     const isCredit = data.type === "credito";
+    const monthlyRate = data.interestRate ?? 0.05;
 
     // Capital financiado = totalAmount - cuota inicial (si aplica)
     const totalAmount = money(data.totalAmount);
@@ -327,7 +328,7 @@ export const createLayaway = async (data: CreateLayawayInput) => {
       const { generateSchedule: gen } = await import("@/lib/credit/amortization");
       const preview = gen({
         principal: financedCapital.toNumber(),
-        monthlyRate: 0.05,
+        monthlyRate,
         termMonths: data.termMonths!,
         startDate: new Date(),
       });
@@ -343,7 +344,7 @@ export const createLayaway = async (data: CreateLayawayInput) => {
         status: "active",
         totalAmount: toDbString(totalAmount),
         expiresAt: data.expiresAt,
-        interestRate: isCredit ? "0.0500" : null,
+        interestRate: isCredit ? monthlyRate.toFixed(4) : null,
         financedCapital: isCredit ? toDbString(financedCapital) : null,
         outstandingPrincipal: isCredit ? toDbString(financedCapital) : null,
         termMonths: isCredit ? data.termMonths : null,
@@ -384,7 +385,7 @@ export const createLayaway = async (data: CreateLayawayInput) => {
     if (isCredit && data.termMonths) {
       const schedule = generateSchedule({
         principal: financedCapital.toNumber(),
-        monthlyRate: 0.05,
+        monthlyRate,
         termMonths: data.termMonths,
         startDate: new Date(),
       });

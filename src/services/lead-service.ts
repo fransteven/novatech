@@ -342,6 +342,7 @@ export async function convertLeadToLayaway(
     totalAmount: Number(lead.salePrice),
     initialDeposit: data.initialDeposit ?? 0,
     termMonths: lead.termMonths,
+    interestRate: Number(lead.interestRate),
     expiresAt: data.expiresAt,
     paymentMethod: data.paymentMethod,
     accountId: data.accountId,

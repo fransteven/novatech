@@ -115,4 +115,31 @@ describe("generateSchedule — sistema francés / cuota fija", () => {
       expect(schedule[schedule.length - 1].remainingBalance).toBe(0);
     });
   });
+
+  describe("tasa configurable — misma tasa no queda fija en 5%", () => {
+    const params = {
+      principal: 1_000_000,
+      termMonths: 6,
+      startDate: BASE_DATE,
+    };
+
+    it("una tasa mensual mayor produce una cuota fija mayor", () => {
+      const low = generateSchedule({ ...params, monthlyRate: 0.03 });
+      const high = generateSchedule({ ...params, monthlyRate: 0.05 });
+      expect(high[0].totalAmount).toBeGreaterThan(low[0].totalAmount);
+    });
+
+    it("el interés de la cuota 1 refleja la tasa recibida, no un valor fijo", () => {
+      const rate = 0.03;
+      const schedule = generateSchedule({ ...params, monthlyRate: rate });
+      const expectedInterest = roundCOP(money(1_000_000).times(rate)).toNumber();
+      expect(schedule[0].interest).toBe(expectedInterest);
+    });
+
+    it("lanza error si la tasa es 0 o negativa", () => {
+      expect(() =>
+        generateSchedule({ ...params, monthlyRate: 0 })
+      ).toThrow();
+    });
+  });
 });

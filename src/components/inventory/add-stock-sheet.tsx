@@ -80,6 +80,8 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
       quantity: "",
       unitCost: "",
       serials: [],
+      batteryHealth: "",
+      notes: "",
     },
   });
 

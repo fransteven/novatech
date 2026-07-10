@@ -13,6 +13,8 @@ export const createLayawaySchema = z
     totalAmount: z.number().positive("El total debe ser positivo"),
     initialDeposit: z.number().min(0, "El abono inicial no puede ser negativo").default(0),
     termMonths: z.number().int().min(1).max(60).optional(),
+    // Tasa mensual como fracción (ej. 0.05 = 5%). Solo aplica a type='credito'.
+    interestRate: z.number().min(0).max(1).optional(),
     expiresAt: z.coerce.date().refine((date) => date > new Date(), {
       message: "La fecha de vencimiento debe ser en el futuro",
     }),
@@ -28,6 +30,15 @@ export const createLayawaySchema = z
       return true;
     },
     { message: "El crédito requiere un plazo en meses (termMonths >= 1)", path: ["termMonths"] }
+  )
+  .refine(
+    (data) => {
+      if (data.type === "credito") {
+        return typeof data.interestRate === "number" && data.interestRate > 0;
+      }
+      return true;
+    },
+    { message: "El crédito requiere una tasa de interés", path: ["interestRate"] }
   )
   .refine(
     (data) => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PosProductList } from "@/components/pos/pos-product-list";
 import { CustomerSelector, Customer } from "@/components/pos/customer-selector";
 import { LayawayDialog } from "@/components/pos/layaway-dialog";
+import { CreditDialog } from "@/components/pos/credit-dialog";
 import { toast } from "sonner";
 import { Trash2, CreditCard, ShoppingCart, MonitorCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -297,7 +298,7 @@ export default function PosPage() {
       </div>
 
       {/* Footer actions */}
-      <div className="p-3.5 bg-card border-t border-border">
+      <div className="p-3.5 bg-card border-t border-border space-y-2">
         <div className="grid grid-cols-2 gap-2">
           <LayawayDialog
             cartItems={cartItems}
@@ -310,32 +311,43 @@ export default function PosPage() {
             }}
           />
 
-          <Button
-            className="w-full h-[46px] font-bold text-[14.5px] gap-2 cursor-pointer text-primary-foreground border-0"
-            disabled={cartItems.length === 0 || processing}
-            onClick={handleCheckout}
-            style={{
-              background:
-                "linear-gradient(180deg, var(--tf-accent), oklch(0.52 0.2 270))",
-              boxShadow:
-                "0 1px 0 inset oklch(1 0 0 / 0.25), 0 8px 20px var(--tf-accent-ring)",
+          <CreditDialog
+            cartItems={cartItems}
+            totalAmount={total}
+            selectedCustomer={selectedCustomer}
+            onSuccess={() => {
+              setCartItems([]);
+              setSelectedCustomer(null);
+              setMobileCartOpen(false);
             }}
-          >
-            {processing ? (
-              "Procesando..."
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4" />
-                Cobrar
-                {cartItems.length > 0 && (
-                  <span className="font-extrabold font-mono tracking-[-0.01em]">
-                    {formatCurrency(total)}
-                  </span>
-                )}
-              </>
-            )}
-          </Button>
+          />
         </div>
+
+        <Button
+          className="w-full h-[46px] font-bold text-[14.5px] gap-2 cursor-pointer text-primary-foreground border-0"
+          disabled={cartItems.length === 0 || processing}
+          onClick={handleCheckout}
+          style={{
+            background:
+              "linear-gradient(180deg, var(--tf-accent), oklch(0.52 0.2 270))",
+            boxShadow:
+              "0 1px 0 inset oklch(1 0 0 / 0.25), 0 8px 20px var(--tf-accent-ring)",
+          }}
+        >
+          {processing ? (
+            "Procesando..."
+          ) : (
+            <>
+              <CreditCard className="h-4 w-4" />
+              Cobrar
+              {cartItems.length > 0 && (
+                <span className="font-extrabold font-mono tracking-[-0.01em]">
+                  {formatCurrency(total)}
+                </span>
+              )}
+            </>
+          )}
+        </Button>
       </div>
     </>
   );
