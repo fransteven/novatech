@@ -27,22 +27,24 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
     totalExpenses,
     interestIncome,
     netProfit,
+    totalSold,
+    grossMarginPct,
   } = kpis;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <KpiCard
         icon={ShoppingCart}
         title="Ingresos por Ventas"
         value={fmt(totalRevenue)}
-        description="Total facturado en ventas"
+        description={`${totalSold} unidad${totalSold === 1 ? "" : "es"} vendida${totalSold === 1 ? "" : "s"}`}
       />
       <KpiCard
         icon={Percent}
         title="Ingresos por Intereses"
         value={fmt(interestIncome)}
         description="Intereses cobrados en créditos"
-        valueClassName="text-blue-600"
+        valueClassName="text-[color:var(--tf-accent)]"
       />
       <KpiCard
         icon={TrendingDown}
@@ -54,8 +56,8 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
         icon={TrendingUp}
         title="Utilidad Bruta"
         value={fmt(grossProfit)}
-        description="Ingresos menos costo de ventas"
-        valueClassName="text-green-600"
+        description={`Margen bruto ${grossMarginPct.toFixed(1)}%`}
+        valueClassName="text-[color:var(--tf-green)]"
       />
       <KpiCard
         icon={TrendingDown}
@@ -68,7 +70,11 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
         title="Utilidad Neta"
         value={fmt(netProfit)}
         description="Utilidad bruta menos gastos"
-        valueClassName={netProfit >= 0 ? "text-green-600" : "text-red-600"}
+        valueClassName={
+          netProfit >= 0
+            ? "text-[color:var(--tf-green)]"
+            : "text-[color:var(--tf-red)]"
+        }
       />
     </div>
   );

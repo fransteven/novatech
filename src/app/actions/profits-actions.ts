@@ -35,3 +35,16 @@ export async function getMonthlyProfitsAction(year: number) {
     return { success: false, error: "Failed to fetch monthly profits" };
   }
 }
+
+export async function getMonthlyProfitBreakdownAction(
+  year: number,
+  month: number,
+) {
+  try {
+    const data = await profitsService.getMonthlyProfitBreakdown(year, month);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching monthly profit breakdown:", error);
+    return { success: false, error: "Failed to fetch monthly profit breakdown" };
+  }
+}

@@ -1,6 +1,15 @@
 import { db } from "@/db";
-import { sales, saleDetails, expenses, layawayPayments } from "@/db/schema";
-import { sql, and, gte, lte, eq } from "drizzle-orm";
+import {
+  sales,
+  saleDetails,
+  expenses,
+  expenseCategories,
+  layawayPayments,
+  layaways,
+  products,
+  customers,
+} from "@/db/schema";
+import { sql, and, gte, lte, eq, gt, desc } from "drizzle-orm";
 import { startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 type DateRange = { from: Date; to: Date };
@@ -134,6 +143,111 @@ export const getMonthlyProfits = async (year: number) => {
 
   return result;
 };
+
+/**
+ * Desglose de las filas fuente detrás de un mes de getMonthlyProfits(), para
+ * auditoría rápida: qué ventas, gastos e intereses componen esos totales.
+ * Usa exactamente los mismos filtros (status, rango de fechas) que los
+ * agregados, así que los subtotales de cada sección deben cuadrar con las
+ * columnas de esa fila mensual.
+ */
+export const getMonthlyProfitBreakdown = async (year: number, month: number) => {
+  const from = startOfMonth(new Date(year, month - 1, 1));
+  const to = endOfMonth(new Date(year, month - 1, 1));
+
+  const saleRows = await db
+    .select({
+      id: saleDetails.id,
+      saleId: saleDetails.saleId,
+      createdAt: sales.createdAt,
+      productName: products.name,
+      customerName: customers.name,
+      price: saleDetails.price,
+      unitCost: saleDetails.unitCost,
+    })
+    .from(saleDetails)
+    .innerJoin(sales, eq(saleDetails.saleId, sales.id))
+    .innerJoin(products, eq(saleDetails.productId, products.id))
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(
+      and(
+        eq(sales.status, "completed"),
+        gte(sales.createdAt, from),
+        lte(sales.createdAt, to),
+      ),
+    )
+    .orderBy(desc(sales.createdAt));
+
+  const expenseRows = await db
+    .select({
+      id: expenses.id,
+      date: expenses.date,
+      categoryName: expenseCategories.name,
+      description: expenses.description,
+      amount: expenses.amount,
+    })
+    .from(expenses)
+    .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+    .where(and(gte(expenses.date, from), lte(expenses.date, to)))
+    .orderBy(desc(expenses.date));
+
+  const interestRows = await db
+    .select({
+      id: layawayPayments.id,
+      createdAt: layawayPayments.createdAt,
+      customerName: customers.name,
+      type: layawayPayments.type,
+      amount: layawayPayments.amount,
+      interestPortion: layawayPayments.interestPortion,
+    })
+    .from(layawayPayments)
+    .innerJoin(layaways, eq(layawayPayments.layawayId, layaways.id))
+    .leftJoin(customers, eq(layaways.customerId, customers.id))
+    .where(
+      and(
+        gte(layawayPayments.createdAt, from),
+        lte(layawayPayments.createdAt, to),
+        gt(sql`CAST(${layawayPayments.interestPortion} AS DECIMAL)`, 0),
+      ),
+    )
+    .orderBy(desc(layawayPayments.createdAt));
+
+  return {
+    sales: saleRows.map((r) => {
+      const price = Number(r.price);
+      const unitCost = Number(r.unitCost);
+      return {
+        id: r.id,
+        saleId: r.saleId,
+        createdAt: r.createdAt,
+        productName: r.productName,
+        customerName: r.customerName,
+        price,
+        unitCost,
+        profit: price - unitCost,
+      };
+    }),
+    expenses: expenseRows.map((r) => ({
+      id: r.id,
+      date: r.date,
+      categoryName: r.categoryName,
+      description: r.description,
+      amount: Number(r.amount),
+    })),
+    interestPayments: interestRows.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      customerName: r.customerName,
+      type: r.type,
+      amount: Number(r.amount),
+      interestPortion: Number(r.interestPortion),
+    })),
+  };
+};
+
+export type MonthlyProfitBreakdown = Awaited<
+  ReturnType<typeof getMonthlyProfitBreakdown>
+>;
 
 export type ProfitsKPIs = Awaited<ReturnType<typeof getProfitsKPIs>>;
 export type MonthlyProfit = {

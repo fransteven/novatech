@@ -54,7 +54,7 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
 
       <div>
         <h2 className="text-[15px] font-semibold mb-3">Desglose Mensual — {selectedYear}</h2>
-        <MonthlyProfitsTable data={monthlyData} />
+        <MonthlyProfitsTable data={monthlyData} year={selectedYear} />
       </div>
     </div>
   );
