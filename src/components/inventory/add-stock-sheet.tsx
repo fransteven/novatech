@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { receiveStockAction } from "@/app/actions/inventory-actions";
 import { ProductWithStock } from "@/services/product-service";
+import { cn } from "@/lib/utils";
 
 import { PrintLabelsDialog, PrintData } from "./print-labels-dialog";
 
@@ -33,12 +34,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface AddStockSheetProps {
   products: ProductWithStock[];
@@ -68,6 +75,7 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
   const [selectedProduct, setSelectedProduct] =
     useState<ProductWithStock | null>(null);
   const [imeiCount, setImeiCount] = useState(0);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const form = useForm<Record<string, any>>({
@@ -171,46 +179,105 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
                 control={form.control}
                 name="productId"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Producto *</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        const product = products.find((p) => p.id === value);
-                        setSelectedProduct(product || null);
-                        setImeiCount(0);
-                        form.setValue("quantity", "");
-                        form.setValue("serials", []);
-                      }}
-                      defaultValue={field.value}
+                    <Popover
+                      open={productPickerOpen}
+                      onOpenChange={setProductPickerOpen}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Buscar y seleccionar producto..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {products.map((product) => {
-                          const attrs = product.attributes as Record<string, string> | null;
-                          const attrValues = attrs ? Object.values(attrs).filter(Boolean) : [];
-                          return (
-                            <SelectItem key={product.id} value={product.id}>
-                              <span className="flex flex-col">
-                                <span>
-                                  {product.name}
-                                  {product.isSerialized && " (Serializado)"}
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={productPickerOpen}
+                            className="w-full justify-between font-normal h-auto py-2 px-3"
+                          >
+                            {selectedProduct ? (
+                              <span className="flex flex-col items-start min-w-0">
+                                <span className="text-[13px] font-semibold truncate">
+                                  {selectedProduct.name}
+                                  {selectedProduct.isSerialized && " (Serializado)"}
                                 </span>
-                                {attrValues.length > 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {attrValues.join(" · ")}
-                                  </span>
-                                )}
+                                {(() => {
+                                  const attrs = selectedProduct.attributes as Record<string, string> | null;
+                                  const attrValues = attrs ? Object.values(attrs).filter(Boolean) : [];
+                                  return attrValues.length > 0 ? (
+                                    <span className="text-xs text-muted-foreground truncate">
+                                      {attrValues.join(" · ")}
+                                    </span>
+                                  ) : null;
+                                })()}
                               </span>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                Buscar y seleccionar producto...
+                              </span>
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0"
+                        align="start"
+                      >
+                        <Command>
+                          <CommandInput placeholder="Buscar por nombre, atributo o SKU..." />
+                          <CommandList>
+                            <CommandEmpty>No se encontró ningún producto.</CommandEmpty>
+                            <CommandGroup>
+                              {products.map((product) => {
+                                const attrs = product.attributes as Record<string, string> | null;
+                                const attrValues = attrs ? Object.values(attrs).filter(Boolean) : [];
+                                const searchValue = [
+                                  product.name,
+                                  product.sku,
+                                  ...attrValues,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ");
+                                return (
+                                  <CommandItem
+                                    key={product.id}
+                                    value={searchValue}
+                                    onSelect={() => {
+                                      field.onChange(product.id);
+                                      setSelectedProduct(product);
+                                      setImeiCount(0);
+                                      form.setValue("quantity", "");
+                                      form.setValue("serials", []);
+                                      setProductPickerOpen(false);
+                                    }}
+                                  >
+                                    <span className="flex flex-col min-w-0 flex-1">
+                                      <span className="text-[12.5px] truncate">
+                                        {product.name}
+                                        {product.isSerialized && " (Serializado)"}
+                                      </span>
+                                      {attrValues.length > 0 && (
+                                        <span className="text-xs text-muted-foreground truncate">
+                                          {attrValues.join(" · ")}
+                                        </span>
+                                      )}
+                                    </span>
+                                    <Check
+                                      className={cn(
+                                        "ml-auto h-4 w-4 flex-shrink-0",
+                                        selectedProduct?.id === product.id
+                                          ? "opacity-100"
+                                          : "opacity-0",
+                                      )}
+                                    />
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
