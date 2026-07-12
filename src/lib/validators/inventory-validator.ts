@@ -10,6 +10,20 @@ export const receiveStockSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Corrección administrativa de un registro serializado ya existente
+// (ej. costo mal ingresado). Solo accesible para rol admin (ver requireAdmin).
+export const updateSerialItemSchema = z.object({
+  itemId: z.string().uuid(),
+  serialNumber: z.string().trim().min(1).nullable(),
+  sku: z.string().trim().nullable(),
+  status: z.enum(["available", "reserved", "sold", "defective"]),
+  unitCost: z.number().min(0, "El costo debe ser positivo o cero"),
+  batteryHealth: z.number().min(1).max(100).nullable().optional(),
+  notes: z.string().trim().nullable().optional(),
+});
+
+export type UpdateSerialItemInput = z.infer<typeof updateSerialItemSchema>;
+
 // Schema for the UI Form (client-side)
 export const receiveStockFormSchema = z.object({
   productId: z.string().min(1, "Seleccione un producto."),

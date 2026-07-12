@@ -7,8 +7,14 @@ import {
   getInventoryMovements,
   getProductSerials,
   searchInventoryStock,
+  updateSerialItem,
 } from "@/services/inventory-service";
-import { receiveStockSchema } from "@/lib/validators/inventory-validator";
+import {
+  receiveStockSchema,
+  updateSerialItemSchema,
+} from "@/lib/validators/inventory-validator";
+import { requireAdmin } from "@/lib/auth-guard";
+import { recordAudit } from "@/services/audit-service";
 
 type ReceiveStockResult =
   | { success: false; error: string }
@@ -93,6 +99,49 @@ export async function getProductSerialsAction(productId: string) {
   } catch (error) {
     console.error("Error fetching product serials:", error);
     return { success: false, error: "Failed to fetch product serials" };
+  }
+}
+
+export async function updateSerialItemAction(data: unknown) {
+  try {
+    const admin = await requireAdmin();
+
+    const validationResult = updateSerialItemSchema.safeParse(data);
+    if (!validationResult.success) {
+      return {
+        success: false,
+        error: validationResult.error.issues[0].message,
+      };
+    }
+
+    const { productId, changes } = await updateSerialItem(
+      validationResult.data,
+    );
+
+    if (Object.keys(changes).length > 0) {
+      await recordAudit({
+        userId: admin.id,
+        userName: admin.name,
+        action: "product_item.update",
+        entityType: "product_item",
+        entityId: validationResult.data.itemId,
+        changes,
+      });
+    }
+
+    revalidatePath("/inventory");
+    revalidatePath("/dashboard");
+
+    return { success: true, productId };
+  } catch (error) {
+    console.error("Error updating serial item:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update inventory record",
+    };
   }
 }
 

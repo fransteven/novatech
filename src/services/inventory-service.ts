@@ -7,7 +7,10 @@ import {
   saleDetails,
 } from "@/db/schema";
 import { eq, desc, sql, or, ilike, inArray, and } from "drizzle-orm";
-import { ReceiveStockInput } from "@/lib/validators/inventory-validator";
+import {
+  ReceiveStockInput,
+  UpdateSerialItemInput,
+} from "@/lib/validators/inventory-validator";
 
 export const receiveStock = async ({
   productId,
@@ -288,6 +291,86 @@ export const getProductSerials = async (productId: string) => {
     )
     .where(eq(productItems.productId, productId))
     .orderBy(desc(productItems.createdAt));
+};
+
+/**
+ * Corrige un registro serializado ya existente (product_items) que fue
+ * capturado de forma errada — ej. costo, serial, SKU, estado o condición.
+ *
+ * El costo se actualiza también en el movimiento IN asociado en
+ * inventory_movements, porque getProductSerials() muestra
+ * COALESCE(movimiento.unitCost, item.unitCost) y calculateProductWAC()
+ * calcula el promedio a partir de inventory_movements, no de product_items.
+ *
+ * Nota: esto es una corrección de captura, NO reconcilia ventas ya
+ * registradas — cambiar `status` aquí no afecta `sales`/`sale_details`.
+ */
+export const updateSerialItem = async (input: UpdateSerialItemInput) => {
+  return await db.transaction(async (tx) => {
+    const current = await tx.query.productItems.findFirst({
+      where: eq(productItems.id, input.itemId),
+    });
+
+    if (!current) {
+      throw new Error(`Registro de inventario ${input.itemId} no encontrado`);
+    }
+
+    const currentConditionDetails =
+      (current.conditionDetails as Record<string, unknown> | null) || {};
+    const newConditionDetails = {
+      ...currentConditionDetails,
+      ...(input.batteryHealth !== undefined
+        ? { batteryHealth: input.batteryHealth }
+        : {}),
+    };
+
+    const [updated] = await tx
+      .update(productItems)
+      .set({
+        serialNumber: input.serialNumber,
+        sku: input.sku,
+        status: input.status,
+        unitCost: input.unitCost.toString(),
+        notes: input.notes ?? null,
+        conditionDetails: newConditionDetails,
+      })
+      .where(eq(productItems.id, input.itemId))
+      .returning();
+
+    await tx
+      .update(inventoryMovements)
+      .set({ unitCost: input.unitCost.toString() })
+      .where(
+        and(
+          eq(inventoryMovements.productItemId, input.itemId),
+          eq(inventoryMovements.type, "IN"),
+        ),
+      );
+
+    // Solo registrar los campos que realmente cambiaron
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
+    const compare = (
+      key: string,
+      oldValue: unknown,
+      newValue: unknown,
+    ) => {
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        changes[key] = { old: oldValue, new: newValue };
+      }
+    };
+
+    compare("serialNumber", current.serialNumber, input.serialNumber);
+    compare("sku", current.sku, input.sku);
+    compare("status", current.status, input.status);
+    compare("unitCost", Number(current.unitCost), input.unitCost);
+    compare("notes", current.notes, input.notes ?? null);
+    compare("conditionDetails", currentConditionDetails, newConditionDetails);
+
+    return {
+      productId: updated.productId,
+      changes,
+    };
+  });
 };
 
 /**

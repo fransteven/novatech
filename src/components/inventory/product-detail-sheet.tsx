@@ -19,8 +19,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getProductSerialsAction } from "@/app/actions/inventory-actions";
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth-client";
+import { EditSerialDialog } from "./edit-serial-dialog";
 
 interface ProductDetailSheetProps {
   product: {
@@ -52,6 +54,22 @@ export function ProductDetailSheet({
 }: ProductDetailSheetProps) {
   const [serials, setSerials] = useState<Serial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSerial, setEditingSerial] = useState<Serial | null>(null);
+  const { data: session } = authClient.useSession();
+  // El campo `role` se declara en `additionalFields` de Better Auth (ver
+  // src/lib/auth.ts) pero el cliente aún no lo tipa; cast puntual y seguro.
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === "admin";
+
+  const refreshSerials = () => {
+    if (product?.productId) {
+      getProductSerialsAction(product.productId).then((result) => {
+        if (result.success && result.data) {
+          setSerials(result.data);
+        }
+      });
+    }
+  };
 
   const formatPrice = (value: number | string | null | undefined) => {
     if (value === null || value === undefined) return "N/A";
@@ -144,6 +162,7 @@ export function ProductDetailSheet({
                       <TableHead>Estado</TableHead>
                       <TableHead>Costo</TableHead>
                       <TableHead>Registro</TableHead>
+                      {isAdmin && <TableHead className="w-10" />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -192,6 +211,17 @@ export function ProductDetailSheet({
                         <TableCell className="text-sm">
                           {new Date(serial.createdAt).toLocaleDateString("es-ES")}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <button
+                              onClick={() => setEditingSerial(serial)}
+                              title="Corregir registro (admin)"
+                              className="text-slate-400 hover:text-indigo-600 transition-colors p-0.5 rounded"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -207,6 +237,17 @@ export function ProductDetailSheet({
           )}
         </div>
       </SheetContent>
+
+      {isAdmin && (
+        <EditSerialDialog
+          item={editingSerial}
+          open={!!editingSerial}
+          onOpenChange={(v) => {
+            if (!v) setEditingSerial(null);
+          }}
+          onSuccess={refreshSerials}
+        />
+      )}
     </Sheet>
   );
 }

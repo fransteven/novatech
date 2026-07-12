@@ -11,3 +11,4 @@ export * from "./schema/purchases";
 export * from "./schema/shareholders";
 export * from "./schema/leads";
 export * from "./schema/creditors";
+export * from "./schema/audit";
