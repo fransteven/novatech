@@ -9,6 +9,11 @@ export const productSchema = z.object({
     message: "Price must be a valid positive number",
   }),
   isSerialized: z.boolean(),
+  warrantyMonths: z
+    .number()
+    .int()
+    .min(0, "Los meses de garantía no pueden ser negativos")
+    .optional(),
   attributes: z.record(z.string(), z.any()).optional(),
 });
 

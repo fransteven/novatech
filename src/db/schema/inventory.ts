@@ -30,6 +30,9 @@ export const products = pgTable(
     //Precio de venta sugerido
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     isSerialized: boolean("is_serialized").default(false).notNull(),
+    // Meses de cobertura de garantía para este modelo (ej. 12 para iPhone nuevo,
+    // menos para otras marcas). Si es null, se usa DEFAULT_WARRANTY_MONTHS.
+    warrantyMonths: integer("warranty_months"),
     attributes: jsonb("attributes"), // Stores dynamic values: { brand: "Apple", storage: "256GB" }
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

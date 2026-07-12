@@ -23,6 +23,7 @@ import {
   Users,
   Target,
   HandCoins,
+  ShieldCheck,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const operacion = [
   { title: "Compras", href: "/purchases", icon: ShoppingCart },
   { title: "Apartados", href: "/layaways", icon: CalendarClock },
   { title: "Leads", href: "/leads", icon: Target },
+  { title: "Garantías", href: "/garantias", icon: ShieldCheck },
   { title: "Peritaje iPhones", href: "/iphone-purchase-checklist", icon: Smartphone },
 ];
 

@@ -34,6 +34,7 @@ import {
 import { providers, purchases, purchaseDetails } from "./purchases";
 import { leads, leadActivities } from "./leads";
 import { creditors, creditorMovements } from "./creditors";
+import { warranties, warrantyClaims } from "./warranties";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -64,6 +65,7 @@ export const productItemsRelations = relations(
     reservations: many(reservations),
     layawayDetails: many(layawayDetails),
     purchaseDetails: many(purchaseDetails),
+    warranties: many(warranties),
   }),
 );
 
@@ -71,6 +73,7 @@ export const productItemsRelations = relations(
 export const customersRelations = relations(customers, ({ many }) => ({
   layaways: many(layaways),
   leads: many(leads),
+  warranties: many(warranties),
 }));
 
 export const layawaysRelations = relations(layaways, ({ one, many }) => ({
@@ -346,6 +349,34 @@ export const creditorMovementsRelations = relations(creditorMovements, ({ one })
   }),
   createdByUser: one(user, {
     fields: [creditorMovements.createdBy],
+    references: [user.id],
+  }),
+}));
+
+// --- Warranties Relations ---
+export const warrantiesRelations = relations(warranties, ({ one, many }) => ({
+  productItem: one(productItems, {
+    fields: [warranties.productItemId],
+    references: [productItems.id],
+  }),
+  customer: one(customers, {
+    fields: [warranties.customerId],
+    references: [customers.id],
+  }),
+  createdByUser: one(user, {
+    fields: [warranties.createdBy],
+    references: [user.id],
+  }),
+  claims: many(warrantyClaims),
+}));
+
+export const warrantyClaimsRelations = relations(warrantyClaims, ({ one }) => ({
+  warranty: one(warranties, {
+    fields: [warrantyClaims.warrantyId],
+    references: [warranties.id],
+  }),
+  handledByUser: one(user, {
+    fields: [warrantyClaims.handledBy],
     references: [user.id],
   }),
 }));

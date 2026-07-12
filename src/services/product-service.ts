@@ -20,6 +20,7 @@ export const getProducts = async () => {
       categoryId: products.categoryId,
       price: products.price,
       isSerialized: products.isSerialized,
+      warrantyMonths: products.warrantyMonths,
       createdAt: products.createdAt,
       updatedAt: products.updatedAt,
       //COALESCE funciona como un if null, si el resultado es null, devuelve 0

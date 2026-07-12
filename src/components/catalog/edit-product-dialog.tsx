@@ -42,7 +42,11 @@ import {
 import { useEffect, useState } from "react";
 
 interface EditProductDialogProps {
-  product: ProductWithStock & { sku?: string | null; categoryId?: string | null };
+  product: ProductWithStock & {
+    sku?: string | null;
+    categoryId?: string | null;
+    warrantyMonths?: number | null;
+  };
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -77,6 +81,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       price: product.price?.toString() || "0",
       categoryId: product.categoryId || "",
       isSerialized: product.isSerialized,
+      warrantyMonths: product.warrantyMonths ?? undefined,
       attributes: (product.attributes as Record<string, any>) || {},
     },
   });
@@ -91,6 +96,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         price: product.price?.toString() || "0",
         categoryId: product.categoryId || "",
         isSerialized: product.isSerialized,
+        warrantyMonths: product.warrantyMonths ?? undefined,
         attributes: (product.attributes as Record<string, any>) || {},
       });
     }
@@ -269,6 +275,34 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                       step="0.01"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="warrantyMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Meses de Garantía</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Ej: 12 para iPhone nuevo"
+                      min="0"
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Meses de cobertura desde la entrega. Si se deja vacío, se
+                    usa el periodo por defecto de la tienda.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

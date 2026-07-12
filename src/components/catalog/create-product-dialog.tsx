@@ -71,6 +71,7 @@ export function CreateProductDialog() {
       price: "0",
       categoryId: "",
       isSerialized: false,
+      warrantyMonths: undefined,
       attributes: {},
     },
   });
@@ -255,6 +256,34 @@ export function CreateProductDialog() {
                       step="0.01"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="warrantyMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Meses de Garantía</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Ej: 12 para iPhone nuevo"
+                      min="0"
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Meses de cobertura desde la entrega. Si se deja vacío, se
+                    usa el periodo por defecto de la tienda.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
