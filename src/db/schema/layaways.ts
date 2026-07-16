@@ -108,6 +108,19 @@ export const riskHistory = pgTable("risk_history", {
   occurredAt: timestamp("occurred_at").defaultNow().notNull(),
 });
 
+// --- LOG DE ENVÍO DEL DIGEST DIARIO DE COBROS (email a trabajadores) ---
+export const reminderLog = pgTable("reminder_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  digestDate: text("digest_date").notNull(), // 'YYYY-MM-DD'
+  sentTo: text("sent_to").notNull(), // correos destinatarios, separados por coma
+  itemCount: integer("item_count").notNull(),
+  // Idempotencia: un digest por día. Reenvío manual usa sufijo ':manual:<timestamp>'.
+  dedupeKey: text("dedupe_key").unique().notNull(),
+  status: text("status").notNull(), // 'sent' | 'failed' | 'empty'
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // --- NOTIFICACIONES IN-APP ---
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(),
