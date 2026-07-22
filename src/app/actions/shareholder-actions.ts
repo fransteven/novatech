@@ -27,6 +27,16 @@ export async function getDistributionsAction() {
   }
 }
 
+export async function getContributionsAction() {
+  try {
+    const data = await shareholdersService.getContributions();
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching contributions:", error);
+    return { success: false, error: "Failed to fetch contributions" };
+  }
+}
+
 export async function createDistributionAction(input: unknown) {
   const result = createDistributionSchema.safeParse(input);
   if (!result.success) {
