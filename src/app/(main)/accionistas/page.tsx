@@ -1,9 +1,11 @@
 import {
   getShareholdersAction,
   getDistributionsAction,
+  getContributionsAction,
 } from "@/app/actions/shareholder-actions";
 import { DistributionDialog } from "@/components/shareholders/distribution-dialog";
 import { DistributionsTable } from "@/components/shareholders/distributions-table";
+import { ContributionsTable } from "@/components/shareholders/contributions-table";
 import { AddContributionDialog } from "@/components/shareholders/add-contribution-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -14,12 +16,18 @@ import { formatCurrency } from "@/lib/formatters";
 export const dynamic = "force-dynamic";
 
 export default async function AccionistasPage() {
-  const [shareholdersResult, distributionsResult] = await Promise.all([
-    getShareholdersAction(),
-    getDistributionsAction(),
-  ]);
+  const [shareholdersResult, distributionsResult, contributionsResult] =
+    await Promise.all([
+      getShareholdersAction(),
+      getDistributionsAction(),
+      getContributionsAction(),
+    ]);
 
-  if (!shareholdersResult.success || !distributionsResult.success) {
+  if (
+    !shareholdersResult.success ||
+    !distributionsResult.success ||
+    !contributionsResult.success
+  ) {
     return (
       <div className="container mx-auto space-y-8 p-8">
         <h1 className="text-3xl font-bold tracking-tight">Accionistas</h1>
@@ -34,6 +42,7 @@ export default async function AccionistasPage() {
 
   const shareholders = shareholdersResult.data ?? [];
   const distributions = distributionsResult.data ?? [];
+  const contributions = contributionsResult.data ?? [];
 
   const totalContributed = shareholders.reduce(
     (sum, s) => sum + Number(s.totalContributed ?? 0),
@@ -114,6 +123,18 @@ export default async function AccionistasPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Contributions history */}
+      <div>
+        <h2 className="text-[15px] font-semibold mb-3">Historial de aportes</h2>
+        <ContributionsTable
+          contributions={
+            contributions as Parameters<
+              typeof ContributionsTable
+            >[0]["contributions"]
+          }
+        />
       </div>
 
       {/* Distributions history */}

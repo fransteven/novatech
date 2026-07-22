@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { getLayawayDetailsAction } from "@/app/actions/layaway-actions";
 import {
@@ -60,7 +61,22 @@ interface RiskHistoryEntry {
   occurredAt: string | Date;
 }
 
+interface LayawayHeader {
+  id: string;
+  type: string;
+  status: string;
+  totalAmount: string | number;
+  financedCapital?: string | number | null;
+  outstandingPrincipal?: string | number | null;
+  interestRate?: string | number | null;
+  termMonths?: number | null;
+  installmentAmount?: string | number | null;
+  createdAt?: string | Date | null;
+  expiresAt?: string | Date | null;
+}
+
 interface LayawayDetails {
+  layaway: LayawayHeader | null;
   items: LayawayItem[];
   payments: LayawayPayment[];
   schedule: ScheduleEntry[];
@@ -87,7 +103,9 @@ export function LayawayDetailsDialog({
   layawayType = "sin_interes",
 }: LayawayDetailsDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [details, setDetails] = useState<LayawayDetails>({
+    layaway: null,
     items: [],
     payments: [],
     schedule: [],
@@ -114,6 +132,76 @@ export function LayawayDetailsDialog({
   }, [open, layawayId]);
 
   const isCredit = layawayType === "credito";
+  const header = details.layaway;
+
+  const handleCopyId = async () => {
+    if (!layawayId) return;
+    try {
+      await navigator.clipboard.writeText(layawayId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard no disponible */
+    }
+  };
+
+  const formatDate = (value?: string | Date | null) =>
+    value
+      ? new Date(value).toLocaleDateString("es-CO", {
+          day: "2-digit", month: "short", year: "numeric",
+        })
+      : "—";
+
+  const initialDeposit =
+    header && header.financedCapital != null
+      ? Number(header.totalAmount) - Number(header.financedCapital)
+      : null;
+
+  const summary = header ? (
+    <div className="rounded-md border bg-muted/30 p-3 mb-3">
+      <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Resumen</p>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+        <div className="flex justify-between col-span-2 sm:col-span-1">
+          <dt className="text-muted-foreground">Precio de venta</dt>
+          <dd className="font-semibold">{formatCurrency(Number(header.totalAmount))}</dd>
+        </div>
+        {isCredit && initialDeposit != null && (
+          <div className="flex justify-between col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">Abono inicial</dt>
+            <dd className="font-medium">{formatCurrency(initialDeposit)}</dd>
+          </div>
+        )}
+        {isCredit && header.financedCapital != null && (
+          <div className="flex justify-between col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">Capital financiado</dt>
+            <dd className="font-medium">{formatCurrency(Number(header.financedCapital))}</dd>
+          </div>
+        )}
+        {isCredit && header.installmentAmount != null && (
+          <div className="flex justify-between col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">Cuota</dt>
+            <dd className="font-medium">{formatCurrency(Number(header.installmentAmount))}</dd>
+          </div>
+        )}
+        {isCredit && header.interestRate != null && (
+          <div className="flex justify-between col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">Tasa</dt>
+            <dd className="font-medium">{(Number(header.interestRate) * 100).toFixed(2)}%</dd>
+          </div>
+        )}
+        {isCredit && header.termMonths != null && (
+          <div className="flex justify-between col-span-2 sm:col-span-1">
+            <dt className="text-muted-foreground">Plazo</dt>
+            <dd className="font-medium">{header.termMonths} meses</dd>
+          </div>
+        )}
+        <div className="flex justify-between col-span-2 sm:col-span-1">
+          <dt className="text-muted-foreground">Creado</dt>
+          <dd className="font-medium">{formatDate(header.createdAt)}</dd>
+        </div>
+      </dl>
+    </div>
+  ) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -123,11 +211,28 @@ export function LayawayDetailsDialog({
             {isCredit ? "Detalle del Crédito" : "Detalle del Apartado"}
           </DialogTitle>
           <DialogDescription>Cliente: {customerName || "Desconocido"}</DialogDescription>
+          {layawayId && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-muted-foreground">ID:</span>
+              <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">{layawayId}</code>
+              <button
+                type="button"
+                onClick={handleCopyId}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title="Copiar ID"
+              >
+                {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copiado" : "Copiar"}
+              </button>
+            </div>
+          )}
         </DialogHeader>
 
         {loading ? (
           <div className="py-6 text-center text-muted-foreground">Cargando...</div>
         ) : isCredit ? (
+          <>
+          {summary}
           <Tabs defaultValue="cronograma" className="w-full min-w-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="cronograma">Cronograma</TabsTrigger>
@@ -142,8 +247,13 @@ export function LayawayDetailsDialog({
                 <div className="mb-3">
                   <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Artículos</p>
                   {details.items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm py-1">
-                      <span>{item.productName}{item.serialNumber ? ` (SN: ${item.serialNumber})` : ""}</span>
+                    <div key={item.id} className="flex justify-between items-start text-sm py-1">
+                      <div>
+                        <span>{item.productName}{item.serialNumber ? ` (SN: ${item.serialNumber})` : ""}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {formatCurrency(Number(item.agreedPrice))} c/u × {item.quantity}
+                        </span>
+                      </div>
                       <span className="font-medium">{formatCurrency(Number(item.agreedPrice) * item.quantity)}</span>
                     </div>
                   ))}
@@ -264,9 +374,11 @@ export function LayawayDetailsDialog({
               </div>
             </TabsContent>
           </Tabs>
+          </>
         ) : (
           /* Vista sin_interes (original) */
           <div className="space-y-6">
+            {summary}
             <div>
               <h4 className="font-semibold text-sm mb-3">Artículos Apartados</h4>
               <div className="space-y-3">
@@ -275,6 +387,7 @@ export function LayawayDetailsDialog({
                     <div>
                       <p className="font-medium">{item.productName}</p>
                       <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                        <span>{formatCurrency(Number(item.agreedPrice))} c/u</span>
                         <span>Cant: {item.quantity}</span>
                         {item.serialNumber && <span>SN: {item.serialNumber}</span>}
                       </div>

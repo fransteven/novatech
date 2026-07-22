@@ -55,6 +55,25 @@ export const addContribution = async (data: AddContributionInput) => {
   return contribution;
 };
 
+export const getContributions = async () => {
+  return await db
+    .select({
+      id: shareholderContributions.id,
+      shareholderId: shareholderContributions.shareholderId,
+      shareholderName: shareholders.fullName,
+      amount: shareholderContributions.amount,
+      notes: shareholderContributions.notes,
+      occurredAt: shareholderContributions.occurredAt,
+      createdAt: shareholderContributions.createdAt,
+    })
+    .from(shareholderContributions)
+    .innerJoin(
+      shareholders,
+      eq(shareholderContributions.shareholderId, shareholders.id),
+    )
+    .orderBy(desc(shareholderContributions.occurredAt));
+};
+
 export const getDistributions = async () => {
   const distributions = await db
     .select()

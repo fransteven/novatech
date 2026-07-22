@@ -447,6 +447,25 @@ export const createLayaway = async (data: CreateLayawayInput) => {
 // ---------------------------------------------------------------------------
 
 export const getLayawayDetails = async (layawayId: string) => {
+  // Cabecera del layaway (precio de venta, financiamiento, fechas)
+  const [layaway] = await db
+    .select({
+      id: layaways.id,
+      type: layaways.type,
+      status: layaways.status,
+      totalAmount: layaways.totalAmount,
+      financedCapital: layaways.financedCapital,
+      outstandingPrincipal: layaways.outstandingPrincipal,
+      interestRate: layaways.interestRate,
+      termMonths: layaways.termMonths,
+      installmentAmount: layaways.installmentAmount,
+      createdAt: layaways.createdAt,
+      expiresAt: layaways.expiresAt,
+    })
+    .from(layaways)
+    .where(eq(layaways.id, layawayId))
+    .limit(1);
+
   const details = await db
     .select({
       id: layawayDetails.id,
@@ -497,7 +516,7 @@ export const getLayawayDetails = async (layawayId: string) => {
     .orderBy(desc(riskHistory.occurredAt))
     .limit(20);
 
-  return { items: details, payments, schedule, riskHistory: risk };
+  return { layaway: layaway ?? null, items: details, payments, schedule, riskHistory: risk };
 };
 
 // ---------------------------------------------------------------------------
