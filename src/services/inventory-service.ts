@@ -12,6 +12,11 @@ import {
   UpdateSerialItemInput,
 } from "@/lib/validators/inventory-validator";
 
+/** El cliente de base de datos o la transacción activa. */
+export type DbExecutor =
+  | typeof db
+  | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export const receiveStock = async ({
   productId,
   quantity,
@@ -400,4 +405,51 @@ export const calculateProductWAC = async (productId: string, txObj?: any): Promi
 
   // Retornar el promedio redondeado a 2 decimales
   return Number((data.totalValue / data.totalQuantity).toFixed(2));
+};
+
+/**
+ * Resuelve el costo unitario real de una línea de venta.
+ *
+ * Serializado  → costo del movimiento IN de ese ítem, con fallback a
+ *                product_items.unit_cost (el movimiento es la fuente de verdad,
+ *                ver updateSerialItem que escribe en ambos).
+ * No serializado → WAC del producto.
+ *
+ * Único punto de resolución de costo: lo usan tanto la venta de contado
+ * (pos-service.processSale) como la liquidación de créditos/apartados
+ * (layaway-service.completeLayaway).
+ */
+export const resolveItemCost = async (
+  productItemId: string | null,
+  productId: string,
+  txObj?: DbExecutor,
+): Promise<number> => {
+  const dbInstance = txObj ?? db;
+
+  if (!productItemId) {
+    return await calculateProductWAC(productId, dbInstance);
+  }
+
+  const [movement] = await dbInstance
+    .select({ unitCost: inventoryMovements.unitCost })
+    .from(inventoryMovements)
+    .where(
+      and(
+        eq(inventoryMovements.productItemId, productItemId),
+        eq(inventoryMovements.type, "IN"),
+      ),
+    )
+    .limit(1);
+
+  if (movement?.unitCost) {
+    return Number(movement.unitCost);
+  }
+
+  const [item] = await dbInstance
+    .select({ unitCost: productItems.unitCost })
+    .from(productItems)
+    .where(eq(productItems.id, productItemId))
+    .limit(1);
+
+  return Number(item?.unitCost ?? 0);
 };

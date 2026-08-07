@@ -12,7 +12,10 @@ import type {
   ProductSearchResult,
   ProcessSaleInput,
 } from "@/lib/validators/pos-validator";
-import { calculateProductWAC } from "@/services/inventory-service";
+import {
+  calculateProductWAC,
+  resolveItemCost,
+} from "@/services/inventory-service";
 
 /**
  * Search for a product by barcode (SKU or serial number)
@@ -198,21 +201,7 @@ export const processSale = async ({
         }
 
         // MINIMUM PRICE VALIDATION for serialized items (price >= cost)
-        // Get the cost from inventory movements for this specific item
-        const costMovement = await tx
-          .select({
-            unitCost: inventoryMovements.unitCost,
-          })
-          .from(inventoryMovements)
-          .where(
-            and(
-              eq(inventoryMovements.productItemId, item.productItemId),
-              eq(inventoryMovements.type, "IN"),
-            ),
-          )
-          .limit(1);
-
-        itemCost = Number(costMovement[0]?.unitCost || productItem.unitCost || 0);
+        itemCost = await resolveItemCost(item.productItemId, item.productId, tx);
         if (item.price < itemCost) {
           throw new Error(
             `El precio de venta no puede ser menor al costo del producto. Costo: $${itemCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
@@ -244,7 +233,7 @@ export const processSale = async ({
 
         // MINIMUM PRICE VALIDATION for non-serialized items (price >= cost)
         // Calculate Weighted Average Cost (WAC) from inventory movements
-        avgUnitCost = await calculateProductWAC(item.productId, tx);
+        avgUnitCost = await resolveItemCost(null, item.productId, tx);
         if (item.price < avgUnitCost) {
           // Get product name for better error message
           const [product] = await tx
