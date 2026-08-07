@@ -220,3 +220,36 @@ describe("applyAbonoCapital — reduce_installment", () => {
     ).toThrow();
   });
 });
+
+describe("applyAbonoCapital — tasa pactada", () => {
+  // La tasa varía por nivel de riesgo del cliente. Regenerar el cronograma con
+  // otra tasa cobra un interés distinto al acordado, y el reporte de ganancias
+  // lo registra como ingreso legítimo. Estos tests fijan que la tasa recibida
+  // es la que se usa.
+  it("el cronograma regenerado usa la tasa recibida, no un default", () => {
+    const state = {
+      schedule: makeSchedule(1_000_000, 12),
+      outstandingPrincipal: 1_000_000,
+    };
+
+    const at4 = applyAbonoCapital(state, 200_000, "reduce_installment", 0.04, BASE);
+    const at5 = applyAbonoCapital(state, 200_000, "reduce_installment", 0.05, BASE);
+
+    // Primer interés = saldo nuevo × tasa
+    expect(at4.newSchedule[0].interest).toBe(Math.round(800_000 * 0.04));
+    expect(at5.newSchedule[0].interest).toBe(Math.round(800_000 * 0.05));
+    expect(at4.newSchedule[0].interest).not.toBe(at5.newSchedule[0].interest);
+  });
+
+  it("con tasa menor la cuota resultante es menor", () => {
+    const state = {
+      schedule: makeSchedule(1_000_000, 12),
+      outstandingPrincipal: 1_000_000,
+    };
+
+    const at4 = applyAbonoCapital(state, 200_000, "reduce_installment", 0.04, BASE);
+    const at5 = applyAbonoCapital(state, 200_000, "reduce_installment", 0.05, BASE);
+
+    expect(at4.newInstallmentAmount).toBeLessThan(at5.newInstallmentAmount);
+  });
+});

@@ -17,7 +17,7 @@ import {
   registerCreditPaymentSchema,
 } from "@/lib/validators/layaway-validator";
 
-const REVALIDATE_PATHS = ["/layaways", "/inventory", "/cash", "/dashboard"];
+const REVALIDATE_PATHS = ["/layaways", "/inventory", "/cash", "/dashboard", "/profits"];
 const revalidateAll = () => REVALIDATE_PATHS.forEach((p) => revalidatePath(p));
 
 export async function getLayawaysAction() {
@@ -91,11 +91,22 @@ export async function registerCreditPaymentAction(data: unknown) {
   }
 }
 
-export async function cancelLayawayAction(layawayId: string) {
+export async function cancelLayawayAction(
+  layawayId: string,
+  options: { deviceRecovered?: boolean } = {},
+) {
   try {
-    await cancelLayaway(layawayId);
+    const session = await auth.api.getSession({ headers: await headers() });
+    const result = await cancelLayaway(layawayId, {
+      deviceRecovered: options.deviceRecovered,
+      userId: session?.user?.id ?? null,
+    });
     revalidateAll();
-    return { success: true };
+    return {
+      success: true,
+      retainedCapital: result.retainedCapital,
+      deviceRecovered: result.deviceRecovered,
+    };
   } catch (error) {
     const err = error as Error;
     return { success: false, error: err.message || "Error al cancelar el apartado." };

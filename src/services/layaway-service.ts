@@ -20,6 +20,7 @@ import {
   products,
   sales,
   saleDetails,
+  otherIncome,
 } from "@/db/schema";
 import { eq, desc, sql, and, asc } from "drizzle-orm";
 import type {
@@ -36,6 +37,7 @@ import { assertTransition } from "@/lib/credit/state-machine";
 import type { LayawayStatus } from "@/lib/credit/state-machine";
 import { money, roundCOP, toDbString, sub } from "@/lib/money";
 import { createNotification, detectUpcomingDue } from "./notification-service";
+import { resolveItemCost } from "./inventory-service";
 
 // ---------------------------------------------------------------------------
 // Helpers internos
@@ -221,12 +223,20 @@ async function completeLayaway(
     .where(eq(layawayDetails.layawayId, layawayId));
 
   for (const item of details) {
+    // Costo real del ítem — sin esto la utilidad bruta de todo crédito
+    // liquidado se reportaba al 100% (profits-service resta sale_details.unit_cost).
+    const unitCost = await resolveItemCost(
+      item.productItemId,
+      item.productId,
+      tx,
+    );
+
     await tx.insert(saleDetails).values({
       saleId: sale.id,
       productId: item.productId,
       productItemId: item.productItemId,
       price: item.agreedPrice,
-      unitCost: "0", // TODO: traer costo real si se decide
+      unitCost: toDbString(unitCost),
     });
 
     if (item.productItemId) {
@@ -239,7 +249,7 @@ async function completeLayaway(
         productId: item.productId,
         type: "OUT",
         quantity: 1,
-        unitCost: "0",
+        unitCost: toDbString(unitCost),
         reason: `Venta por Crédito/Apartado Completado #${layawayId.slice(0, 8)}`,
       });
     } else {
@@ -248,6 +258,7 @@ async function completeLayaway(
         productId: item.productId,
         type: "OUT",
         quantity: item.quantity,
+        unitCost: toDbString(unitCost),
         reason: `Venta por Crédito/Apartado Completado #${layawayId.slice(0, 8)}`,
       });
     }
@@ -282,6 +293,17 @@ export const getLayaways = async () => {
       customerDocument: customers.documentId,
       customerPhone: customers.phone,
       totalPaid: sql<number>`COALESCE(SUM(CASE WHEN ${cashMovements.direction} = 'in' THEN CAST(${cashMovements.amount} AS DECIMAL) ELSE 0 END), 0)`.mapWith(Number),
+      // Saldo pendiente de un crédito = cuotas no pagadas (capital + interés),
+      // descontando abonos parciales ya aplicados a cada cuota.
+      pendingSchedule: sql<number>`COALESCE((
+        SELECT SUM(
+          CAST(${layawaySchedule.totalAmount} AS DECIMAL)
+          - CAST(${layawaySchedule.paidAmount} AS DECIMAL)
+        )
+        FROM ${layawaySchedule}
+        WHERE ${layawaySchedule.layawayId} = ${layaways.id}
+          AND ${layawaySchedule.status} <> 'pagada'
+      ), 0)`.mapWith(Number),
     })
     .from(layaways)
     .leftJoin(customers, eq(layaways.customerId, customers.id))
@@ -297,13 +319,25 @@ export const getLayaways = async () => {
     )
     .orderBy(desc(layaways.createdAt));
 
-  return result.map((l) => ({
-    ...l,
-    totalAmount: Number(l.totalAmount),
-    outstandingPrincipal: l.outstandingPrincipal ? Number(l.outstandingPrincipal) : null,
-    installmentAmount: l.installmentAmount ? Number(l.installmentAmount) : null,
-    balance: Number(l.totalAmount) - l.totalPaid,
-  }));
+  return result.map((l) => {
+    // En un apartado sin interés el precio pactado es todo lo que se debe, así
+    // que el saldo sale de la caja recibida. En un crédito el cliente paga
+    // capital + interés (más que totalAmount), por lo que restar los pagos del
+    // precio da saldos negativos y marca el crédito como completado antes de
+    // tiempo — el saldo real es lo que queda pendiente en el cronograma.
+    const balance =
+      l.type === "credito"
+        ? l.pendingSchedule
+        : Number(l.totalAmount) - l.totalPaid;
+
+    return {
+      ...l,
+      totalAmount: Number(l.totalAmount),
+      outstandingPrincipal: l.outstandingPrincipal ? Number(l.outstandingPrincipal) : null,
+      installmentAmount: l.installmentAmount ? Number(l.installmentAmount) : null,
+      balance,
+    };
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -631,6 +665,8 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
     let interestPortion = 0;
     let newScheduleEntries = schedEntries;
     let newOutstandingPrincipal = Number(lay.outstandingPrincipal ?? lay.totalAmount);
+    // Solo cambia con abono a capital (estrategia reduce_installment)
+    let newInstallmentAmount: number | null = null;
 
     // 5. Aplicar tipo de pago
     if (data.type === "cuota") {
@@ -658,16 +694,27 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
       ).toNumber();
     } else if (data.type === "abono_capital") {
       if (!data.capitalStrategy) throw new Error("Se requiere la estrategia de abono a capital");
+
+      // La tasa es la pactada con este cliente (varía según su nivel de riesgo).
+      // Regenerar con un default fijo cobraría un interés distinto al acordado.
+      const monthlyRate = Number(lay.interestRate ?? 0);
+      if (!(monthlyRate > 0)) {
+        throw new Error(
+          "El crédito no tiene una tasa de interés registrada; no se puede regenerar el cronograma"
+        );
+      }
+
       const result = applyAbonoCapital(
         { schedule: schedEntries, outstandingPrincipal: newOutstandingPrincipal },
         data.amount,
         data.capitalStrategy,
-        0.05,
+        monthlyRate,
         new Date()
       );
       principalPortion = data.amount;
       newScheduleEntries = result.newSchedule;
       newOutstandingPrincipal = result.newOutstandingPrincipal;
+      newInstallmentAmount = result.newInstallmentAmount;
     }
 
     // 6. Registrar cashMovement
@@ -754,10 +801,15 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
       );
     }
 
-    // 9. Actualizar saldo insoluto
+    // 9. Actualizar saldo insoluto (y la cuota si el abono a capital la cambió)
     await tx
       .update(layaways)
-      .set({ outstandingPrincipal: toDbString(newOutstandingPrincipal) })
+      .set({
+        outstandingPrincipal: toDbString(newOutstandingPrincipal),
+        ...(newInstallmentAmount !== null
+          ? { installmentAmount: toDbString(newInstallmentAmount) }
+          : {}),
+      })
       .where(eq(layaways.id, data.layawayId));
 
     // 10. ¿Crédito completamente saldado?
@@ -777,7 +829,21 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
 // cancelLayaway
 // ---------------------------------------------------------------------------
 
-export const cancelLayaway = async (layawayId: string) => {
+export type CancelLayawayOptions = {
+  /**
+   * Solo créditos: si el equipo volvió físicamente a la tienda.
+   * Obligatorio, porque en un crédito el equipo ya se entregó — devolverlo a
+   * 'available' sin verificar crea stock fantasma (un equipo en manos del
+   * cliente apareciendo como vendible).
+   */
+  deviceRecovered?: boolean;
+  userId?: string | null;
+};
+
+export const cancelLayaway = async (
+  layawayId: string,
+  options: CancelLayawayOptions = {}
+) => {
   return await db.transaction(async (tx) => {
     const [layaway] = await tx
       .select()
@@ -790,6 +856,51 @@ export const cancelLayaway = async (layawayId: string) => {
 
     assertTransition(layaway.status as LayawayStatus, "cancelled");
 
+    const isCredit = layaway.type === "credito";
+
+    if (isCredit && typeof options.deviceRecovered !== "boolean") {
+      throw new Error(
+        "Debes indicar si el equipo fue recuperado para cancelar un crédito"
+      );
+    }
+    // En un apartado el equipo nunca salió de la tienda.
+    const deviceRecovered = isCredit ? options.deviceRecovered! : true;
+
+    // Plata que se queda en el negocio = todo lo cobrado menos el interés que
+    // ya se reconoció como ingreso pago por pago (si no, se contaría dos veces).
+    // Se calcula desde caja para que sirva igual en crédito y en apartado.
+    const [collected] = await tx
+      .select({
+        total: sql<number>`COALESCE(SUM(CAST(${cashMovements.amount} AS DECIMAL)), 0)`.mapWith(
+          Number
+        ),
+      })
+      .from(cashMovements)
+      .where(
+        and(
+          eq(cashMovements.sourceId, layawayId),
+          sql`${cashMovements.sourceType} IN ('layaway_deposit', 'layaway_payment')`,
+          eq(cashMovements.direction, "in"),
+          eq(cashMovements.status, "posted")
+        )
+      );
+
+    const [recognizedInterest] = await tx
+      .select({
+        total: sql<number>`COALESCE(SUM(CAST(${layawayPayments.interestPortion} AS DECIMAL)), 0)`.mapWith(
+          Number
+        ),
+      })
+      .from(layawayPayments)
+      .where(eq(layawayPayments.layawayId, layawayId));
+
+    const retainedCapital = Math.max(
+      0,
+      roundCOP(
+        sub(collected?.total ?? 0, recognizedInterest?.total ?? 0)
+      ).toNumber()
+    );
+
     await tx
       .update(layaways)
       .set({ status: "cancelled" })
@@ -800,22 +911,112 @@ export const cancelLayaway = async (layawayId: string) => {
       .from(layawayDetails)
       .where(eq(layawayDetails.layawayId, layawayId));
 
-    for (const item of details) {
+    // Equipo no recuperado: económicamente es una venta al precio que se
+    // alcanzó a cobrar. Se registra como tal para que el costo real del equipo
+    // entre al reporte de ganancias (si el cobrado no cubre el costo, la
+    // utilidad bruta del mes sale negativa, que es exactamente la pérdida).
+    let saleId: string | null = null;
+    if (!deviceRecovered) {
+      const [sale] = await tx
+        .insert(sales)
+        .values({
+          customerId: layaway.customerId,
+          totalAmount: toDbString(retainedCapital),
+          status: "completed",
+        })
+        .returning();
+      saleId = sale.id;
+    }
+
+    // Con varios ítems, lo retenido se reparte a prorrata del precio pactado;
+    // el último absorbe el residuo del redondeo para que sume exacto.
+    const agreedTotal = details.reduce(
+      (acc, d) => acc + Number(d.agreedPrice),
+      0
+    );
+    let allocated = 0;
+
+    for (const [index, item] of details.entries()) {
+      const isLastItem = index === details.length - 1;
+      const itemRevenue = isLastItem
+        ? roundCOP(sub(retainedCapital, allocated)).toNumber()
+        : roundCOP(
+            money(retainedCapital)
+              .times(Number(item.agreedPrice))
+              .dividedBy(agreedTotal || 1)
+          ).toNumber();
+      allocated = roundCOP(money(allocated).plus(itemRevenue)).toNumber();
+
+      const unitCost = await resolveItemCost(
+        item.productItemId,
+        item.productId,
+        tx
+      );
+
+      if (deviceRecovered) {
+        // Vuelve al inventario a su costo; no consume COGS.
+        if (item.productItemId) {
+          await tx
+            .update(productItems)
+            .set({ status: "available" })
+            .where(eq(productItems.id, item.productItemId));
+        } else {
+          await tx.insert(inventoryMovements).values({
+            productId: item.productId,
+            type: "RESERVED_IN",
+            quantity: item.quantity,
+            unitCost: toDbString(unitCost),
+            reason: `Cancelación Apartado/Crédito #${layawayId.slice(0, 8)}`,
+          });
+        }
+        continue;
+      }
+
+      // El equipo se queda con el cliente: sale definitivamente del stock.
+      if (saleId) {
+        await tx.insert(saleDetails).values({
+          saleId,
+          productId: item.productId,
+          productItemId: item.productItemId,
+          // El precio pactado nunca se cobró completo; el ingreso real es lo
+          // que quedó en caja.
+          price: toDbString(itemRevenue),
+          unitCost: toDbString(unitCost),
+        });
+      }
+
       if (item.productItemId) {
         await tx
           .update(productItems)
-          .set({ status: "available" })
+          .set({ status: "lost" })
           .where(eq(productItems.id, item.productItemId));
-      } else {
         await tx.insert(inventoryMovements).values({
+          productItemId: item.productItemId,
           productId: item.productId,
-          type: "RESERVED_IN",
-          quantity: item.quantity,
-          reason: `Cancelación Apartado/Crédito #${layawayId.slice(0, 8)}`,
+          type: "OUT",
+          quantity: 1,
+          unitCost: toDbString(unitCost),
+          reason: `Crédito incumplido, equipo no recuperado #${layawayId.slice(0, 8)}`,
         });
       }
+      // No serializado: el RESERVED_OUT del alta ya lo sacó del stock.
     }
 
-    return { success: true };
+    // Equipo recuperado y con plata cobrada: esa plata se queda en el negocio
+    // sin costo asociado (el equipo sigue en inventario). Se reconoce como
+    // ingreso del mes de la cancelación para que caja y utilidad cuadren.
+    if (deviceRecovered && retainedCapital > 0) {
+      await tx.insert(otherIncome).values({
+        concept: "retencion_credito",
+        amount: toDbString(retainedCapital),
+        description: `Retención de capital por cancelación de ${
+          isCredit ? "crédito" : "apartado"
+        } #${layawayId.slice(0, 8)} (equipo recuperado)`,
+        layawayId,
+        createdBy: options.userId ?? null,
+      });
+    }
+
+    return { success: true, retainedCapital, deviceRecovered };
   });
 };

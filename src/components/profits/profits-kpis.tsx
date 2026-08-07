@@ -21,14 +21,17 @@ interface ProfitsKPIsProps {
 
 export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
   const {
-    totalRevenue,
+    salesRevenue,
+    interestIncome,
+    otherIncome,
+    totalIncome,
     totalCost,
     grossProfit,
     totalExpenses,
-    interestIncome,
     netProfit,
     totalSold,
     grossMarginPct,
+    productMarginPct,
   } = kpis;
 
   return (
@@ -36,7 +39,7 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
       <KpiCard
         icon={ShoppingCart}
         title="Ingresos por Ventas"
-        value={fmt(totalRevenue)}
+        value={fmt(salesRevenue)}
         description={`${totalSold} unidad${totalSold === 1 ? "" : "es"} vendida${totalSold === 1 ? "" : "s"}`}
       />
       <KpiCard
@@ -47,16 +50,26 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
         valueClassName="text-[color:var(--tf-accent)]"
       />
       <KpiCard
+        icon={CircleDollarSign}
+        title="Ingresos Totales"
+        value={fmt(totalIncome)}
+        description={
+          otherIncome > 0
+            ? `Ventas, intereses y ${fmt(otherIncome)} de otros ingresos`
+            : "Ventas más intereses de crédito"
+        }
+      />
+      <KpiCard
         icon={TrendingDown}
         title="Costo de Ventas"
         value={fmt(totalCost)}
-        description="Costo de los productos vendidos"
+        description={`Costo de los productos vendidos · margen de producto ${productMarginPct.toFixed(1)}%`}
       />
       <KpiCard
         icon={TrendingUp}
         title="Utilidad Bruta"
         value={fmt(grossProfit)}
-        description={`Margen bruto ${grossMarginPct.toFixed(1)}%`}
+        description={`Ingresos totales menos costo · margen ${grossMarginPct.toFixed(1)}%`}
         valueClassName="text-[color:var(--tf-green)]"
       />
       <KpiCard

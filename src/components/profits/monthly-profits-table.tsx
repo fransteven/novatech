@@ -34,18 +34,29 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
 
   const totals = data.reduce(
     (acc, row) => ({
-      revenue: acc.revenue + row.revenue,
+      salesRevenue: acc.salesRevenue + row.salesRevenue,
+      interestIncome: acc.interestIncome + row.interestIncome,
+      otherIncome: acc.otherIncome + row.otherIncome,
+      totalIncome: acc.totalIncome + row.totalIncome,
       cost: acc.cost + row.cost,
       grossProfit: acc.grossProfit + row.grossProfit,
       expenses: acc.expenses + row.expenses,
-      interestIncome: acc.interestIncome + row.interestIncome,
       netProfit: acc.netProfit + row.netProfit,
     }),
-    { revenue: 0, cost: 0, grossProfit: 0, expenses: 0, interestIncome: 0, netProfit: 0 },
+    {
+      salesRevenue: 0,
+      interestIncome: 0,
+      otherIncome: 0,
+      totalIncome: 0,
+      cost: 0,
+      grossProfit: 0,
+      expenses: 0,
+      netProfit: 0,
+    },
   );
 
   const hasData = (row: MonthlyProfit) =>
-    row.revenue > 0 || row.cost > 0 || row.expenses > 0 || row.interestIncome > 0;
+    row.totalIncome > 0 || row.cost > 0 || row.expenses > 0;
 
   const toggleMonth = async (month: number) => {
     if (expandedMonth === month) {
@@ -65,11 +76,20 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
 
   return (
     <div className="rounded-[12px] border border-border overflow-x-auto">
-      <table className="w-full text-sm min-w-[560px]">
+      <table className="w-full text-sm min-w-[780px]">
         <thead className="bg-muted/50">
           <tr className="border-b border-border">
             <th className="px-4 py-3 text-left font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Mes
+            </th>
+            <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
+              Ventas
+            </th>
+            <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
+              Intereses
+            </th>
+            <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
+              Otros
             </th>
             <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Ingresos
@@ -79,9 +99,6 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
             </th>
             <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Util. Bruta
-            </th>
-            <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
-              Intereses
             </th>
             <th className="px-4 py-3 text-right font-semibold text-[12px] uppercase tracking-wide text-[color:var(--tf-fg-subtle)]">
               Gastos
@@ -121,7 +138,16 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-[13px] text-muted-foreground">
-                    {row.revenue > 0 ? fmt(row.revenue) : "—"}
+                    {row.salesRevenue > 0 ? fmt(row.salesRevenue) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[13px] text-[color:var(--tf-accent)]">
+                    {row.interestIncome > 0 ? fmt(row.interestIncome) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[13px] text-muted-foreground">
+                    {row.otherIncome > 0 ? fmt(row.otherIncome) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-[13px] font-medium">
+                    {row.totalIncome > 0 ? fmt(row.totalIncome) : "—"}
                   </td>
                   <td className="px-4 py-3 text-right text-[13px] text-muted-foreground">
                     {row.cost > 0 ? fmt(row.cost) : "—"}
@@ -134,9 +160,6 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
                     ) : (
                       "—"
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-right text-[13px] text-[color:var(--tf-accent)]">
-                    {row.interestIncome > 0 ? fmt(row.interestIncome) : "—"}
                   </td>
                   <td className="px-4 py-3 text-right text-[13px] text-muted-foreground">
                     {row.expenses > 0 ? fmt(row.expenses) : "—"}
@@ -159,7 +182,7 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
                 </tr>
                 {isExpanded && (
                   <tr className="border-b border-border last:border-0 bg-muted/20">
-                    <td colSpan={7} className="px-4 py-4">
+                    <td colSpan={9} className="px-4 py-4">
                       {isLoading || !breakdown ? (
                         <p className="text-xs text-muted-foreground">Cargando desglose...</p>
                       ) : (
@@ -175,12 +198,16 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
         <tfoot className="bg-muted/50 border-t border-border">
           <tr>
             <td className="px-4 py-3 font-bold text-[13px]">Total</td>
-            <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.revenue)}</td>
+            <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.salesRevenue)}</td>
+            <td className="px-4 py-3 text-right font-bold text-[13px] text-[color:var(--tf-accent)]">
+              {fmt(totals.interestIncome)}
+            </td>
+            <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.otherIncome)}</td>
+            <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.totalIncome)}</td>
             <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.cost)}</td>
             <td className="px-4 py-3 text-right font-bold text-[13px] text-[color:var(--tf-green)]">
               {fmt(totals.grossProfit)}
             </td>
-            <td className="px-4 py-3 text-right font-bold text-[13px] text-[color:var(--tf-accent)]">{fmt(totals.interestIncome)}</td>
             <td className="px-4 py-3 text-right font-bold text-[13px]">{fmt(totals.expenses)}</td>
             <td
               className={`px-4 py-3 text-right font-bold text-[13px] ${
@@ -199,10 +226,10 @@ export function MonthlyProfitsTable({ data, year }: MonthlyProfitsTableProps) {
 }
 
 function MonthBreakdownDetail({ breakdown }: { breakdown: MonthlyProfitBreakdown }) {
-  const { sales, expenses, interestPayments } = breakdown;
+  const { sales, expenses, interestPayments, otherIncome } = breakdown;
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <BreakdownSection title={`Ventas (${sales.length})`}>
         {sales.length === 0 ? (
           <EmptyRow />
@@ -257,6 +284,24 @@ function MonthBreakdownDetail({ breakdown }: { breakdown: MonthlyProfitBreakdown
               <p className="text-[color:var(--tf-accent)] whitespace-nowrap">
                 +{fmt(p.interestPortion)}
               </p>
+            </div>
+          ))
+        )}
+      </BreakdownSection>
+
+      <BreakdownSection title={`Otros ingresos (${otherIncome.length})`}>
+        {otherIncome.length === 0 ? (
+          <EmptyRow />
+        ) : (
+          otherIncome.map((o) => (
+            <div key={o.id} className="flex items-center justify-between gap-2 py-1 text-[12px]">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{o.description}</p>
+                <p className="truncate text-[color:var(--tf-fg-subtle)]">
+                  {o.concept} · {fmtDate(o.date)}
+                </p>
+              </div>
+              <p className="text-[color:var(--tf-green)] whitespace-nowrap">+{fmt(o.amount)}</p>
             </div>
           ))
         )}

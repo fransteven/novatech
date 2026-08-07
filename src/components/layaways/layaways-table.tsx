@@ -92,13 +92,29 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
   const [creditPaymentOpen, setCreditPaymentOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [selectedLayaway, setSelectedLayaway] = useState<Layaway | null>(null);
+  // Solo aplica a créditos: el equipo ya está con el cliente y hay que saber si
+  // volvió antes de devolverlo al inventario.
+  const [deviceRecovered, setDeviceRecovered] = useState<boolean | null>(null);
+
+  const isCancellingCredit = selectedLayaway?.type === "credito";
 
   const handleCancel = async () => {
     if (!selectedLayaway) return;
-    const res = await cancelLayawayAction(selectedLayaway.id);
+    if (isCancellingCredit && deviceRecovered === null) return;
+
+    const res = await cancelLayawayAction(
+      selectedLayaway.id,
+      isCancellingCredit ? { deviceRecovered: deviceRecovered! } : {},
+    );
+
     if (res.success) {
-      toast.success("Apartado cancelado. El inventario ha sido liberado.");
+      toast.success(
+        res.deviceRecovered
+          ? "Cancelado. El equipo volvió al inventario."
+          : "Cancelado. El equipo salió del inventario y se registró la venta por lo cobrado.",
+      );
       setCancelOpen(false);
+      setDeviceRecovered(null);
     } else {
       toast.error(res.error || "Error al cancelar el apartado");
     }
@@ -409,19 +425,59 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         />
       )}
 
-      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+      <AlertDialog
+        open={cancelOpen}
+        onOpenChange={(open) => {
+          setCancelOpen(open);
+          if (!open) setDeviceRecovered(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Está seguro de cancelar este apartado/crédito?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción es irreversible. Los productos reservados volverán a
-              estar disponibles en el inventario.
+              {isCancellingCredit
+                ? "Esta acción es irreversible. En un crédito el equipo ya se entregó, así que necesitamos saber dónde quedó antes de tocar el inventario."
+                : "Esta acción es irreversible. Los productos reservados volverán a estar disponibles en el inventario."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {isCancellingCredit && (
+            <div className="space-y-2 rounded-md border border-border p-3 text-sm">
+              <p className="font-medium">¿Se recuperó el equipo?</p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={deviceRecovered === true ? "default" : "outline"}
+                  onClick={() => setDeviceRecovered(true)}
+                >
+                  Sí, volvió a la tienda
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={deviceRecovered === false ? "default" : "outline"}
+                  onClick={() => setDeviceRecovered(false)}
+                >
+                  No, se quedó con el cliente
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {deviceRecovered === true &&
+                  "El equipo vuelve al inventario y lo cobrado se registra como ingreso por retención."}
+                {deviceRecovered === false &&
+                  "El equipo sale del inventario y se registra como venta por el monto cobrado, con su costo real (la utilidad puede quedar negativa)."}
+                {deviceRecovered === null && "Elige una opción para continuar."}
+              </p>
+            </div>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancel}
+              disabled={isCancellingCredit && deviceRecovered === null}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Confirmar Cancelación
