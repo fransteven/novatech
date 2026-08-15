@@ -12,6 +12,8 @@ export const saleItemSchema = z.object({
   price: z.number().positive("El precio debe ser positivo"),
   quantity: z.number().int().positive().default(1),
   isSerialized: z.boolean(),
+  // Referencial: el servidor siempre re-resuelve el costo con resolveItemCost.
+  unitCost: z.number().nonnegative().optional(),
 });
 
 export const salePaymentSchema = z.object({

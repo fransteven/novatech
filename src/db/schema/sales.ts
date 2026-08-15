@@ -20,8 +20,8 @@ export const saleDetails = pgTable("sale_details", {
   productId: uuid("product_id")
     .references(() => products.id)
     .notNull(),
-  unitCost: decimal("unit_cost", { precision: 10, scale: 2 })
-    .notNull()
-    .default("0"),
+  // Sin default: omitir el costo debe fallar de forma ruidosa, no registrar
+  // 100% de margen en silencio.
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
 });

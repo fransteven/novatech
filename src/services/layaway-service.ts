@@ -37,13 +37,32 @@ import { assertTransition } from "@/lib/credit/state-machine";
 import type { LayawayStatus } from "@/lib/credit/state-machine";
 import { money, roundCOP, toDbString, sub } from "@/lib/money";
 import { createNotification, detectUpcomingDue } from "./notification-service";
-import { resolveItemCost } from "./inventory-service";
+import { resolveItemCost, type DbExecutor } from "./inventory-service";
 
 // ---------------------------------------------------------------------------
 // Helpers internos
 // ---------------------------------------------------------------------------
 
 type DbOrTx = typeof db | Parameters<typeof db.transaction>[0] extends (tx: infer T) => unknown ? T : never;
+
+/**
+ * Costo de una línea de apartado al liquidarla o cancelarla.
+ *
+ * Prefiere el snapshot congelado al apartar (layaway_details.unit_cost) para que
+ * editar el inventario o mover el WAC no reescriba la utilidad de un trato ya
+ * pactado. El fallback cubre los apartados abiertos antes de esa columna.
+ */
+export const resolveLayawayItemCost = async (
+  item: {
+    unitCost: string | null;
+    productItemId: string | null;
+    productId: string;
+  },
+  tx: DbExecutor,
+): Promise<number> =>
+  item.unitCost != null
+    ? Number(item.unitCost)
+    : await resolveItemCost(item.productItemId, item.productId, tx);
 
 /**
  * Recalcula el estado del crédito (DPD, mora, riesgo, notificaciones).
@@ -225,11 +244,7 @@ async function completeLayaway(
   for (const item of details) {
     // Costo real del ítem — sin esto la utilidad bruta de todo crédito
     // liquidado se reportaba al 100% (profits-service resta sale_details.unit_cost).
-    const unitCost = await resolveItemCost(
-      item.productItemId,
-      item.productId,
-      tx,
-    );
+    const unitCost = await resolveLayawayItemCost(item, tx);
 
     await tx.insert(saleDetails).values({
       saleId: sale.id,
@@ -391,12 +406,27 @@ export const createLayaway = async (data: CreateLayawayInput) => {
 
     // 2. Procesar ítems (inventario)
     for (const item of data.items) {
+      // Costo congelado al momento de apartar: si el inventario se edita o el WAC
+      // se mueve durante la vida del apartado, la utilidad del trato no cambia.
+      const itemCost = await resolveItemCost(
+        item.productItemId || null,
+        item.productId,
+        tx,
+      );
+
+      if (item.price < itemCost) {
+        throw new Error(
+          `El precio de venta no puede ser menor al costo del producto. Costo: ${itemCost}`,
+        );
+      }
+
       await tx.insert(layawayDetails).values({
         layawayId: newLayaway.id,
         productId: item.productId,
         productItemId: item.productItemId || null,
         quantity: item.quantity,
         agreedPrice: item.price.toString(),
+        unitCost: toDbString(itemCost),
       });
 
       if (item.isSerialized && item.productItemId) {
@@ -947,11 +977,7 @@ export const cancelLayaway = async (
           ).toNumber();
       allocated = roundCOP(money(allocated).plus(itemRevenue)).toNumber();
 
-      const unitCost = await resolveItemCost(
-        item.productItemId,
-        item.productId,
-        tx
-      );
+      const unitCost = await resolveLayawayItemCost(item, tx);
 
       if (deviceRecovered) {
         // Vuelve al inventario a su costo; no consume COGS.

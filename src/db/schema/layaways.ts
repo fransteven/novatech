@@ -54,6 +54,9 @@ export const layawayDetails = pgTable("layaway_details", {
   productItemId: uuid("product_item_id").references(() => productItems.id), // Null si es producto genérico
   quantity: integer("quantity").default(1).notNull(),
   agreedPrice: decimal("agreed_price", { precision: 10, scale: 2 }).notNull(),
+  // Costo congelado al momento de apartar. Nullable: las filas anteriores a esta
+  // columna no lo tienen y se resuelven con resolveItemCost al liquidar.
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
 });
 
 // --- CRONOGRAMA DE CUOTAS (solo crédito) ---
