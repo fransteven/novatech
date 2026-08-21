@@ -319,6 +319,20 @@ export const getLayaways = async () => {
         WHERE ${layawaySchedule.layawayId} = ${layaways.id}
           AND ${layawaySchedule.status} <> 'pagada'
       ), 0)`.mapWith(Number),
+      // Equipos del apartado (nombre + IMEI/serial) para mostrarlos en la lista
+      // y poder filtrar por el código que salió a crédito. Va como subconsulta
+      // correlacionada: un join a layaway_details multiplicaría filas e inflaría
+      // el SUM de totalPaid.
+      devices: sql<string>`COALESCE((
+        SELECT string_agg(DISTINCT CONCAT_WS(' ',
+          ${products.name},
+          COALESCE(${productItems.serialNumber}, ${productItems.sku}, ${products.sku})
+        ), ' | ')
+        FROM ${layawayDetails}
+        LEFT JOIN ${products} ON ${products.id} = ${layawayDetails.productId}
+        LEFT JOIN ${productItems} ON ${productItems.id} = ${layawayDetails.productItemId}
+        WHERE ${layawayDetails.layawayId} = ${layaways.id}
+      ), '')`,
     })
     .from(layaways)
     .leftJoin(customers, eq(layaways.customerId, customers.id))

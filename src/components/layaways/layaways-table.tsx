@@ -2,6 +2,7 @@
 
 import {
   ColumnDef,
+  FilterFn,
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -58,6 +59,8 @@ interface Layaway {
   customerPhone: string | null;
   totalPaid: number;
   balance: number;
+  // "Producto IMEI | Producto IMEI" — armado en getLayaways()
+  devices: string;
 }
 
 interface CashAccount {
@@ -142,6 +145,22 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                 {layaway.customerDocument}
                 {layaway.customerPhone ? ` • ${layaway.customerPhone}` : ""}
               </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "devices",
+        header: "Equipo",
+        meta: { mobileLabel: "Equipo" },
+        cell: ({ row }) => {
+          const devices = row.original.devices;
+          if (!devices) return <span className="text-muted-foreground text-xs">—</span>;
+          return (
+            <div className="text-xs">
+              {devices.split(" | ").map((d) => (
+                <div key={d} className="font-mono">{d}</div>
+              ))}
             </div>
           );
         },
@@ -280,12 +299,41 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
     []
   );
 
+  // El filtro por defecto de TanStack solo mira columnas con accessorKey, así
+  // que documento, teléfono e IMEI quedaban fuera. Los IMEI se dictan por
+  // bloques, por eso se quitan espacios y guiones a ambos lados.
+  const globalFilterFn = useMemo<FilterFn<Layaway>>(
+    () => (row, _columnId, filterValue) => {
+      const raw = String(filterValue).trim().toLowerCase();
+      if (!raw) return true;
+
+      const l = row.original;
+      const haystack = [
+        l.customerName,
+        l.customerDocument,
+        l.customerPhone,
+        l.devices,
+        new Date(l.createdAt).toLocaleDateString("es-ES"),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (haystack.includes(raw)) return true;
+
+      const strip = (v: string) => v.replace(/[\s-]/g, "");
+      return strip(haystack).includes(strip(raw));
+    },
+    []
+  );
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn,
     state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
   });
@@ -300,7 +348,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Filtrar apartados y créditos..."
+              placeholder="Buscar por cliente, documento, IMEI o serial..."
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="pl-9 pr-9"
