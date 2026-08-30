@@ -29,6 +29,8 @@ export async function createProductAction(data: unknown) {
     const maxAttempts = isCustomSku ? 1 : 5;
     let attempt = 0;
     let success = false;
+    let created: Awaited<ReturnType<typeof productService.createProduct>> | null =
+      null;
 
     while (attempt < maxAttempts && !success) {
       attempt++;
@@ -53,7 +55,7 @@ export async function createProductAction(data: unknown) {
       }
 
       try {
-        await productService.createProduct({
+        created = await productService.createProduct({
           ...result.data,
           sku: currentSKU,
         });
@@ -73,7 +75,12 @@ export async function createProductAction(data: unknown) {
     }
 
     revalidatePath("/dashboard/catalog");
-    return { success: true };
+    revalidatePath("/catalog");
+    revalidatePath("/purchases");
+    revalidatePath("/inventory");
+    // Se devuelve el producto creado para que quien lo cree al vuelo (ej. el
+    // formulario de compras) pueda seleccionarlo sin recargar el catálogo.
+    return { success: true, data: created };
   } catch (error: any) {
     console.error("Error creating product:", error);
 

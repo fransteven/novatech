@@ -122,6 +122,13 @@ npx drizzle-kit studio   # Open Drizzle Studio to inspect the DB
 
 ## 📖 Historic Development Log (Changelog)
 
+### Agosto 2026
+- **Módulo de Compras endurecido**: `createPurchase` recalcula subtotal/total en el servidor, lee `isSerialized` del catálogo (nunca del payload) y es idempotente (`purchases.idempotency_key`). El total del cliente sólo se usa como verificación.
+- **Costo aterrizado (landed cost)**: nueva tabla `purchase_extra_costs` (flete, casillero, arancel, comisión). Se prorratea por valor de línea en centavos con mayor residuo (`src/lib/purchase-costs.ts`) y se escribe en `product_items` / `inventory_movements`, que es lo que `resolveItemCost` lee al vender. `purchase_details` guarda costo de factura y `landed_unit_cost`.
+- **Compras a crédito**: `purchases.payment_status` + `amount_paid` y nueva tabla `purchase_payments` (con `cash_movement_id` e idempotencia, igual que `layaway_payments`). Sin abono no se crea movimiento de caja; `account_id` pasó a nullable.
+- **Entrada de inventario unificada**: `inventory-service.receiveStockLines(tx, lines)` es el único punto que crea `product_items` + `inventory_movements`; lo usan tanto el ingreso manual (`receiveStock`) como las compras. Valida seriales (normalizados, sin repetidos ni colisiones) e inserta en lote.
+- **Índice único parcial** sobre `product_items.serial_number` — antes se podían duplicar IMEIs.
+
 ### March 2026
 - **Layaways Module Complete**: Developed a financial structure separating deposits from actual sales using `customers`, `layaways`, `layaway_details`, and `cash_transactions`. Accrual principles applied: profits are recognized only on full layaway liquidation.
 - **Physical Condition on Inventory**: Added JSONB fields (`condition_details` and `notes`) to `product_items` to record battery percentages and cosmetic wear without breaking catalog schemas.

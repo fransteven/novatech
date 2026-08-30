@@ -31,7 +31,13 @@ import {
   cashTransfers,
   cashReconciliations,
 } from "./cash";
-import { providers, purchases, purchaseDetails } from "./purchases";
+import {
+  providers,
+  purchases,
+  purchaseDetails,
+  purchaseExtraCosts,
+  purchasePayments,
+} from "./purchases";
 import { leads, leadActivities } from "./leads";
 import { creditors, creditorMovements } from "./creditors";
 import { warranties, warrantyClaims } from "./warranties";
@@ -233,6 +239,8 @@ export const purchasesRelations = relations(purchases, ({ one, many }) => ({
     references: [user.id],
   }),
   purchaseDetails: many(purchaseDetails),
+  extraCosts: many(purchaseExtraCosts),
+  payments: many(purchasePayments),
 }));
 
 export const purchaseDetailsRelations = relations(purchaseDetails, ({ one }) => ({
@@ -249,6 +257,38 @@ export const purchaseDetailsRelations = relations(purchaseDetails, ({ one }) => 
     references: [productItems.id],
   }),
 }));
+
+export const purchaseExtraCostsRelations = relations(
+  purchaseExtraCosts,
+  ({ one }) => ({
+    purchase: one(purchases, {
+      fields: [purchaseExtraCosts.purchaseId],
+      references: [purchases.id],
+    }),
+  }),
+);
+
+export const purchasePaymentsRelations = relations(
+  purchasePayments,
+  ({ one }) => ({
+    purchase: one(purchases, {
+      fields: [purchasePayments.purchaseId],
+      references: [purchases.id],
+    }),
+    account: one(cashAccounts, {
+      fields: [purchasePayments.accountId],
+      references: [cashAccounts.id],
+    }),
+    cashMovement: one(cashMovements, {
+      fields: [purchasePayments.cashMovementId],
+      references: [cashMovements.id],
+    }),
+    user: one(user, {
+      fields: [purchasePayments.userId],
+      references: [user.id],
+    }),
+  }),
+);
 
 export const cashAccountsRelations = relations(cashAccounts, ({ many }) => ({
   movements: many(cashMovements),

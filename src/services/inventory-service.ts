@@ -11,12 +11,223 @@ import {
   ReceiveStockInput,
   UpdateSerialItemInput,
 } from "@/lib/validators/inventory-validator";
+import { findDuplicateSerials, normalizeSerial } from "@/lib/serials";
 
 /** El cliente de base de datos o la transacción activa. */
 export type DbExecutor =
-  | typeof db
-  | Parameters<Parameters<typeof db.transaction>[0]>[0];
+  typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export interface ReceiveStockLine {
+  productId: string;
+  quantity: number;
+  /** Costo unitario a registrar. Si se pasa `unitCosts`, este valor sólo es el de respaldo. */
+  unitCost: number;
+  /**
+   * Costo por unidad (longitud === quantity). Lo usa la compra para escribir el
+   * costo aterrizado exacto de cada serial tras prorratear costos adicionales.
+   */
+  unitCosts?: number[];
+  serials?: string[];
+  conditionDetails?: Record<string, unknown> | null;
+  notes?: string | null;
+  /** Texto que queda en inventory_movements.reason (ej. "Compra #a1b2c3d4"). */
+  reason: string;
+}
+
+export interface ReceivedStockItem {
+  id: string;
+  serialNumber: string | null;
+  unitCost: number;
+}
+
+export interface ReceivedStockLine {
+  productId: string;
+  productName: string;
+  productSku: string | null;
+  isSerialized: boolean;
+  quantity: number;
+  /** Vacío en líneas no serializadas: el stock genérico vive en inventory_movements. */
+  items: ReceivedStockItem[];
+}
+
+/**
+ * Punto único de entrada de mercancía al inventario.
+ *
+ * Lo usan tanto el ingreso manual (`receiveStock`, sheet de inventario) como el
+ * registro de compras (`PurchaseService.createPurchase`), para que ambas rutas
+ * apliquen exactamente las mismas reglas:
+ *
+ * - `isSerialized` se lee SIEMPRE de la BD, nunca del input del cliente.
+ * - Los seriales se normalizan y se rechazan vacíos, repetidos dentro del lote
+ *   y colisiones con seriales ya existentes en el inventario.
+ * - Inserta en lote (una sentencia por tabla), no una por unidad.
+ *
+ * Recibe el ejecutor de la transacción activa: quien llama decide el alcance
+ * transaccional, de modo que el stock y sus efectos contables entren o fallen juntos.
+ */
+export const receiveStockLines = async (
+  tx: DbExecutor,
+  lines: ReceiveStockLine[],
+): Promise<ReceivedStockLine[]> => {
+  if (lines.length === 0) {
+    throw new Error("Debe recibir al menos una línea de producto.");
+  }
+
+  for (const line of lines) {
+    if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+      throw new Error("La cantidad de cada línea debe ser un entero positivo.");
+    }
+  }
+
+  // 1. Catálogo: una sola consulta para todos los productos involucrados
+  const productIds = [...new Set(lines.map((line) => line.productId))];
+  const catalog = await tx
+    .select({
+      id: products.id,
+      name: products.name,
+      sku: products.sku,
+      isSerialized: products.isSerialized,
+    })
+    .from(products)
+    .where(inArray(products.id, productIds));
+
+  const catalogById = new Map(catalog.map((product) => [product.id, product]));
+
+  const missing = productIds.filter((id) => !catalogById.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `Producto no encontrado en el catálogo: ${missing.join(", ")}`,
+    );
+  }
+
+  // 2. Seriales: normalización y validación global del lote
+  const serialsByLine = lines.map((line, index) => {
+    const product = catalogById.get(line.productId)!;
+    if (!product.isSerialized) return [];
+
+    const provided = (line.serials ?? []).map(normalizeSerial).filter(Boolean);
+
+    if (provided.length !== line.quantity) {
+      throw new Error(
+        `${product.name}: se requieren ${line.quantity} serial(es) y se recibieron ${provided.length}.`,
+      );
+    }
+
+    void index;
+    return provided;
+  });
+
+  const allSerials = serialsByLine.flat();
+
+  if (allSerials.length > 0) {
+    const duplicates = findDuplicateSerials(allSerials);
+    if (duplicates.length > 0) {
+      throw new Error(
+        `Serial(es) repetido(s) en el registro: ${duplicates.join(", ")}`,
+      );
+    }
+
+    const collisions = await tx
+      .select({ serialNumber: productItems.serialNumber })
+      .from(productItems)
+      .where(
+        inArray(
+          sql`UPPER(REPLACE(${productItems.serialNumber}, ' ', ''))`,
+          allSerials,
+        ),
+      );
+
+    if (collisions.length > 0) {
+      throw new Error(
+        `Serial(es) ya registrado(s) en inventario: ${collisions
+          .map((row) => row.serialNumber)
+          .join(", ")}`,
+      );
+    }
+  }
+
+  // 3. Inserción en lote de los ítems serializados
+  const itemRows = lines.flatMap((line, lineIndex) => {
+    const product = catalogById.get(line.productId)!;
+    if (!product.isSerialized) return [];
+
+    return serialsByLine[lineIndex].map((serial, unitIndex) => ({
+      lineIndex,
+      values: {
+        productId: line.productId,
+        serialNumber: serial,
+        status: "available" as const,
+        unitCost: (line.unitCosts?.[unitIndex] ?? line.unitCost).toString(),
+        conditionDetails: line.conditionDetails ?? null,
+        notes: line.notes ?? null,
+      },
+    }));
+  });
+
+  const insertedItems = itemRows.length
+    ? await tx
+        .insert(productItems)
+        .values(itemRows.map((row) => row.values))
+        .returning({
+          id: productItems.id,
+          serialNumber: productItems.serialNumber,
+          unitCost: productItems.unitCost,
+        })
+    : [];
+
+  // 4. Movimientos de inventario: uno por unidad serializada, uno por línea genérica
+  const movementRows = [
+    ...insertedItems.map((item, index) => ({
+      productItemId: item.id,
+      productId: itemRows[index].values.productId,
+      type: "IN",
+      quantity: 1,
+      unitCost: item.unitCost,
+      reason: lines[itemRows[index].lineIndex].reason,
+    })),
+    ...lines
+      .filter((line) => !catalogById.get(line.productId)!.isSerialized)
+      .map((line) => ({
+        productItemId: null,
+        productId: line.productId,
+        type: "IN",
+        quantity: line.quantity,
+        unitCost: line.unitCost.toString(),
+        reason: line.reason,
+      })),
+  ];
+
+  if (movementRows.length > 0) {
+    await tx.insert(inventoryMovements).values(movementRows);
+  }
+
+  // 5. Resultado agrupado por línea, en el mismo orden recibido
+  return lines.map((line, lineIndex) => {
+    const product = catalogById.get(line.productId)!;
+    const items = insertedItems
+      .filter((_, index) => itemRows[index].lineIndex === lineIndex)
+      .map((item) => ({
+        id: item.id,
+        serialNumber: item.serialNumber,
+        unitCost: Number(item.unitCost),
+      }));
+
+    return {
+      productId: line.productId,
+      productName: product.name,
+      productSku: product.sku,
+      isSerialized: product.isSerialized,
+      quantity: line.quantity,
+      items,
+    };
+  });
+};
+
+/**
+ * Ingreso manual de stock desde el inventario (sin proveedor ni movimiento de
+ * caja). Es una envoltura de una sola línea sobre `receiveStockLines`, para que
+ * comparta validaciones con el registro de compras.
+ */
 export const receiveStock = async ({
   productId,
   quantity,
@@ -29,79 +240,35 @@ export const receiveStock = async ({
   notes?: string;
 }) => {
   return await db.transaction(async (tx) => {
-    // 1. Verificación: Consultar el producto
-    const product = await tx.query.products.findFirst({
-      where: eq(products.id, productId),
-    });
-
-    if (!product) {
-      throw new Error(`Product with ID ${productId} not found`);
-    }
-
-    // 2. Validación de Integridad
-    if (product.isSerialized) {
-      if (!serials || serials.length !== quantity) {
-        throw new Error(
-          `Serialized product requires exactly ${quantity} serial numbers. Provided: ${
-            serials?.length || 0
-          }`,
-        );
-      }
-    }
-
-    // 3. Ejecución
-    if (product.isSerialized && serials) {
-      const createdItems = [];
-      const conditionDetails = batteryHealth ? { batteryHealth } : null;
-
-      // Caso Serializado
-      for (const serial of serials) {
-        // Insertar product item
-        const [newItem] = await tx
-          .insert(productItems)
-          .values({
-            productId,
-            serialNumber: serial,
-            status: "available",
-            unitCost: unitCost.toString(),
-            conditionDetails,
-            notes: notes || null,
-          })
-          .returning({
-            id: productItems.id,
-            serialNumber: productItems.serialNumber,
-          });
-
-        createdItems.push(newItem);
-
-        // Insertar movimiento de inventario
-        await tx.insert(inventoryMovements).values({
-          productItemId: newItem.id,
-          productId,
-          type: "IN",
-          quantity: 1,
-          unitCost: unitCost.toString(),
-          reason: "Stock Received",
-        });
-      }
-      return { success: true, type: "serialized", items: createdItems };
-    } else {
-      // Caso NO Serializado
-      await tx.insert(inventoryMovements).values({
-        productItemId: null,
+    const [line] = await receiveStockLines(tx, [
+      {
         productId,
-        type: "IN",
         quantity,
-        unitCost: unitCost.toString(),
+        unitCost,
+        serials,
+        conditionDetails: batteryHealth ? { batteryHealth } : null,
+        notes: notes || null,
         reason: "Stock Received",
-      });
+      },
+    ]);
+
+    if (line.isSerialized) {
       return {
         success: true,
-        type: "generic",
-        product: { sku: product.sku, name: product.name },
-        quantity,
+        type: "serialized",
+        items: line.items.map((item) => ({
+          id: item.id,
+          serialNumber: item.serialNumber,
+        })),
       };
     }
+
+    return {
+      success: true,
+      type: "generic",
+      product: { sku: line.productSku, name: line.productName },
+      quantity: line.quantity,
+    };
   });
 };
 
@@ -209,7 +376,13 @@ export const getStockSummary = async () => {
     })
     .from(products)
     .leftJoin(inventoryMovements, eq(products.id, inventoryMovements.productId))
-    .groupBy(products.id, products.name, products.isSerialized, products.sku, products.attributes);
+    .groupBy(
+      products.id,
+      products.name,
+      products.isSerialized,
+      products.sku,
+      products.attributes,
+    );
 
   return stockData.map((item) => ({
     productId: item.productId,
@@ -260,7 +433,13 @@ export const searchInventoryStock = async (query: string) => {
     .from(products)
     .leftJoin(inventoryMovements, eq(products.id, inventoryMovements.productId))
     .where(inArray(products.id, matchedIds))
-    .groupBy(products.id, products.name, products.isSerialized, products.sku, products.attributes);
+    .groupBy(
+      products.id,
+      products.name,
+      products.isSerialized,
+      products.sku,
+      products.attributes,
+    );
 
   return stockData.map((item) => ({
     productId: item.productId,
@@ -284,15 +463,18 @@ export const getProductSerials = async (productId: string) => {
       createdAt: productItems.createdAt,
       conditionDetails: productItems.conditionDetails,
       notes: productItems.notes,
-      unitCost: sql<number>`COALESCE(${inventoryMovements.unitCost}, ${productItems.unitCost})`.mapWith(Number),
+      unitCost:
+        sql<number>`COALESCE(${inventoryMovements.unitCost}, ${productItems.unitCost})`.mapWith(
+          Number,
+        ),
     })
     .from(productItems)
     .leftJoin(
       inventoryMovements,
       and(
         eq(productItems.id, inventoryMovements.productItemId),
-        eq(inventoryMovements.type, "IN")
-      )
+        eq(inventoryMovements.type, "IN"),
+      ),
     )
     .where(eq(productItems.productId, productId))
     .orderBy(desc(productItems.createdAt));
@@ -354,11 +536,7 @@ export const updateSerialItem = async (input: UpdateSerialItemInput) => {
 
     // Solo registrar los campos que realmente cambiaron
     const changes: Record<string, { old: unknown; new: unknown }> = {};
-    const compare = (
-      key: string,
-      oldValue: unknown,
-      newValue: unknown,
-    ) => {
+    const compare = (key: string, oldValue: unknown, newValue: unknown) => {
       if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
         changes[key] = { old: oldValue, new: newValue };
       }
@@ -382,19 +560,28 @@ export const updateSerialItem = async (input: UpdateSerialItemInput) => {
  * Calcula el Costo Promedio Ponderado (WAC) de un producto no serializado.
  * Ecuación: Suma(Cantidad * Costo Unitario) / Suma(Cantidad) para todos los movimientos IN.
  */
-export const calculateProductWAC = async (productId: string, txObj?: any): Promise<number> => {
-  const dbInstance = txObj || db;
+export const calculateProductWAC = async (
+  productId: string,
+  txObj?: DbExecutor,
+): Promise<number> => {
+  const dbInstance = txObj ?? db;
   const result = await dbInstance
     .select({
-      totalQuantity: sql<number>`COALESCE(SUM(${inventoryMovements.quantity}), 0)`.mapWith(Number),
-      totalValue: sql<number>`COALESCE(SUM(${inventoryMovements.quantity} * CAST(${inventoryMovements.unitCost} AS DECIMAL)), 0)`.mapWith(Number),
+      totalQuantity:
+        sql<number>`COALESCE(SUM(${inventoryMovements.quantity}), 0)`.mapWith(
+          Number,
+        ),
+      totalValue:
+        sql<number>`COALESCE(SUM(${inventoryMovements.quantity} * CAST(${inventoryMovements.unitCost} AS DECIMAL)), 0)`.mapWith(
+          Number,
+        ),
     })
     .from(inventoryMovements)
     .where(
       and(
         eq(inventoryMovements.productId, productId),
-        eq(inventoryMovements.type, "IN")
-      )
+        eq(inventoryMovements.type, "IN"),
+      ),
     );
 
   const data = result[0];

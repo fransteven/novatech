@@ -39,9 +39,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import type * as React from "react";
 
-export function CreateProductDialog() {
-  const [open, setOpen] = useState(false);
+export interface CreatedProduct {
+  id: string;
+  name: string;
+  sku: string | null;
+  isSerialized: boolean;
+  price: string;
+  attributes: unknown;
+}
+
+interface CreateProductDialogProps {
+  /** Controla el diálogo desde afuera (ej. abrirlo desde el buscador de compras). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Reemplaza el botón "Nuevo Producto". Pasar `null` para no renderizar disparador. */
+  trigger?: React.ReactNode;
+  /** Prellena el nombre — útil cuando se creó desde una búsqueda sin resultados. */
+  defaultName?: string;
+  /** Devuelve el producto recién creado a quien abrió el diálogo. */
+  onCreated?: (product: CreatedProduct) => void;
+}
+
+export function CreateProductDialog({
+  open: controlledOpen,
+  onOpenChange,
+  trigger,
+  defaultName,
+  onCreated,
+}: CreateProductDialogProps = {}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [categories, setCategories] = useState<
     { id: string; name: string; template: any }[]
   >([]);
@@ -65,7 +99,7 @@ export function CreateProductDialog() {
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      name: "",
+      name: defaultName ?? "",
       sku: "",
       description: "",
       price: "0",
@@ -75,6 +109,14 @@ export function CreateProductDialog() {
       attributes: {},
     },
   });
+
+  useEffect(() => {
+    if (open && defaultName) {
+      form.setValue("name", defaultName);
+    }
+    // Sólo al abrir: no queremos pisar lo que el usuario esté escribiendo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultName]);
 
   const selectedCategoryId = form.watch("categoryId");
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
@@ -86,6 +128,9 @@ export function CreateProductDialog() {
         toast.success("Producto creado exitosamente");
         setOpen(false);
         form.reset();
+        if (result.data) {
+          onCreated?.(result.data as CreatedProduct);
+        }
       } else {
         toast.error(result.error || "Error al crear el producto");
       }
@@ -94,12 +139,16 @@ export function CreateProductDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Producto
-        </Button>
-      </DialogTrigger>
+      {trigger === undefined ? (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Producto
+          </Button>
+        </DialogTrigger>
+      ) : trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Crear Producto</DialogTitle>
@@ -275,7 +324,9 @@ export function CreateProductDialog() {
                       value={field.value ?? ""}
                       onChange={(e) =>
                         field.onChange(
-                          e.target.value === "" ? undefined : Number(e.target.value),
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
                         )
                       }
                     />
