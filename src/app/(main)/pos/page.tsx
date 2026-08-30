@@ -92,7 +92,7 @@ export default function PosPage() {
           isSerialized: item.isSerialized,
         })),
         totalAmount,
-        userId: selectedCustomer?.id,
+        customerId: selectedCustomer?.id,
       });
 
       if (response.success) {

@@ -6,9 +6,13 @@ import {
   timestamp,
   uuid,
   uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { customers } from "./customers";
 import { productItems } from "./inventory";
+import { saleDetails } from "./sales";
+import { layawayDetails } from "./layaways";
 import { user } from "./auth";
 
 // --- GARANTÍA: se materializa por unidad al registrar un reclamo o ajustar
@@ -18,9 +22,15 @@ export const warranties = pgTable(
   "warranties",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    productItemId: uuid("product_item_id")
-      .references(() => productItems.id)
-      .notNull(),
+    // --- ANCLAS DE LA GARANTÍA ---
+    // Un equipo serializado ancla a su unidad física (product_item). Un
+    // accesorio sin serial (audífonos, cargador) no tiene unidad, así que
+    // ancla a la LÍNEA de entrega. Al menos una de las tres debe existir.
+    productItemId: uuid("product_item_id").references(() => productItems.id),
+    saleDetailId: uuid("sale_detail_id").references(() => saleDetails.id),
+    layawayDetailId: uuid("layaway_detail_id").references(
+      () => layawayDetails.id,
+    ),
     customerId: uuid("customer_id").references(() => customers.id),
     // Origen de la garantía: 'sale' | 'layaway' | 'manual'
     sourceType: text("source_type").notNull(),
@@ -36,8 +46,16 @@ export const warranties = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    // Una garantía activa por unidad física
+    // Una garantía por unidad física / por línea de entrega. Postgres permite
+    // múltiples NULLs en un índice único, así que las filas que anclan por otra
+    // vía no chocan entre sí.
     uniqueIndex("warranties_product_item_unique").on(table.productItemId),
+    uniqueIndex("warranties_sale_detail_unique").on(table.saleDetailId),
+    uniqueIndex("warranties_layaway_detail_unique").on(table.layawayDetailId),
+    check(
+      "warranties_anchor_check",
+      sql`${table.productItemId} IS NOT NULL OR ${table.saleDetailId} IS NOT NULL OR ${table.layawayDetailId} IS NOT NULL`,
+    ),
   ],
 );
 

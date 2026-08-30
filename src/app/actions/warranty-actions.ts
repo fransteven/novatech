@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import * as warrantyService from "@/services/warranty-service";
 import {
-  warrantyLookupSchema,
+  warrantySearchSchema,
+  warrantyAnchorSchema,
   createClaimSchema,
   updateClaimStatusSchema,
   adjustWarrantySchema,
@@ -11,33 +12,66 @@ import {
 import { getSessionUser, requireAdmin } from "@/lib/auth-guard";
 import { recordAudit } from "@/services/audit-service";
 
-export async function lookupWarrantyAction(data: unknown) {
-  const result = warrantyLookupSchema.safeParse(data);
+/**
+ * Consulta de garantías. Devuelve datos de contacto de clientes, así que exige
+ * sesión — no es un endpoint público.
+ */
+export async function searchWarrantiesAction(data: unknown) {
+  const result = warrantySearchSchema.safeParse(data);
   if (!result.success) {
-    return { success: false, error: result.error.issues[0].message };
+    return { success: false as const, error: result.error.issues[0].message };
   }
 
   try {
-    const warranty = await warrantyService.getWarrantyBySerial(
-      result.data.serial,
-    );
-    return { success: true, data: warranty };
+    const user = await getSessionUser();
+    if (!user) {
+      return { success: false as const, error: "No autorizado" };
+    }
+
+    const found = await warrantyService.searchWarranties(result.data);
+    return { success: true as const, data: found };
   } catch (error) {
-    console.error("Error looking up warranty:", error);
-    return { success: false, error: "Error al consultar la garantía" };
+    console.error("Error searching warranties:", error);
+    return { success: false as const, error: "Error al consultar garantías" };
+  }
+}
+
+export async function getWarrantyDetailAction(data: unknown) {
+  const result = warrantyAnchorSchema.safeParse(data);
+  if (!result.success) {
+    return { success: false as const, error: result.error.issues[0].message };
+  }
+
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { success: false as const, error: "No autorizado" };
+    }
+
+    const detail = await warrantyService.getWarrantyDetail(result.data);
+    if (!detail) {
+      return { success: false as const, error: "Entrega no encontrada" };
+    }
+    return { success: true as const, data: detail };
+  } catch (error) {
+    console.error("Error loading warranty detail:", error);
+    return {
+      success: false as const,
+      error: "Error al cargar el detalle de la garantía",
+    };
   }
 }
 
 export async function registerClaimAction(data: unknown) {
   const result = createClaimSchema.safeParse(data);
   if (!result.success) {
-    return { success: false, error: result.error.issues[0].message };
+    return { success: false as const, error: result.error.issues[0].message };
   }
 
   try {
     const user = await getSessionUser();
     if (!user) {
-      return { success: false, error: "No autorizado" };
+      return { success: false as const, error: "No autorizado" };
     }
 
     const { claim, withinWarranty } = await warrantyService.createClaim(
@@ -46,11 +80,11 @@ export async function registerClaimAction(data: unknown) {
     );
 
     revalidatePath("/garantias");
-    return { success: true, data: claim, withinWarranty };
+    return { success: true as const, data: claim, withinWarranty };
   } catch (error) {
     console.error("Error registering warranty claim:", error);
     return {
-      success: false,
+      success: false as const,
       error:
         error instanceof Error
           ? error.message
@@ -62,13 +96,13 @@ export async function registerClaimAction(data: unknown) {
 export async function updateClaimStatusAction(data: unknown) {
   const result = updateClaimStatusSchema.safeParse(data);
   if (!result.success) {
-    return { success: false, error: result.error.issues[0].message };
+    return { success: false as const, error: result.error.issues[0].message };
   }
 
   try {
     const user = await getSessionUser();
     if (!user) {
-      return { success: false, error: "No autorizado" };
+      return { success: false as const, error: "No autorizado" };
     }
 
     const updated = await warrantyService.updateClaimStatus(
@@ -77,11 +111,11 @@ export async function updateClaimStatusAction(data: unknown) {
     );
 
     revalidatePath("/garantias");
-    return { success: true, data: updated };
+    return { success: true as const, data: updated };
   } catch (error) {
     console.error("Error updating warranty claim:", error);
     return {
-      success: false,
+      success: false as const,
       error:
         error instanceof Error
           ? error.message
@@ -93,7 +127,7 @@ export async function updateClaimStatusAction(data: unknown) {
 export async function adjustWarrantyAction(data: unknown) {
   const result = adjustWarrantySchema.safeParse(data);
   if (!result.success) {
-    return { success: false, error: result.error.issues[0].message };
+    return { success: false as const, error: result.error.issues[0].message };
   }
 
   try {
@@ -124,11 +158,11 @@ export async function adjustWarrantyAction(data: unknown) {
     });
 
     revalidatePath("/garantias");
-    return { success: true, data: warranty };
+    return { success: true as const, data: warranty };
   } catch (error) {
     console.error("Error adjusting warranty:", error);
     return {
-      success: false,
+      success: false as const,
       error:
         error instanceof Error
           ? error.message
@@ -139,10 +173,15 @@ export async function adjustWarrantyAction(data: unknown) {
 
 export async function getRecentClaimsAction() {
   try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { success: false as const, error: "No autorizado" };
+    }
+
     const claims = await warrantyService.getRecentClaims();
-    return { success: true, data: claims };
+    return { success: true as const, data: claims };
   } catch (error) {
     console.error("Error fetching warranty claims:", error);
-    return { success: false, error: "Error al cargar los reclamos" };
+    return { success: false as const, error: "Error al cargar los reclamos" };
   }
 }

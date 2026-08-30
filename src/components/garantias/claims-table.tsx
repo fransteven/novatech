@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   Table,
@@ -43,6 +43,12 @@ export interface WarrantyClaimRow {
 export function ClaimsTable({ claims }: { claims: WarrantyClaimRow[] }) {
   const [rows, setRows] = useState(claims);
   const [isPending, startTransition] = useTransition();
+
+  // `useState` congela la lista inicial: sin esto, un reclamo nuevo no aparece
+  // pese al revalidatePath("/garantias") del server action.
+  useEffect(() => {
+    setRows(claims);
+  }, [claims]);
 
   const handleStatusChange = (claimId: string, status: string) => {
     setRows((prev) =>

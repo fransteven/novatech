@@ -29,7 +29,9 @@ export const processSaleSchema = z
   .object({
     items: z.array(saleItemSchema).min(1, "Debe agregar al menos un producto"),
     totalAmount: z.number().positive("El total debe ser positivo"),
-    userId: z.string().optional(),
+    // Cliente del directorio CRM al que se le factura. El VENDEDOR nunca viaja
+    // en el payload: se resuelve en el server action desde la sesión.
+    customerId: z.string().uuid("Cliente inválido").optional(),
     payments: z.array(salePaymentSchema).optional(),
   })
   .superRefine((data, ctx) => {

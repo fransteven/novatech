@@ -1,11 +1,35 @@
 import { z } from "zod";
 
-export const warrantyLookupSchema = z.object({
-  serial: z.string().trim().min(3, "Ingresa un serial/IMEI válido"),
+/**
+ * Ancla de una garantía. Un equipo serializado se identifica por su unidad
+ * física; un accesorio sin serial (audífonos, cargador) solo existe como línea
+ * de una venta o de un apartado. Debe llegar exactamente una vía.
+ */
+export const warrantyAnchorSchema = z
+  .object({
+    productItemId: z.string().uuid().optional(),
+    saleDetailId: z.string().uuid().optional(),
+    layawayDetailId: z.string().uuid().optional(),
+  })
+  .refine(
+    (a) =>
+      [a.productItemId, a.saleDetailId, a.layawayDetailId].filter(Boolean)
+        .length === 1,
+    { message: "Indica exactamente una referencia de la entrega" },
+  );
+
+export const warrantySearchSchema = z.object({
+  // Texto libre: IMEI/serial (completo o parcial), nombre o cédula o teléfono
+  // del cliente, nombre/SKU del producto, o N° (prefijo) de venta/apartado.
+  q: z.string().trim().max(120).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  status: z.enum(["todas", "vigente", "vencida"]).default("todas"),
+  sourceType: z.enum(["todas", "sale", "layaway"]).default("todas"),
 });
 
 export const createClaimSchema = z.object({
-  productItemId: z.string().uuid("Unidad inválida"),
+  anchor: warrantyAnchorSchema,
   reportedSerial: z.string().trim().optional(),
   issue: z.string().trim().min(3, "Describe la falla reportada"),
 });
@@ -23,7 +47,7 @@ export const updateClaimStatusSchema = z.object({
 });
 
 export const adjustWarrantySchema = z.object({
-  productItemId: z.string().uuid(),
+  anchor: warrantyAnchorSchema,
   startDate: z.coerce.date(),
   warrantyMonths: z.coerce
     .number()
@@ -32,7 +56,8 @@ export const adjustWarrantySchema = z.object({
   notes: z.string().trim().optional(),
 });
 
-export type WarrantyLookupInput = z.infer<typeof warrantyLookupSchema>;
+export type WarrantyAnchor = z.infer<typeof warrantyAnchorSchema>;
+export type WarrantySearchInput = z.infer<typeof warrantySearchSchema>;
 export type CreateClaimInput = z.infer<typeof createClaimSchema>;
 export type UpdateClaimStatusInput = z.infer<typeof updateClaimStatusSchema>;
 export type AdjustWarrantyInput = z.infer<typeof adjustWarrantySchema>;

@@ -162,8 +162,12 @@ export const reservationsRelations = relations(reservations, ({ one }) => ({
   }),
 }));
 
-export const salesRelations = relations(sales, ({ many }) => ({
+export const salesRelations = relations(sales, ({ one, many }) => ({
   saleDetails: many(saleDetails),
+  customer: one(customers, {
+    fields: [sales.customerId],
+    references: [customers.id],
+  }),
 }));
 
 export const saleDetailsRelations = relations(saleDetails, ({ one }) => ({
@@ -398,6 +402,14 @@ export const warrantiesRelations = relations(warranties, ({ one, many }) => ({
   productItem: one(productItems, {
     fields: [warranties.productItemId],
     references: [productItems.id],
+  }),
+  saleDetail: one(saleDetails, {
+    fields: [warranties.saleDetailId],
+    references: [saleDetails.id],
+  }),
+  layawayDetail: one(layawayDetails, {
+    fields: [warranties.layawayDetailId],
+    references: [layawayDetails.id],
   }),
   customer: one(customers, {
     fields: [warranties.customerId],

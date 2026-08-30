@@ -145,20 +145,32 @@ export const searchProduct = async (
 };
 
 /**
+ * Entrada del servicio: el payload validado del cliente MÁS el vendedor, que
+ * el server action resuelve desde la sesión y nunca acepta del cliente.
+ */
+export type ProcessSaleServiceInput = ProcessSaleInput & {
+  userId: string | null;
+};
+
+/**
  * Process a sale transaction
  */
 export const processSale = async ({
   items,
   totalAmount,
   userId,
+  customerId,
   payments,
-}: ProcessSaleInput) => {
+}: ProcessSaleServiceInput) => {
   return await db.transaction(async (tx) => {
     // 1. Create the sale record
+    // userId = vendedor (sesión). customerId = cliente del directorio CRM.
+    // Confundirlos rompe la garantía por cliente y viola el FK de cash_movements.
     const [sale] = await tx
       .insert(sales)
       .values({
         userId,
+        customerId: customerId ?? null,
         totalAmount: totalAmount.toString(),
         status: "completed",
       })

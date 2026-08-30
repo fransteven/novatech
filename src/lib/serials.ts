@@ -10,6 +10,15 @@
 export const normalizeSerial = (serial: string): string =>
   serial.trim().replace(/\s+/g, "").toUpperCase();
 
+/**
+ * Clave de BÚSQUEDA de un serial: además de espacios quita guiones, porque el
+ * cliente dicta el IMEI en bloques ("352 099-00 1761481") y el escáner a veces
+ * los inserta. Se aplica a AMBOS lados de la comparación (dato y query), nunca
+ * para escribir en la base — para eso está `normalizeSerial`.
+ */
+export const serialSearchKey = (value: string): string =>
+  value.replace(/[\s-]/g, "").toUpperCase();
+
 /** Devuelve los seriales que aparecen más de una vez en el lote, ya normalizados. */
 export const findDuplicateSerials = (serials: string[]): string[] => {
   const seen = new Set<string>();

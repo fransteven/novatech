@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import {
@@ -15,36 +15,47 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { serialSearchKey } from "@/lib/serials";
 import { registerClaimAction } from "@/app/actions/warranty-actions";
+import type { WarrantyAnchor } from "@/lib/validators/warranty-validator";
 
 interface ClaimDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  productItemId: string;
+  anchor: WarrantyAnchor;
   defaultSerial: string;
   withinWarranty: boolean;
+  onRegistered: () => void;
 }
 
 export function ClaimDialog({
   open,
   onOpenChange,
-  productItemId,
+  anchor,
   defaultSerial,
   withinWarranty,
+  onRegistered,
 }: ClaimDialogProps) {
   const [issue, setIssue] = useState("");
   const [reportedSerial, setReportedSerial] = useState(defaultSerial);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // Reset al abrir. Ajustar estado durante el render (en vez de en un efecto)
+  // evita el render en cascada y deja intacta la animación de salida de Radix.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       setIssue("");
       setReportedSerial(defaultSerial);
     }
-  }, [open, defaultSerial]);
+  }
 
+  // Un accesorio sin serial no puede "no coincidir" — solo se compara cuando
+  // la unidad vendida tiene serial registrado.
   const serialMismatch =
-    reportedSerial.trim().toLowerCase() !== defaultSerial.trim().toLowerCase();
+    defaultSerial.trim().length > 0 &&
+    serialSearchKey(reportedSerial) !== serialSearchKey(defaultSerial);
 
   const handleSubmit = () => {
     if (!issue.trim()) {
@@ -53,13 +64,14 @@ export function ClaimDialog({
     }
     startTransition(async () => {
       const res = await registerClaimAction({
-        productItemId,
+        anchor,
         issue,
         reportedSerial,
       });
       if (res.success) {
         toast.success("Reclamo registrado exitosamente");
         onOpenChange(false);
+        onRegistered();
       } else {
         toast.error(res.error || "Error al registrar el reclamo");
       }
