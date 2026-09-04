@@ -1,12 +1,33 @@
 import { z } from "zod";
 
 /**
+ * Los inputs `type="number"` mandan `""` cuando el usuario los deja o los deja
+ * vacíos, y `Number("")` es 0 — suficiente para que `.min(1)` reviente con un
+ * error que el formulario no pinta en ningún lado. Estos dos preprocesadores
+ * normalizan el vacío antes de coercionar: uno lo trata como "sin dato" y el
+ * otro como cero explícito.
+ */
+const blankAsUndefined = (value: unknown) =>
+  value === "" || value === null ? undefined : value;
+
+const blankAsZero = (value: unknown) =>
+  value === "" || value === null || value === undefined ? 0 : value;
+
+/** Número opcional: vacío === no informado (no === 0). */
+const optionalNumber = (schema: z.ZodType<number>) =>
+  z.preprocess(blankAsUndefined, schema.optional());
+
+/** Número obligatorio donde el vacío significa cero (montos, costos). */
+const amountNumber = (schema: z.ZodType<number>) =>
+  z.preprocess(blankAsZero, schema);
+
+/**
  * Condición física capturada al recibir un equipo. Se guarda en el JSONB
  * `condition_details` de product_items / purchase_details.
  */
 const conditionDetailsSchema = z
   .object({
-    batteryHealth: z.coerce.number().min(1).max(100).optional(),
+    batteryHealth: optionalNumber(z.coerce.number().min(1).max(100)),
   })
   .optional()
   .nullable();
@@ -22,7 +43,7 @@ const purchaseDetailSchema = z.object({
     .number()
     .int("La cantidad debe ser un número entero")
     .min(1, "Cantidad debe ser mayor a 0"),
-  unitCost: z.coerce.number().min(0, "Costo debe ser 0 o mayor"),
+  unitCost: amountNumber(z.coerce.number().min(0, "Costo debe ser 0 o mayor")),
   serialNumbers: z.array(z.string()).optional(),
   conditionDetails: conditionDetailsSchema,
   notes: z.string().optional(),
@@ -30,7 +51,9 @@ const purchaseDetailSchema = z.object({
 
 const extraCostSchema = z.object({
   concept: z.string().min(1, "Concepto requerido"),
-  amount: z.coerce.number().min(0, "El monto no puede ser negativo"),
+  amount: amountNumber(
+    z.coerce.number().min(0, "El monto no puede ser negativo"),
+  ),
   notes: z.string().optional(),
 });
 
@@ -46,14 +69,14 @@ export const createPurchaseSchema = z
       .min(1, "Debe agregar al menos un producto"),
     extraCosts: z.array(extraCostSchema).optional(),
     // --- Pago al proveedor ---
-    amountPaid: z.coerce
-      .number()
-      .min(0, "El monto pagado no puede ser negativo"),
+    amountPaid: amountNumber(
+      z.coerce.number().min(0, "El monto pagado no puede ser negativo"),
+    ),
     accountId: z.string().uuid().optional().nullable(),
     paymentMethod: z.string().min(1, "Método de pago requerido"),
     referenceCode: z.string().optional(),
     /** Total calculado en el cliente; el servidor recalcula y lo usa como verificación. */
-    expectedTotal: z.coerce.number().min(0).optional(),
+    expectedTotal: optionalNumber(z.coerce.number().min(0)),
   })
   .superRefine((data, ctx) => {
     // Sin abono no se toca caja; con abono la cuenta es obligatoria.

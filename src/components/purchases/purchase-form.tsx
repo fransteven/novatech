@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useFieldArray, useForm, type Resolver } from "react-hook-form";
+import { useEffect, useState } from "react";
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type FieldErrors,
+  type Resolver,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
@@ -11,7 +17,7 @@ import {
   type CreatePurchaseSchema,
 } from "@/lib/validators/purchase-validator";
 import { createPurchaseAction } from "@/app/actions/purchase-actions";
-import { allocateExtraCosts } from "@/lib/purchase-costs";
+import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
 import { findDuplicateSerials, normalizeSerial } from "@/lib/serials";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -55,6 +61,40 @@ const toNumber = (value: unknown): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+const isBlank = (value: unknown) =>
+  value === "" || value === null || value === undefined;
+
+/**
+ * Los inputs `type="number"` entregan strings; sin esto el estado del
+ * formulario guarda `"1500"` y cualquier comparación numérica queda a merced de
+ * la coerción. Vacío es 0 en montos y "sin dato" en los campos opcionales.
+ */
+const numberField = { setValueAs: (v: unknown) => (isBlank(v) ? 0 : Number(v)) };
+const optionalNumberField = {
+  setValueAs: (v: unknown) => (isBlank(v) ? undefined : Number(v)),
+};
+
+/**
+ * Primer mensaje de error del árbol de `formState.errors`. Sin esto, un error
+ * en un campo que no pinta su mensaje deja el botón de enviar mudo.
+ */
+const firstErrorMessage = (node: unknown): string | undefined => {
+  if (!node || typeof node !== "object") return undefined;
+
+  const message = (node as { message?: unknown }).message;
+  if (typeof message === "string" && message) return message;
+
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (key === "ref" || key === "types") continue;
+    const found = firstErrorMessage(value);
+    if (found) return found;
+  }
+  return undefined;
+};
+
+const FieldError = ({ message }: { message?: string }) =>
+  message ? <p className="text-destructive text-xs">{message}</p> : null;
 
 const todayInputValue = () => {
   const now = new Date();
@@ -103,53 +143,76 @@ export function PurchaseForm({
     name: "extraCosts",
   });
 
-  const watchedDetails = form.watch("details");
-  const watchedExtraCosts = form.watch("extraCosts");
-  const watchedAmountPaid = form.watch("amountPaid");
-  const accountId = form.watch("accountId");
+  // `useWatch` entrega una copia nueva en cada cambio. `form.watch()` devolvía
+  // SIEMPRE la misma referencia (RHF muta el array in place), así que cualquier
+  // `useMemo` colgado de ella se quedaba congelado con los valores iniciales y
+  // el formulario mandaba un total de $0 al servidor.
+  const watchedDetails = useWatch({ control: form.control, name: "details" });
+  const watchedExtraCosts = useWatch({
+    control: form.control,
+    name: "extraCosts",
+  });
+  const watchedAmountPaid = useWatch({
+    control: form.control,
+    name: "amountPaid",
+  });
+  const accountId = useWatch({ control: form.control, name: "accountId" });
 
-  const productById = useMemo(
-    () => new Map(products.map((product) => [product.id, product])),
-    [products],
-  );
+  const productById = new Map(products.map((product) => [product.id, product]));
 
   // --- Totales derivados del estado del formulario (nunca guardados a mano) ---
-  const allocation = useMemo(() => {
-    const extraTotal = (watchedExtraCosts ?? []).reduce(
+  // Sin memo a propósito: es la misma función pura que corre el servidor sobre
+  // un puñado de líneas, y memorizarla fue justamente el origen del bug.
+  const allocation = allocateExtraCosts(
+    (watchedDetails ?? []).map((detail) => ({
+      quantity: Math.max(1, Math.trunc(toNumber(detail?.quantity))),
+      unitCost: toNumber(detail?.unitCost),
+    })),
+    (watchedExtraCosts ?? []).reduce(
       (acc, cost) => acc + toNumber(cost?.amount),
       0,
-    );
-
-    return allocateExtraCosts(
-      (watchedDetails ?? []).map((detail) => ({
-        quantity: Math.max(1, Math.trunc(toNumber(detail?.quantity))),
-        unitCost: toNumber(detail?.unitCost),
-      })),
-      extraTotal,
-    );
-  }, [watchedDetails, watchedExtraCosts]);
+    ),
+  );
 
   const total = allocation.total;
   const amountPaid = toNumber(watchedAmountPaid);
   const pending = Math.max(0, total - amountPaid);
 
-  // El monto pagado sigue al total salvo cuando el usuario elige un abono parcial.
+  // Contado = pagar el total; el monto sigue al total mientras ese sea el modo.
   useEffect(() => {
     if (paymentMode === "paid") {
       form.setValue("amountPaid", total, { shouldValidate: false });
-    } else if (paymentMode === "pending") {
-      form.setValue("amountPaid", 0, { shouldValidate: false });
-      form.setValue("accountId", null, { shouldValidate: false });
     }
   }, [paymentMode, total, form]);
 
+  /** El selector es un atajo; el monto pagado es la fuente de verdad. */
+  const applyPaymentMode = (mode: PaymentMode) => {
+    setPaymentMode(mode);
+    if (mode === "paid") {
+      form.setValue("amountPaid", total, { shouldValidate: false });
+    } else if (mode === "pending") {
+      form.setValue("amountPaid", 0, { shouldValidate: false });
+      form.setValue("accountId", null, { shouldValidate: false });
+    }
+  };
+
+  /**
+   * Escribir el monto reclasifica la compra: 0 = crédito, total = contado.
+   * No se toca `accountId`: al reescribir el monto se pasa por 0 y se perdería
+   * la cuenta ya elegida. Si el monto queda en 0, `onSubmit` la anula igual.
+   */
+  const handleAmountPaidChange = (value: number) => {
+    setPaymentMode(derivePaymentStatus(value, total));
+  };
+
   // --- Seriales repetidos: aviso inmediato, antes de llegar al servidor ---
-  const duplicateSerials = useMemo(() => {
-    const serials = (watchedDetails ?? []).flatMap((detail) =>
-      (detail?.serialNumbers ?? []).filter(Boolean),
-    );
-    return new Set(findDuplicateSerials(serials as string[]));
-  }, [watchedDetails]);
+  const duplicateSerials = new Set(
+    findDuplicateSerials(
+      (watchedDetails ?? []).flatMap((detail) =>
+        (detail?.serialNumbers ?? []).filter(Boolean),
+      ) as string[],
+    ),
+  );
 
   const selectedAccount = cashAccounts.find(
     (account) => account.id === accountId,
@@ -239,8 +302,18 @@ export function PurchaseForm({
     }
   };
 
+  /** Ningún error de validación puede dejar el botón mudo. */
+  const onInvalid = (errors: FieldErrors<CreatePurchaseSchema>) => {
+    toast.error(
+      firstErrorMessage(errors) ?? "Revisa los datos del formulario",
+    );
+  };
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+      className="space-y-6"
+    >
       {/* ---------- Cabecera ---------- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
@@ -272,11 +345,7 @@ export function PurchaseForm({
               }}
             />
           </div>
-          {form.formState.errors.providerId && (
-            <p className="text-destructive text-xs">
-              {form.formState.errors.providerId.message}
-            </p>
-          )}
+          <FieldError message={form.formState.errors.providerId?.message} />
         </div>
 
         <div className="space-y-2">
@@ -358,11 +427,11 @@ export function PurchaseForm({
                       setProducts((prev) => [created, ...prev])
                     }
                   />
-                  {form.formState.errors.details?.[index]?.productId && (
-                    <p className="text-destructive text-xs">
-                      {form.formState.errors.details[index]?.productId?.message}
-                    </p>
-                  )}
+                  <FieldError
+                    message={
+                      form.formState.errors.details?.[index]?.productId?.message
+                    }
+                  />
                 </div>
 
                 <div className="col-span-4 md:col-span-2 space-y-2">
@@ -372,6 +441,7 @@ export function PurchaseForm({
                     min="1"
                     step="1"
                     {...form.register(`details.${index}.quantity`, {
+                      ...numberField,
                       onChange: (event) => {
                         if (!isSerialized) return;
                         const value = Math.max(
@@ -382,6 +452,11 @@ export function PurchaseForm({
                       },
                     })}
                   />
+                  <FieldError
+                    message={
+                      form.formState.errors.details?.[index]?.quantity?.message
+                    }
+                  />
                 </div>
 
                 <div className="col-span-8 md:col-span-3 space-y-2">
@@ -390,7 +465,12 @@ export function PurchaseForm({
                     type="number"
                     step="0.01"
                     min="0"
-                    {...form.register(`details.${index}.unitCost`)}
+                    {...form.register(`details.${index}.unitCost`, numberField)}
+                  />
+                  <FieldError
+                    message={
+                      form.formState.errors.details?.[index]?.unitCost?.message
+                    }
                   />
                 </div>
 
@@ -472,7 +552,14 @@ export function PurchaseForm({
                         placeholder="Ej. 95"
                         {...form.register(
                           `details.${index}.conditionDetails.batteryHealth`,
+                          optionalNumberField,
                         )}
+                      />
+                      <FieldError
+                        message={
+                          form.formState.errors.details?.[index]
+                            ?.conditionDetails?.batteryHealth?.message
+                        }
                       />
                     </div>
                     <div className="space-y-1">
@@ -527,19 +614,31 @@ export function PurchaseForm({
 
         {extraCostsArray.fields.map((field, index) => (
           <div key={field.id} className="flex items-center gap-2">
-            <Input
-              className="flex-1"
-              placeholder="Concepto"
-              {...form.register(`extraCosts.${index}.concept`)}
-            />
-            <Input
-              className="w-40"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0"
-              {...form.register(`extraCosts.${index}.amount`)}
-            />
+            <div className="flex-1 space-y-1">
+              <Input
+                placeholder="Concepto"
+                {...form.register(`extraCosts.${index}.concept`)}
+              />
+              <FieldError
+                message={
+                  form.formState.errors.extraCosts?.[index]?.concept?.message
+                }
+              />
+            </div>
+            <div className="w-40 space-y-1">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0"
+                {...form.register(`extraCosts.${index}.amount`, numberField)}
+              />
+              <FieldError
+                message={
+                  form.formState.errors.extraCosts?.[index]?.amount?.message
+                }
+              />
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -564,7 +663,7 @@ export function PurchaseForm({
             <Label>Estado</Label>
             <Select
               value={paymentMode}
-              onValueChange={(value) => setPaymentMode(value as PaymentMode)}
+              onValueChange={(value) => applyPaymentMode(value as PaymentMode)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -583,9 +682,14 @@ export function PurchaseForm({
               type="number"
               step="0.01"
               min="0"
-              disabled={paymentMode !== "partial"}
-              {...form.register("amountPaid")}
+              max={total > 0 ? total : undefined}
+              {...form.register("amountPaid", {
+                ...numberField,
+                onChange: (event) =>
+                  handleAmountPaidChange(toNumber(event.target.value)),
+              })}
             />
+            <FieldError message={form.formState.errors.amountPaid?.message} />
           </div>
         </div>
 
@@ -610,11 +714,9 @@ export function PurchaseForm({
                   ))}
                 </SelectContent>
               </Select>
-              {form.formState.errors.accountId && (
-                <p className="text-destructive text-xs">
-                  {form.formState.errors.accountId.message}
-                </p>
-              )}
+              <FieldError
+                message={form.formState.errors.accountId?.message}
+              />
             </div>
 
             <div className="space-y-2">
