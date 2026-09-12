@@ -24,6 +24,7 @@ import {
   Target,
   HandCoins,
   ShieldCheck,
+  Landmark,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ const analisis = [
   { title: "Gastos", href: "/expenses", icon: Banknote },
   { title: "Importaciones", href: "/import-costs", icon: PackageSearch },
   { title: "Acreedores", href: "/acreedores", icon: HandCoins },
+  { title: "Préstamos", href: "/prestamos", icon: Landmark },
 ];
 
 type NavItem = { title: string; href: string; icon: React.ElementType };

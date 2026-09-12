@@ -41,6 +41,7 @@ import {
 import { leads, leadActivities } from "./leads";
 import { creditors, creditorMovements } from "./creditors";
 import { warranties, warrantyClaims } from "./warranties";
+import { loans, loanSchedule, loanPayments } from "./loans";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -80,6 +81,7 @@ export const customersRelations = relations(customers, ({ many }) => ({
   layaways: many(layaways),
   leads: many(leads),
   warranties: many(warranties),
+  loans: many(loans),
 }));
 
 export const layawaysRelations = relations(layaways, ({ one, many }) => ({
@@ -116,6 +118,10 @@ export const riskHistoryRelations = relations(riskHistory, ({ one }) => ({
   layaway: one(layaways, {
     fields: [riskHistory.layawayId],
     references: [layaways.id],
+  }),
+  loan: one(loans, {
+    fields: [riskHistory.loanId],
+    references: [loans.id],
   }),
 }));
 
@@ -468,4 +474,42 @@ export const shareholderDistributionItemsRelations = relations(
     }),
   }),
 );
+
+// --- RELACIONES PRÉSTAMOS DE DINERO ---
+export const loansRelations = relations(loans, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [loans.customerId],
+    references: [customers.id],
+  }),
+  createdByUser: one(user, {
+    fields: [loans.createdBy],
+    references: [user.id],
+  }),
+  schedule: many(loanSchedule),
+  payments: many(loanPayments),
+  riskHistory: many(riskHistory),
+}));
+
+export const loanScheduleRelations = relations(loanSchedule, ({ one }) => ({
+  loan: one(loans, {
+    fields: [loanSchedule.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const loanPaymentsRelations = relations(loanPayments, ({ one }) => ({
+  loan: one(loans, {
+    fields: [loanPayments.loanId],
+    references: [loans.id],
+  }),
+  cashMovement: one(cashMovements, {
+    fields: [loanPayments.cashMovementId],
+    references: [cashMovements.id],
+  }),
+  createdByUser: one(user, {
+    fields: [loanPayments.createdBy],
+    references: [user.id],
+  }),
+}));
+
 

@@ -15,7 +15,8 @@ const formatCOP = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const tipoLabel = (row: CollectionRow) => (row.tipo === "credito" ? "Crédito" : "Apartado");
+const tipoLabel = (row: CollectionRow) =>
+  row.tipo === "credito" ? "Crédito" : row.tipo === "prestamo" ? "Préstamo" : "Apartado";
 const cuotaLabel = (row: CollectionRow) => (row.cuotaNumero != null ? `#${row.cuotaNumero}` : "—");
 
 function renderRows(rows: CollectionRow[], showMora: boolean, moraMessages?: Map<string, string>): string {

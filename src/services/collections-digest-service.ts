@@ -7,7 +7,15 @@
  */
 
 import { db } from "@/db";
-import { layaways, layawaySchedule, customers, user, reminderLog } from "@/db/schema";
+import {
+  layaways,
+  layawaySchedule,
+  loans,
+  loanSchedule,
+  customers,
+  user,
+  reminderLog,
+} from "@/db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/send";
 import { renderCollectionsDigestEmail } from "@/lib/email/templates/collections-digest";
@@ -15,10 +23,12 @@ import { getLLMProvider } from "@/lib/llm";
 
 const POR_VENCER_DAYS = 3;
 
-export type CollectionKind = "credito" | "apartado";
+export type CollectionKind = "credito" | "apartado" | "prestamo";
 
 export interface CollectionRow {
-  layawayId: string;
+  sourceType: CollectionKind;
+  sourceId: string;
+  layawayId?: string; // retrocompatibilidad con templates
   tipo: CollectionKind;
   clienteNombre: string;
   clienteTelefono: string | null;
@@ -34,9 +44,9 @@ export interface DailyCollections {
   porVencer: CollectionRow[];
 }
 
-/** Clave única por fila — un layaway puede tener varias cuotas en mora a la vez. */
+/** Clave única por fila — incluye tipo para diferenciar préstamos de créditos/apartados. */
 export function rowKey(row: CollectionRow): string {
-  return `${row.layawayId}:${row.cuotaNumero ?? "unica"}`;
+  return `${row.tipo}:${row.sourceId ?? row.layawayId}:${row.cuotaNumero ?? "unica"}`;
 }
 
 const formatCOP = (value: number) =>
@@ -107,6 +117,8 @@ export async function collectDailyCollections(refDate: Date = new Date()): Promi
 
     const diasMora = bucket === "mora" ? daysBetweenUTC(today, dueDate) : 0;
     const entry: CollectionRow = {
+      sourceType: "credito",
+      sourceId: row.layawayId,
       layawayId: row.layawayId,
       tipo: "credito",
       clienteNombre: row.clienteNombre,
@@ -142,11 +154,57 @@ export async function collectDailyCollections(refDate: Date = new Date()): Promi
 
     const diasMora = bucket === "mora" ? daysBetweenUTC(today, dueDate) : 0;
     const entry: CollectionRow = {
+      sourceType: "apartado",
+      sourceId: row.id,
       layawayId: row.id,
       tipo: "apartado",
       clienteNombre: row.clienteNombre,
       clienteTelefono: row.clienteTelefono,
       cuotaNumero: null,
+      monto: Number(row.totalAmount),
+      fecha: dueDate,
+      diasMora,
+    };
+
+    if (bucket === "mora") result.enMora.push(entry);
+    else if (bucket === "hoy") result.vencenHoy.push(entry);
+    else result.porVencer.push(entry);
+  }
+
+  // --- Préstamos de dinero: cuotas pendientes/vencidas del cronograma ---
+  const loanRows = await db
+    .select({
+      loanId: loanSchedule.loanId,
+      number: loanSchedule.number,
+      dueDate: loanSchedule.dueDate,
+      totalAmount: loanSchedule.totalAmount,
+      clienteNombre: customers.name,
+      clienteTelefono: customers.phone,
+    })
+    .from(loanSchedule)
+    .innerJoin(loans, eq(loanSchedule.loanId, loans.id))
+    .innerJoin(customers, eq(loans.customerId, customers.id))
+    .where(
+      and(
+        or(eq(loanSchedule.status, "pendiente"), eq(loanSchedule.status, "vencida")),
+        eq(loans.status, "active")
+      )
+    );
+
+  for (const row of loanRows) {
+    const dueDate = new Date(row.dueDate);
+    const bucket = classify(dueDate, today);
+    if (bucket === "fuera") continue;
+
+    const diasMora = bucket === "mora" ? daysBetweenUTC(today, dueDate) : 0;
+    const entry: CollectionRow = {
+      sourceType: "prestamo",
+      sourceId: row.loanId,
+      layawayId: row.loanId,
+      tipo: "prestamo",
+      clienteNombre: row.clienteNombre,
+      clienteTelefono: row.clienteTelefono,
+      cuotaNumero: row.number,
       monto: Number(row.totalAmount),
       fecha: dueDate,
       diasMora,

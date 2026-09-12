@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   ShoppingCart,
   Percent,
+  Landmark,
 } from "lucide-react";
 import type { ProfitsKPIs } from "@/services/profits-service";
 
@@ -88,6 +89,13 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
             ? "text-[color:var(--tf-green)]"
             : "text-[color:var(--tf-red)]"
         }
+      />
+      <KpiCard
+        icon={Landmark}
+        title="Cartera Prestada"
+        value={fmt(kpis.activeLoanPortfolio ?? 0)}
+        description="Capital insoluto activo en préstamos"
+        valueClassName="text-primary"
       />
     </div>
   );

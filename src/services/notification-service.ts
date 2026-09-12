@@ -4,7 +4,13 @@
  */
 
 import { db } from "@/db";
-import { notifications, layaways, layawaySchedule } from "@/db/schema";
+import {
+  notifications,
+  layaways,
+  layawaySchedule,
+  loans,
+  loanSchedule,
+} from "@/db/schema";
 import { eq, isNull, or, sql, desc, and } from "drizzle-orm";
 
 export type NotificationType = "cuota_por_vencer" | "mora" | "riesgo_rojo" | "seguimiento_lead";
@@ -14,6 +20,7 @@ export interface CreateNotificationInput {
   type: NotificationType;
   layawayId?: string;
   leadId?: string;
+  loanId?: string;
   title: string;
   message: string;
   severity: NotificationSeverity;
@@ -36,6 +43,7 @@ export async function createNotification(
       type: input.type,
       layawayId: input.layawayId ?? null,
       leadId: input.leadId ?? null,
+      loanId: input.loanId ?? null,
       title: input.title,
       message: input.message,
       severity: input.severity,
@@ -131,6 +139,43 @@ export async function detectUpcomingDue(): Promise<void> {
       message: `Cuota #${item.number} vence el ${dueFmt}.`,
       severity: "warning",
       dedupeKey: `cuota_por_vencer:${item.layawayId}:${item.number}:${due.toISOString().slice(0, 10)}`,
+    });
+  }
+
+  // Cuotas de préstamos pendientes que vencen entre hoy y el límite
+  const upcomingLoans = await db
+    .select({
+      scheduleId: loanSchedule.id,
+      loanId: loanSchedule.loanId,
+      number: loanSchedule.number,
+      dueDate: loanSchedule.dueDate,
+      totalAmount: loanSchedule.totalAmount,
+    })
+    .from(loanSchedule)
+    .innerJoin(loans, eq(loanSchedule.loanId, loans.id))
+    .where(
+      and(
+        eq(loanSchedule.status, "pendiente"),
+        eq(loans.status, "active"),
+        sql`${loanSchedule.dueDate} >= ${today}`,
+        sql`${loanSchedule.dueDate} <= ${limit}`
+      )
+    );
+
+  for (const item of upcomingLoans) {
+    const due = new Date(item.dueDate);
+    const dueFmt = due.toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    await createNotification({
+      type: "cuota_por_vencer",
+      loanId: item.loanId,
+      title: "Cuota de préstamo por vencer",
+      message: `Cuota #${item.number} de préstamo vence el ${dueFmt}.`,
+      severity: "warning",
+      dedupeKey: `loan:cuota_por_vencer:${item.loanId}:${item.number}:${due.toISOString().slice(0, 10)}`,
     });
   }
 }

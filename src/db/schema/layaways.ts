@@ -6,11 +6,14 @@ import {
   decimal,
   uuid,
   boolean,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { customers } from "./customers";
 import { products, productItems } from "./inventory";
 import { cashMovements } from "./cash";
 import { user } from "./auth";
+import { loans } from "./loans";
 
 // --- TABLA CABECERA: El documento de Apartado / Crédito ---
 export const layaways = pgTable("layaways", {
@@ -99,17 +102,25 @@ export const layawayPayments = pgTable("layaway_payments", {
 });
 
 // --- HISTORIAL DE RIESGO ---
-export const riskHistory = pgTable("risk_history", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  layawayId: uuid("layaway_id")
-    .references(() => layaways.id)
-    .notNull(),
-  previousScore: integer("previous_score").notNull(),
-  newScore: integer("new_score").notNull(),
-  level: text("level").notNull(),  // 'verde' | 'amarillo' | 'rojo'
-  reason: text("reason").notNull(),
-  occurredAt: timestamp("occurred_at").defaultNow().notNull(),
-});
+export const riskHistory = pgTable(
+  "risk_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    layawayId: uuid("layaway_id").references(() => layaways.id),
+    loanId: uuid("loan_id").references(() => loans.id),
+    previousScore: integer("previous_score").notNull(),
+    newScore: integer("new_score").notNull(),
+    level: text("level").notNull(), // 'verde' | 'amarillo' | 'rojo'
+    reason: text("reason").notNull(),
+    occurredAt: timestamp("occurred_at").defaultNow().notNull(),
+  },
+  (table) => [
+    check(
+      "risk_history_anchor_check",
+      sql`${table.layawayId} IS NOT NULL OR ${table.loanId} IS NOT NULL`
+    ),
+  ]
+);
 
 // --- LOG DE ENVÍO DEL DIGEST DIARIO DE COBROS (email a trabajadores) ---
 export const reminderLog = pgTable("reminder_log", {
@@ -132,6 +143,8 @@ export const notifications = pgTable("notifications", {
   layawayId: uuid("layaway_id").references(() => layaways.id),
   // FK a lead (sin referencia ORM — evita circular import entre layaways ↔ leads)
   leadId: uuid("lead_id"),
+  // FK a loan (sin referencia ORM — análogo a leadId)
+  loanId: uuid("loan_id"),
   title: text("title").notNull(),
   message: text("message").notNull(),
   severity: text("severity").notNull(), // 'info' | 'warning' | 'danger'

@@ -9,6 +9,8 @@ import {
   products,
   customers,
   otherIncome,
+  loans,
+  loanPayments,
 } from "@/db/schema";
 import { sql, and, gte, lte, eq, gt, desc } from "drizzle-orm";
 import { startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
@@ -56,6 +58,23 @@ export const getProfitsKPIs = async (range?: DateRange) => {
       lte(layawayPayments.createdAt, to),
     ));
 
+  const loanInterestResult = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(CAST(${loanPayments.interestPortion} AS DECIMAL)), 0)`,
+    })
+    .from(loanPayments)
+    .where(and(
+      gte(loanPayments.createdAt, from),
+      lte(loanPayments.createdAt, to),
+    ));
+
+  const activeLoansResult = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(CAST(${loans.outstandingPrincipal} AS DECIMAL)), 0)`,
+    })
+    .from(loans)
+    .where(eq(loans.status, "active"));
+
   const otherIncomeResult = await db
     .select({
       total: sql<number>`COALESCE(SUM(CAST(${otherIncome.amount} AS DECIMAL)), 0)`,
@@ -67,13 +86,15 @@ export const getProfitsKPIs = async (range?: DateRange) => {
   const totalCost = Number(revenueResult[0]?.totalCost ?? 0);
   const totalSold = Number(revenueResult[0]?.totalSold ?? 0);
   const totalExpenses = Number(expensesResult[0]?.total ?? 0);
-  const interestIncome = Number(interestResult[0]?.total ?? 0);
+  const interestIncome =
+    Number(interestResult[0]?.total ?? 0) +
+    Number(loanInterestResult[0]?.total ?? 0);
   const otherIncomeTotal = Number(otherIncomeResult[0]?.total ?? 0);
+  const activeLoanPortfolio = Number(activeLoansResult[0]?.total ?? 0);
 
-  // El interés de los créditos es ingreso operativo, no un extra: entra al
-  // ingreso total y al margen bruto. Sin costo asociado (el costo del equipo ya
-  // se reconoce con la venta), así que suma completo a la utilidad. Lo mismo
-  // aplica a la retención de capital de créditos cancelados.
+  // El interés de créditos y préstamos es ingreso operativo, no un extra: entra al
+  // ingreso total y al margen bruto. Sin costo asociado, así que suma completo a la utilidad.
+  // Lo mismo aplica a comisiones de originación y retención de capital.
   const totalIncome = salesRevenue + interestIncome + otherIncomeTotal;
   const grossProfit = totalIncome - totalCost;
   const netProfit = grossProfit - totalExpenses;
@@ -88,6 +109,7 @@ export const getProfitsKPIs = async (range?: DateRange) => {
     totalExpenses,
     netProfit,
     totalSold,
+    activeLoanPortfolio,
     // Margen sobre el ingreso total (ventas + intereses)
     grossMarginPct: totalIncome > 0 ? (grossProfit / totalIncome) * 100 : 0,
     // Margen solo del producto, para comparar precios de venta contra costo
@@ -135,6 +157,15 @@ export const getMonthlyProfits = async (year: number) => {
     .where(and(gte(layawayPayments.createdAt, from), lte(layawayPayments.createdAt, to)))
     .groupBy(sql`EXTRACT(MONTH FROM ${layawayPayments.createdAt})`);
 
+  const loanInterestRows = await db
+    .select({
+      month: sql<number>`EXTRACT(MONTH FROM ${loanPayments.createdAt})`,
+      totalInterest: sql<number>`COALESCE(SUM(CAST(${loanPayments.interestPortion} AS DECIMAL)), 0)`,
+    })
+    .from(loanPayments)
+    .where(and(gte(loanPayments.createdAt, from), lte(loanPayments.createdAt, to)))
+    .groupBy(sql`EXTRACT(MONTH FROM ${loanPayments.createdAt})`);
+
   const otherIncomeRows = await db
     .select({
       month: sql<number>`EXTRACT(MONTH FROM ${otherIncome.date})`,
@@ -152,6 +183,10 @@ export const getMonthlyProfits = async (year: number) => {
     interestRows.map((r) => [Number(r.month), Number(r.totalInterest)]),
   );
 
+  const loanInterestByMonth = new Map(
+    loanInterestRows.map((r) => [Number(r.month), Number(r.totalInterest)]),
+  );
+
   const otherIncomeByMonth = new Map(
     otherIncomeRows.map((r) => [Number(r.month), Number(r.total)]),
   );
@@ -162,7 +197,8 @@ export const getMonthlyProfits = async (year: number) => {
     const salesRevenue = Number(row?.totalRevenue ?? 0);
     const cost = Number(row?.totalCost ?? 0);
     const totalExpenses = expensesByMonth.get(m) ?? 0;
-    const interestIncome = interestByMonth.get(m) ?? 0;
+    const interestIncome =
+      (interestByMonth.get(m) ?? 0) + (loanInterestByMonth.get(m) ?? 0);
     const otherIncomeTotal = otherIncomeByMonth.get(m) ?? 0;
     // Mismo criterio que getProfitsKPIs: el interés es ingreso del mes en que
     // se cobró, y el margen del equipo cae en el mes en que se liquida el crédito.
@@ -252,6 +288,46 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
     )
     .orderBy(desc(layawayPayments.createdAt));
 
+  const loanInterestRows = await db
+    .select({
+      id: loanPayments.id,
+      createdAt: loanPayments.createdAt,
+      customerName: customers.name,
+      type: loanPayments.type,
+      amount: loanPayments.amount,
+      interestPortion: loanPayments.interestPortion,
+    })
+    .from(loanPayments)
+    .innerJoin(loans, eq(loanPayments.loanId, loans.id))
+    .leftJoin(customers, eq(loans.customerId, customers.id))
+    .where(
+      and(
+        gte(loanPayments.createdAt, from),
+        lte(loanPayments.createdAt, to),
+        gt(sql`CAST(${loanPayments.interestPortion} AS DECIMAL)`, 0),
+      ),
+    )
+    .orderBy(desc(loanPayments.createdAt));
+
+  const combinedInterest = [
+    ...interestRows.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      customerName: r.customerName,
+      type: r.type,
+      amount: Number(r.amount),
+      interestPortion: Number(r.interestPortion),
+    })),
+    ...loanInterestRows.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      customerName: r.customerName,
+      type: `prestamo_${r.type}`,
+      amount: Number(r.amount),
+      interestPortion: Number(r.interestPortion),
+    })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
   const otherIncomeRows = await db
     .select({
       id: otherIncome.id,
@@ -286,14 +362,7 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
       description: r.description,
       amount: Number(r.amount),
     })),
-    interestPayments: interestRows.map((r) => ({
-      id: r.id,
-      createdAt: r.createdAt,
-      customerName: r.customerName,
-      type: r.type,
-      amount: Number(r.amount),
-      interestPortion: Number(r.interestPortion),
-    })),
+    interestPayments: combinedInterest,
     otherIncome: otherIncomeRows.map((r) => ({
       id: r.id,
       date: r.date,
