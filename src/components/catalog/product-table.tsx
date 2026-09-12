@@ -29,6 +29,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScanButton } from "@/components/scanner/scan-button";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -167,6 +168,7 @@ export function ProductTable({ data }: ProductTableProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const [tipoFilter, setTipoFilter] = React.useState<string[]>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
 
   const [editProduct, setEditProduct] = React.useState<ProductWithStock | null>(null);
   const [deleteProduct, setDeleteProduct] = React.useState<ProductWithStock | null>(null);
@@ -414,11 +416,20 @@ export function ProductTable({ data }: ProductTableProps) {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const search = String(filterValue).toLowerCase().trim();
+      if (!search) return true;
+      const name = String(row.original.name || "").toLowerCase();
+      const sku = String(row.original.sku || "").toLowerCase();
+      return name.includes(search) || sku.includes(search);
+    },
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
     initialState: { pagination: { pageSize: 10 } },
   });
@@ -450,10 +461,23 @@ export function ProductTable({ data }: ProductTableProps) {
           <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <input
             type="text"
-            placeholder="Buscar producto..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            onChange={(e) => table.getColumn("name")?.setFilterValue(e.target.value)}
+            placeholder="Buscar por nombre o SKU..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
             className="flex-1 bg-transparent border-0 outline-none text-[13px] placeholder:text-muted-foreground/60"
+          />
+          <ScanButton
+            onScan={(val) => {
+              setGlobalFilter(val.trim());
+            }}
+            enableImeiOcr={false}
+            title="Escanear SKU de Producto"
+            description="Filtrar catálogo por código de barras escaneado"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground shrink-0"
+            iconClassName="h-3.5 w-3.5"
+            aria-label="Escanear código de barras"
           />
         </div>
 

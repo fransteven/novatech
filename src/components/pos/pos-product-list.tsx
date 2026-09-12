@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { searchProductAction } from "@/app/actions/pos-action";
 import type { ProductSearchResult } from "@/lib/validators/pos-validator";
+import { ScanButton } from "@/components/scanner/scan-button";
 
 interface PosProductListProps {
   onAddToCart: (item: {
@@ -52,13 +53,13 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!barcode.trim()) return;
+  const executeSearch = async (queryValue: string) => {
+    const clean = queryValue.trim();
+    if (!clean) return;
 
     setLoading(true);
     try {
-      const response = await searchProductAction(barcode);
+      const response = await searchProductAction(clean);
       if (response.success && response.data) {
         setResult(response.data);
         setSalePrice(Number(response.data.suggestedPrice));
@@ -73,6 +74,11 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
       setBarcode("");
       inputRef.current?.focus();
     }
+  };
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await executeSearch(barcode);
   };
 
   const isPriceInvalid = result ? salePrice < result.avgUnitCost : false;
@@ -151,6 +157,21 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
               onChange={(e) => setBarcode(e.target.value)}
               disabled={loading}
               autoFocus
+            />
+
+            {/* Camera scan button */}
+            <ScanButton
+              onScan={(value) => {
+                executeSearch(value);
+              }}
+              enableImeiOcr={true}
+              title="Terminal de Ventas - Escáner"
+              description="Escanear código de barras, QR o IMEI con OCR"
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+              iconClassName="h-4 w-4"
+              aria-label="Abrir escáner de cámara"
             />
 
             {/* Keyboard hint */}

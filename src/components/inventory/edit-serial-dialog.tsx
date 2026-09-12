@@ -23,6 +23,8 @@ import {
 import { updateSerialItemAction } from "@/app/actions/inventory-actions";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
+import { normalizeSerial } from "@/lib/serials";
+import { ScanButton } from "@/components/scanner/scan-button";
 
 interface SerialToEdit {
   id: string;
@@ -153,24 +155,62 @@ export function EditSerialDialog({
                 <Label htmlFor="serialNumber">
                   Serial / IMEI <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="serialNumber"
-                  value={form.serialNumber}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, serialNumber: e.target.value }))
-                  }
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    id="serialNumber"
+                    className="font-mono"
+                    value={form.serialNumber}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, serialNumber: e.target.value }))
+                    }
+                  />
+                  <ScanButton
+                    mode="single"
+                    enableImeiOcr={true}
+                    title="Escanear Corrección de Serial"
+                    description="Escanear código de barras o IMEI con OCR"
+                    onScan={(scanned) => {
+                      const normalized = normalizeSerial(scanned);
+                      if (!normalized) {
+                        return { status: "rejected", message: "Serial inválido" };
+                      }
+                      setForm((f) => ({ ...f, serialNumber: normalized }));
+                      return { status: "accepted" };
+                    }}
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    aria-label="Escanear serial o IMEI"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
                 <Label htmlFor="sku">SKU</Label>
-                <Input
-                  id="sku"
-                  value={form.sku}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, sku: e.target.value }))
-                  }
-                />
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    id="sku"
+                    className="font-mono"
+                    value={form.sku}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, sku: e.target.value }))
+                    }
+                  />
+                  <ScanButton
+                    mode="single"
+                    enableImeiOcr={false}
+                    title="Escanear SKU"
+                    description="Escanear código de barras del SKU"
+                    onScan={(scanned) => {
+                      setForm((f) => ({ ...f, sku: scanned.trim() }));
+                      return { status: "accepted" };
+                    }}
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    aria-label="Escanear SKU"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">

@@ -11,6 +11,8 @@ import { ProductWithStock } from "@/services/product-service";
 import { cn } from "@/lib/utils";
 
 import { PrintLabelsDialog, PrintData } from "./print-labels-dialog";
+import { ScanButton } from "@/components/scanner/scan-button";
+import { processBatchSerial } from "@/lib/camera/batch-serial-helper";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -92,6 +94,41 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
       notes: "",
     },
   });
+
+  const handleContinuousScan = (scannedValue: string) => {
+    const current = (form.getValues("serials") as string[]) || [];
+    const result = processBatchSerial({
+      scannedValue,
+      currentSerials: current,
+      targetQuantity: imeiCount,
+    });
+
+    if (result.decision.status === "accepted") {
+      form.setValue("serials", result.nextSerials, { shouldValidate: true, shouldDirty: true });
+      if (result.filledIndex + 1 < imeiCount) {
+        document.getElementById(`manual-serial-${result.filledIndex + 1}`)?.focus();
+      }
+    }
+    return result.decision;
+  };
+
+  const handleSingleScan = (scannedValue: string, index: number) => {
+    const current = (form.getValues("serials") as string[]) || [];
+    const result = processBatchSerial({
+      scannedValue,
+      currentSerials: current,
+      targetQuantity: imeiCount,
+      targetIndex: index,
+    });
+
+    if (result.decision.status === "accepted") {
+      form.setValue("serials", result.nextSerials, { shouldValidate: true, shouldDirty: true });
+      if (index + 1 < imeiCount) {
+        document.getElementById(`manual-serial-${index + 1}`)?.focus();
+      }
+    }
+    return result.decision;
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function onSubmit(values: Record<string, any>) {
@@ -375,35 +412,66 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
 
                   {selectedProduct.isSerialized && imeiCount > 0 && (
                     <div className="space-y-3 border-t pt-4">
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-sm">
-                          Seriales / IMEIs ({imeiCount} requeridos)
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          Puede usar el lector de código de barras en cada campo
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <h4 className="font-medium text-sm">
+                            Seriales / IMEIs ({imeiCount} requeridos)
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            Escaneo continuo disponible o individual por campo
+                          </p>
+                        </div>
+                        <ScanButton
+                          mode="continuous"
+                          enableImeiOcr={true}
+                          title={`Ingreso de Stock (${imeiCount} seriales)`}
+                          description="Llena automáticamente el siguiente campo vacío"
+                          onScan={handleContinuousScan}
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 h-8 text-xs font-semibold"
+                        >
+                          <span>Escanear lote</span>
+                        </ScanButton>
                       </div>
-                      {Array.from({ length: imeiCount }).map((_, index) => (
-                        <FormField
-                          key={index}
-                          control={form.control}
-                          name={`serials.${index}`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>IMEI #{index + 1}</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder={`Escanear o escribir IMEI #${index + 1}`}
-                                  autoFocus={index === 0}
-                                  {...field}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ))}
+
+                      <div className="space-y-2">
+                        {Array.from({ length: imeiCount }).map((_, index) => (
+                          <FormField
+                            key={index}
+                            control={form.control}
+                            name={`serials.${index}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>IMEI #{index + 1}</FormLabel>
+                                <FormControl>
+                                  <div className="flex items-center gap-1.5">
+                                    <Input
+                                      id={`manual-serial-${index}`}
+                                      placeholder={`Escanear o escribir IMEI #${index + 1}`}
+                                      autoFocus={index === 0}
+                                      className="font-mono text-[13px]"
+                                      {...field}
+                                      value={field.value || ""}
+                                    />
+                                    <ScanButton
+                                      mode="single"
+                                      enableImeiOcr={true}
+                                      title={`Escanear IMEI #${index + 1}`}
+                                      onScan={(val) => handleSingleScan(val, index)}
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      aria-label={`Escanear IMEI #${index + 1}`}
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
 

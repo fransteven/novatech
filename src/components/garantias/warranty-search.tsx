@@ -18,6 +18,7 @@ import { WarrantyDetailSheet } from "@/components/garantias/warranty-detail-shee
 import { searchWarrantiesAction } from "@/app/actions/warranty-actions";
 import type { WarrantyAnchor } from "@/lib/validators/warranty-validator";
 import type { WarrantySearchResult } from "@/services/warranty-service";
+import { ScanButton } from "@/components/scanner/scan-button";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -55,6 +56,31 @@ export function WarrantySearch({ canAdjust }: WarrantySearchProps) {
     });
   }, [query, status, sourceType, from, to]);
 
+  const executeScanSearch = useCallback(
+    (scannedValue: string) => {
+      const clean = scannedValue.trim();
+      if (!clean) return;
+      setQuery(clean);
+      const id = ++requestId.current;
+      startTransition(async () => {
+        const res = await searchWarrantiesAction({
+          q: clean,
+          status,
+          sourceType,
+          from: from || undefined,
+          to: to || undefined,
+        });
+        if (id !== requestId.current) return;
+        setResult(
+          res.success
+            ? res.data
+            : { rows: [], serialInInventoryWithoutDelivery: false, serialUnknown: false }
+        );
+      });
+    },
+    [status, sourceType, from, to]
+  );
+
   useEffect(() => {
     const timer = setTimeout(runSearch, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -74,19 +100,32 @@ export function WarrantySearch({ canAdjust }: WarrantySearchProps) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
         <div className="flex-1 space-y-1.5">
           <Label htmlFor="warranty-q">Buscar</Label>
-          <div className="relative">
+          <div className="relative flex items-center">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="warranty-q"
               placeholder="IMEI, cliente, cédula, teléfono, producto o N° de venta"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 pr-14"
               autoComplete="off"
             />
-            {isPending && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-            )}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {isPending && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+              <ScanButton
+                onScan={executeScanSearch}
+                enableImeiOcr={true}
+                title="Consultar Garantía"
+                description="Escanear código de barras o IMEI con OCR"
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                iconClassName="h-3.5 w-3.5"
+                aria-label="Escanear IMEI o código"
+              />
+            </div>
           </div>
         </div>
 

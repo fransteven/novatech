@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScanButton } from "@/components/scanner/scan-button";
 import { useEffect, useState } from "react";
 import type * as React from "react";
 
@@ -179,10 +180,24 @@ export function CreateProductDialog({
                 <FormItem>
                   <FormLabel>Código de Barras (Opcional)</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Escanear código de fábrica o dejar vacío"
-                      {...field}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Escanear código de fábrica o dejar vacío"
+                        {...field}
+                      />
+                      <ScanButton
+                        onScan={(val) => {
+                          field.onChange(val.trim());
+                        }}
+                        enableImeiOcr={false}
+                        title="Escanear Código de Barras"
+                        description="Capturar código de barras o SKU del producto"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        aria-label="Escanear código de barras"
+                      />
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Para accesorios, escanea el código de la caja. Si lo dejas

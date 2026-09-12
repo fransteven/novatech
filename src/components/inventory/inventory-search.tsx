@@ -5,6 +5,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
+import { ScanButton } from "@/components/scanner/scan-button";
+
 export function InventorySearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -29,6 +31,17 @@ export function InventorySearch() {
     });
   }, [debouncedQuery, pathname, router, searchParams]);
 
+  const handleScan = (scannedValue: string) => {
+    const clean = scannedValue.trim();
+    if (!clean) return;
+    setQuery(clean);
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("query", clean);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
+  };
+
   return (
     <div
       className="flex items-center gap-2 flex-1 min-w-[240px] h-9 rounded-lg border border-transparent px-3 tf-focus-ring transition-all duration-150"
@@ -37,7 +50,7 @@ export function InventorySearch() {
       <Search className="h-[15px] w-[15px] text-[color:var(--tf-fg-subtle)] shrink-0" />
       <input
         type="text"
-        placeholder="Buscar por SKU o nombre de producto..."
+        placeholder="Buscar por nombre, SKU o IMEI/serial..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         className="flex-1 bg-transparent border-0 outline-none text-[13px] placeholder:text-[color:var(--tf-fg-subtle)]"
@@ -54,6 +67,18 @@ export function InventorySearch() {
           <X className="h-[11px] w-[11px]" />
         </button>
       )}
+
+      <ScanButton
+        onScan={handleScan}
+        enableImeiOcr={true}
+        title="Buscar en Inventario"
+        description="Escanear código de barras o IMEI con OCR"
+        variant="ghost"
+        size="sm"
+        className="h-7 w-7 p-0 text-[color:var(--tf-fg-subtle)] hover:text-foreground hover:bg-card shrink-0"
+        iconClassName="h-3.5 w-3.5"
+        aria-label="Escanear código o IMEI"
+      />
     </div>
   );
 }
