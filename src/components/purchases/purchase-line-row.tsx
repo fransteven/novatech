@@ -214,11 +214,11 @@ export function PurchaseLineRow({
             </Label>
             <MoneyInput
               id={`detail-${index}-unitCost`}
-              step="0.01"
               min="0"
               placeholder="0"
               className="h-9 text-[13px]"
-              {...register(`details.${index}.unitCost`, numberField)}
+              value={toNumber(detail?.unitCost)}
+              onValueChange={(value) => setValue(`details.${index}.unitCost`, value ?? 0, { shouldValidate: true, shouldDirty: true })}
             />
             <FieldError message={errors.details?.[index]?.unitCost?.message} />
           </div>

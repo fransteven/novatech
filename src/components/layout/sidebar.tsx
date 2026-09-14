@@ -274,7 +274,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex md:flex-col sticky top-0 h-screen bg-card border-r border-border overflow-hidden z-30 transition-all duration-[250ms] ease-[cubic-bezier(.4,0,.2,1)]",
+        "hidden md:flex md:flex-col sticky top-0 h-screen bg-card border-r border-border overflow-hidden z-30 transition-[width] duration-[240ms] ease-[cubic-bezier(.4,0,.2,1)]",
         isCollapsed ? "w-[72px]" : "w-[264px]",
         className,
       )}

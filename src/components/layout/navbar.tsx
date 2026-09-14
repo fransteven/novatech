@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MobileNav } from "@/components/layout/sidebar";
+import { useSearchShortcutContext } from "@/providers/search-shortcut-provider";
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -31,6 +32,8 @@ const PAGE_LABELS: Record<string, string> = {
   "/expenses": "Gastos",
   "/import-costs": "Importaciones",
   "/reservations": "Reservas",
+  "/purchases": "Compras", "/cash": "Caja", "/leads": "Leads", "/garantias": "Garantías",
+  "/acreedores": "Acreedores", "/prestamos": "Préstamos", "/accionistas": "Accionistas",
 };
 
 const SECTION_LABELS: Record<string, string> = {
@@ -44,12 +47,15 @@ const SECTION_LABELS: Record<string, string> = {
   "/profits": "Análisis",
   "/expenses": "Análisis",
   "/import-costs": "Análisis",
+  "/purchases": "Operación", "/cash": "Análisis", "/leads": "Operación", "/garantias": "Operación",
+  "/acreedores": "Análisis", "/prestamos": "Análisis", "/accionistas": "Análisis",
 };
 
 export function Navbar() {
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const pathname = usePathname();
+  const { activeLabel, focusActiveSearch } = useSearchShortcutContext();
 
   const [theme, setTheme] = React.useState<"light" | "dark">("dark");
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
@@ -135,24 +141,28 @@ export function Navbar() {
 
         <div className="flex-1" />
 
-        {/* Search — hidden on mobile */}
-        <div
-          className="hidden sm:flex items-center gap-2 w-[280px] h-9 px-[10px] rounded-lg border border-transparent text-[13px] tf-focus-ring transition-all duration-150"
+        {/* La búsqueda sigue el contexto de la vista; no simula una búsqueda global. */}
+        <button
+          type="button"
+          onClick={focusActiveSearch}
+          disabled={!activeLabel}
+          className="hidden sm:flex items-center gap-2 w-[280px] h-9 px-[10px] rounded-lg border border-transparent text-[13px] tf-focus-ring transition-[background-color,border-color,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-50"
           style={{ background: "var(--tf-bg-muted)" }}
+          aria-label={activeLabel ? `Abrir ${activeLabel}` : "No hay búsqueda disponible en esta vista"}
+          aria-keyshortcuts="Meta+K Control+K"
         >
           <Search className="h-3.5 w-3.5 text-[color:var(--tf-fg-subtle)] shrink-0" />
-          <input
-            placeholder="Buscar en NovaTech..."
-            className="flex-1 bg-transparent border-0 outline-none text-[13px] placeholder:text-[color:var(--tf-fg-subtle)]"
-            readOnly
-          />
+          <span className="flex-1 truncate text-left text-[color:var(--tf-fg-muted)]">{activeLabel ?? "Buscar en esta vista"}</span>
           <span
             className="text-[10.5px] px-1.5 py-px rounded border border-border text-[color:var(--tf-fg-subtle)]"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            style={{ fontFamily: "var(--font-plex-mono), ui-monospace, monospace" }}
           >
-            ⌘K
+            ⌘K / Ctrl K
           </span>
-        </div>
+        </button>
+        <button type="button" onClick={focusActiveSearch} disabled={!activeLabel} className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 sm:hidden" aria-label={activeLabel ? `Abrir ${activeLabel}` : "No hay búsqueda disponible"}>
+          <Search className="size-4" />
+        </button>
 
         {/* Theme toggle */}
         <button

@@ -16,6 +16,7 @@ import {
   calculateProductWAC,
   resolveItemCost,
 } from "@/services/inventory-service";
+import { formatCurrency } from "@/lib/formatters";
 
 /**
  * Search for a product by barcode (SKU or serial number)
@@ -216,7 +217,7 @@ export const processSale = async ({
         itemCost = await resolveItemCost(item.productItemId, item.productId, tx);
         if (item.price < itemCost) {
           throw new Error(
-            `El precio de venta no puede ser menor al costo del producto. Costo: $${itemCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
+            `El precio de venta no puede ser menor al costo del producto. Costo: ${formatCurrency(itemCost)}, Precio ingresado: ${formatCurrency(item.price)}`,
           );
         }
       } else {
@@ -255,7 +256,7 @@ export const processSale = async ({
             .limit(1);
 
           throw new Error(
-            `El precio de venta no puede ser menor al costo del producto "${product?.name || item.productId}". Costo promedio: $${avgUnitCost.toLocaleString()}, Precio ingresado: $${item.price.toLocaleString()}`,
+            `El precio de venta no puede ser menor al costo del producto "${product?.name || item.productId}". Costo promedio: ${formatCurrency(avgUnitCost)}, Precio ingresado: ${formatCurrency(item.price)}`,
           );
         }
       }

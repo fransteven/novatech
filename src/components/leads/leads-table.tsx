@@ -90,6 +90,9 @@ export function LeadsTable({ data }: LeadsTableProps) {
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            data-search-shortcut
+            data-search-id="leads-search"
+            data-search-label="Buscar leads"
             placeholder="Buscar por nombre, teléfono o producto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

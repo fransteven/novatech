@@ -108,6 +108,10 @@ export function ProductPicker({
         >
           <Command>
             <CommandInput
+              data-search-shortcut
+              data-search-id="purchase-product-search"
+              data-search-label="Buscar producto"
+              data-search-priority="overlay"
               placeholder="Nombre, SKU o atributo..."
               value={search}
               onValueChange={setSearch}

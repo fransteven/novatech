@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { getSaleDetailsAction } from "@/app/actions/sales-actions";
 import { Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
 interface SaleDetail {
   id: string;
@@ -87,10 +88,7 @@ export function SaleDetailsModal({
                         {detail.sku || detail.serialNumber || "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {new Intl.NumberFormat("es-CO", {
-                          style: "currency",
-                          currency: "COP",
-                        }).format(parseFloat(detail.price))}
+                        {formatCurrency(detail.price)}
                       </TableCell>
                     </TableRow>
                   ))

@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Cpu } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
 // Attribute definition from categories.template
 interface AttributeDef {
@@ -62,14 +64,6 @@ interface CreateImportCostDialogProps {
 }
 
 const MASTERCARD_RATE = 0.0045;
-
-const formatCOP = (value: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 
 export function CreateImportCostDialog({
   products,
@@ -455,7 +449,7 @@ export function CreateImportCostDialog({
                     <div className="text-sm">
                       <p className="text-slate-500">Comisión (0.45%)</p>
                       <p className="font-semibold">
-                        {formatCOP(mastercardPesos)}
+                        {formatCurrency(mastercardPesos)}
                       </p>
                     </div>
                   </div>
@@ -514,7 +508,7 @@ export function CreateImportCostDialog({
                 <div className="flex items-end pb-2">
                   <div className="text-sm">
                     <p className="text-slate-500">Pesos casillero</p>
-                    <p className="font-semibold">{formatCOP(casilleroPesos)}</p>
+                    <p className="font-semibold">{formatCurrency(casilleroPesos)}</p>
                   </div>
                 </div>
               </div>
@@ -550,7 +544,7 @@ export function CreateImportCostDialog({
                 <div className="flex items-end pb-2">
                   <div className="text-sm">
                     <p className="text-slate-500">Pesos producto</p>
-                    <p className="font-semibold">{formatCOP(productPesos)}</p>
+                    <p className="font-semibold">{formatCurrency(productPesos)}</p>
                   </div>
                 </div>
               </div>
@@ -564,14 +558,11 @@ export function CreateImportCostDialog({
                 <FormItem>
                   <FormLabel>Aranceles DIAN (COP)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="1"
+                    <MoneyInput
                       placeholder="0"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
+                      value={typeof field.value === "number" ? field.value : Number(field.value) || null}
+                      onBlur={field.onBlur}
+                      onValueChange={(value) => field.onChange(value ?? 0)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -605,19 +596,19 @@ export function CreateImportCostDialog({
 
                 <div className="grid grid-cols-2 gap-1 text-sm">
                   <span className="text-slate-500">Comisión Mastercard</span>
-                  <span className="text-right">{formatCOP(mastercardPesos)}</span>
+                  <span className="text-right">{formatCurrency(mastercardPesos)}</span>
 
                   <span className="text-slate-500">Casillero</span>
-                  <span className="text-right">{formatCOP(casilleroPesos)}</span>
+                  <span className="text-right">{formatCurrency(casilleroPesos)}</span>
 
                   <span className="text-slate-500">Equipo (pesos)</span>
-                  <span className="text-right">{formatCOP(productPesos)}</span>
+                  <span className="text-right">{formatCurrency(productPesos)}</span>
 
                   {customsTariff > 0 && (
                     <>
                       <span className="text-slate-500">Aranceles DIAN</span>
                       <span className="text-right">
-                        {formatCOP(customsTariff)}
+                        {formatCurrency(customsTariff)}
                       </span>
                     </>
                   )}
@@ -626,14 +617,14 @@ export function CreateImportCostDialog({
                     Costo Total
                   </span>
                   <span className="font-semibold border-t border-slate-200 pt-1 text-right">
-                    {formatCOP(totalCost)}
+                    {formatCurrency(totalCost)}
                   </span>
 
                   {estimatedMargin !== null && catalogPrice > 0 && (
                     <>
                       <span className="text-slate-500">Precio catálogo</span>
                       <span className="text-right">
-                        {formatCOP(catalogPrice)}
+                        {formatCurrency(catalogPrice)}
                       </span>
                       <span
                         className={
@@ -647,7 +638,7 @@ export function CreateImportCostDialog({
                       <span
                         className={`text-right font-medium ${estimatedMargin >= 0 ? "text-green-600" : "text-red-600"}`}
                       >
-                        {formatCOP(estimatedMargin)} (
+                        {formatCurrency(estimatedMargin)} (
                         {((estimatedMargin / catalogPrice) * 100).toFixed(1)}%)
                       </span>
                     </>

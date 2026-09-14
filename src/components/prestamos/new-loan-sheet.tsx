@@ -72,7 +72,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   // Paso 2: Condiciones
-  const [principalAmount, setPrincipalAmount] = useState<number | "">("");
+  const [principalAmount, setPrincipalAmount] = useState<number | null>(null);
   const [termMonths, setTermMonths] = useState<number>(6);
   const [interestRatePct, setInterestRatePct] = useState<number | "">(""); // Tasa porcentual vacía por defecto
   const [firstDueDate, setFirstDueDate] = useState<string>(() => {
@@ -87,7 +87,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
   const [accountId, setAccountId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer" | "card">("cash");
   const [originationFeeOpen, setOriginationFeeOpen] = useState(false);
-  const [originationFee, setOriginationFee] = useState<number | "">("");
+  const [originationFee, setOriginationFee] = useState<number | null>(null);
 
   // Regenerar idempotencyKey al abrir el modal y resetear estado
   useEffect(() => {
@@ -99,18 +99,18 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
     } else {
       setStep(1);
       setCustomer(null);
-      setPrincipalAmount("");
+      setPrincipalAmount(null);
       setTermMonths(6);
       setInterestRatePct("");
       setCollateral("");
       setNotes("");
       setOriginationFeeOpen(false);
-      setOriginationFee("");
+      setOriginationFee(null);
     }
   }, [open, accounts, accountId]);
 
   // Cálculo del cronograma en vivo
-  const numericPrincipal = typeof principalAmount === "number" ? principalAmount : 0;
+  const numericPrincipal = principalAmount ?? 0;
   const numericRate = typeof interestRatePct === "number" && interestRatePct > 0 ? interestRatePct / 100 : 0;
 
   const schedule: ScheduleEntry[] = useMemo(() => {
@@ -168,7 +168,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
         interestRate: numericRate,
         accountId,
         paymentMethod,
-        originationFee: typeof originationFee === "number" && originationFee > 0 ? originationFee : undefined,
+        originationFee: originationFee !== null && originationFee > 0 ? originationFee : undefined,
         collateral: collateral.trim() || undefined,
         notes: notes.trim() || undefined,
         firstDueDate: new Date(firstDueDate),
@@ -283,10 +283,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
                 <MoneyInput
                   placeholder="Ej: 2,000,000"
                   value={principalAmount}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setPrincipalAmount(isNaN(val) ? "" : val);
-                  }}
+                  onValueChange={setPrincipalAmount}
                   className="h-11 text-base font-bold"
                 />
               </div>
@@ -371,7 +368,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
                       key={rate}
                       type="button"
                       onClick={() => setInterestRatePct(rate)}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-[background-color,border-color,color] ${
                         interestRatePct === rate
                           ? "bg-accent text-accent-foreground border-accent font-bold"
                           : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
@@ -524,10 +521,7 @@ export function NewLoanSheet({ accounts, onSuccess }: NewLoanSheetProps) {
                   <MoneyInput
                     placeholder="Ej: 50,000"
                     value={originationFee}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      setOriginationFee(isNaN(val) ? "" : val);
-                    }}
+                    onValueChange={setOriginationFee}
                     className="h-11 font-mono"
                   />
                 </CollapsibleContent>

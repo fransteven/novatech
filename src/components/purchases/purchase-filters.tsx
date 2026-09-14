@@ -63,6 +63,9 @@ export function PurchaseFilters({ providers }: PurchaseFiltersProps) {
       <div className="relative flex-1 min-w-[220px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-[15px] w-[15px] text-muted-foreground" />
         <Input
+          data-search-shortcut
+          data-search-id="purchases-search"
+          data-search-label="Buscar compras"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Buscar por factura, referencia o proveedor..."

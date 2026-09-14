@@ -23,6 +23,7 @@ import {
 } from "@/db/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
 import { money, toDbString } from "@/lib/money";
+import { formatCurrency } from "@/lib/formatters";
 import type {
   CreateCreditorInput,
   AddLoanInput,
@@ -283,7 +284,7 @@ export const registerCreditorPayment = async (
     const outstanding = balanceRow?.outstanding ?? 0;
     if (data.amount > outstanding + 0.01) {
       throw new Error(
-        `El pago ($${data.amount.toLocaleString("es-CO")}) excede el saldo adeudado ($${outstanding.toLocaleString("es-CO")})`
+        `El pago (${formatCurrency(data.amount)}) excede el saldo adeudado (${formatCurrency(outstanding)})`
       );
     }
 

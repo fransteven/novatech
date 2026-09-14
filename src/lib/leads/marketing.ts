@@ -4,6 +4,7 @@
  */
 
 import { getLLMProvider } from "@/lib/llm";
+import { formatCurrency } from "@/lib/formatters";
 
 export interface LeadMarketingContext {
   prospectName: string;
@@ -26,13 +27,6 @@ const STAGE_LABELS: Record<string, string> = {
   perdido: "perdido",
 };
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(n);
-
 export function buildMarketingPrompt(ctx: LeadMarketingContext): {
   system: string;
   prompt: string;
@@ -53,7 +47,7 @@ export function buildMarketingPrompt(ctx: LeadMarketingContext): {
 
   const prompt = `## Lead: ${ctx.prospectName}
 - Producto de interés: ${ctx.productDescription}
-- Precio de venta: ${fmt(ctx.salePrice)} | Costo: ${fmt(ctx.costPrice)} | Margen: ${fmt(margin)} (${marginPct}%)
+- Precio de venta: ${formatCurrency(ctx.salePrice)} | Costo: ${formatCurrency(ctx.costPrice)} | Margen: ${formatCurrency(margin)} (${marginPct}%)
 - Crédito: ${monthlyPct}% mensual × ${ctx.termMonths} cuotas
 - Etapa actual: ${stageLabel}
 - Último contacto: ${contactInfo}

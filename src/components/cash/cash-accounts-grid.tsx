@@ -51,7 +51,7 @@ export function CashAccountsGrid({
         return (
           <div
             key={account.id}
-            className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 transition-all duration-200 hover:-translate-y-0.5"
+            className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]"
             style={{ boxShadow: "var(--tf-shadow-sm)" }}
           >
             {/* Top row: icon chip + type badge */}

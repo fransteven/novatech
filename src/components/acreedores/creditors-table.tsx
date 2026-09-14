@@ -167,6 +167,9 @@ export function CreditorsTable({ data, accounts }: CreditorsTableProps) {
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            data-search-shortcut
+            data-search-id="creditors-search"
+            data-search-label="Buscar acreedores"
             placeholder="Buscar acreedor..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}

@@ -2,12 +2,17 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+type CardVariant = "surface" | "interactive" | "metric" | "flat";
+
+function Card({ className, variant = "surface", ...props }: React.ComponentProps<"div"> & { variant?: CardVariant }) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-[14px] border border-border py-6 shadow-[var(--tf-shadow-sm)] transition-all duration-200 hover:shadow-[var(--tf-shadow-md)] hover:-translate-y-0.5",
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border border-border py-6 shadow-[var(--tf-shadow-sm)]",
+        variant === "interactive" && "cursor-pointer transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[var(--tf-shadow-md)]",
+        variant === "metric" && "relative overflow-hidden border-[color:var(--tf-border)] before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]",
+        variant === "flat" && "border-transparent bg-transparent shadow-none",
         className,
       )}
       {...props}

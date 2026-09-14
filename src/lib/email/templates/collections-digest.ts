@@ -6,14 +6,7 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { rowKey, type CollectionRow, type DailyCollections } from "@/services/collections-digest-service";
-
-const formatCOP = (value: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from "@/lib/formatters";
 
 const tipoLabel = (row: CollectionRow) =>
   row.tipo === "credito" ? "Crédito" : row.tipo === "prestamo" ? "Préstamo" : "Apartado";
@@ -28,7 +21,7 @@ function renderRows(rows: CollectionRow[], showMora: boolean, moraMessages?: Map
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${r.clienteTelefono ?? "—"}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${tipoLabel(r)}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${cuotaLabel(r)}</td>
-          <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${formatCOP(r.monto)}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${formatCurrency(r.monto)}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${format(r.fecha, "d 'de' MMMM", { locale: es })}</td>
           ${showMora ? `<td style="padding:8px;border-bottom:1px solid #e5e7eb;color:#b91c1c;font-weight:600;">${r.diasMora} días</td>` : ""}
         </tr>

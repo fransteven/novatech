@@ -33,7 +33,7 @@ export function InspectionItem({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 p-4 rounded-lg border transition-all',
+        'flex flex-col gap-3 p-4 rounded-lg border transition-[background-color,border-color,opacity,filter]',
         isApproved && 'bg-green-500/5 border-green-500/20',
         isFailed && 'bg-red-500/5 border-red-500/20',
         isPending && 'bg-muted/30 border-border',

@@ -13,7 +13,7 @@ function Table({
     <div
       data-slot="table-container"
       className={cn(
-        "relative w-full overflow-x-auto rounded-xl border bg-card shadow-sm",
+        "relative w-full overflow-x-auto rounded-xl border border-border bg-card shadow-[var(--tf-shadow-sm)]",
         mobileCards && "tf-table-cards",
         className,
       )}
@@ -78,7 +78,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-muted-foreground h-11 px-4 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-muted-foreground h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-[0.055em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}

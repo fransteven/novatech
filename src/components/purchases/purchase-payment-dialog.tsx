@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -95,12 +96,10 @@ export function PurchasePaymentDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Monto</Label>
-            <Input
-              type="number"
+            <MoneyInput
               min="0"
-              step="0.01"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
+              value={amount ? Number(amount) : null}
+              onValueChange={(value) => setAmount(value === null ? "" : String(value))}
             />
           </div>
 

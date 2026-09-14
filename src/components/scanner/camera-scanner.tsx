@@ -346,7 +346,7 @@ export function CameraScanner({
           {!ocrActive && !cameraLoading && !cameraError && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
               <div
-                className={`relative w-[82%] aspect-[2.4/1] rounded-xl border-2 transition-all duration-200 ${
+                className={`relative w-[82%] aspect-[2.4/1] rounded-xl border-2 transition-[border-color,box-shadow] duration-200 ${
                   flashState === "success"
                     ? "border-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.7)]"
                     : flashState === "error"

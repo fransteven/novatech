@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
@@ -121,12 +122,11 @@ export function CreateLeadDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="costPrice">Costo (COP)</Label>
-              <Input
+              <MoneyInput
                 id="costPrice"
-                type="number"
                 placeholder="4200000"
-                value={form.costPrice}
-                onChange={set("costPrice")}
+                value={form.costPrice ? Number(form.costPrice) : null}
+                onValueChange={(value) => setForm((current) => ({ ...current, costPrice: value === null ? "" : String(value) }))}
                 required
                 min={0}
               />
@@ -134,12 +134,11 @@ export function CreateLeadDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="salePrice">Precio de venta (COP)</Label>
-              <Input
+              <MoneyInput
                 id="salePrice"
-                type="number"
                 placeholder="4500000"
-                value={form.salePrice}
-                onChange={set("salePrice")}
+                value={form.salePrice ? Number(form.salePrice) : null}
+                onValueChange={(value) => setForm((current) => ({ ...current, salePrice: value === null ? "" : String(value) }))}
                 required
                 min={0}
               />

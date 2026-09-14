@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -130,14 +131,12 @@ export function AddContributionDialog({ shareholders }: AddContributionDialogPro
           {/* Monto */}
           <div className="space-y-1.5">
             <Label htmlFor="amount">Monto (COP) *</Label>
-            <Input
+            <MoneyInput
               id="amount"
-              type="number"
-              step="1"
               min="1"
               placeholder="0"
-              value={form.amount}
-              onChange={(e) => handleChange("amount", e.target.value)}
+              value={form.amount ? Number(form.amount) : null}
+              onValueChange={(value) => handleChange("amount", value === null ? "" : String(value))}
             />
           </div>
 

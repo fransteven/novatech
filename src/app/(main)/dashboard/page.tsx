@@ -2,17 +2,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { getDashboardKPIs, getRecentSales } from "@/services/dashboard-service";
+import { formatCurrency } from "@/lib/formatters";
 
 export default async function DashboardPage() {
   const kpis = await getDashboardKPIs();
   const recentSales = await getRecentSales(5);
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(amount);
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1480px] mx-auto">

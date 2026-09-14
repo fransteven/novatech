@@ -166,6 +166,10 @@ export function CustomerSelector({
         <PopoverContent className="w-[350px] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
+              data-search-shortcut
+              data-search-id="pos-customer-search"
+              data-search-label="Buscar cliente"
+              data-search-priority="overlay"
               placeholder="Buscar por cédula o nombre..."
               value={searchQuery}
               onValueChange={setSearchQuery}

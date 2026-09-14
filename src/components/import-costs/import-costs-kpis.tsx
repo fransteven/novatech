@@ -1,5 +1,6 @@
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DollarSign, TrendingUp, Clock } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
 interface ImportCostsKpisProps {
   stats: {
@@ -11,42 +12,26 @@ interface ImportCostsKpisProps {
   };
 }
 
-const formatCOP = (value: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-
-const formatTRM = (value: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-
 export function ImportCostsKpis({ stats }: ImportCostsKpisProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <KpiCard
         icon={DollarSign}
         title="Total Invertido"
-        value={formatCOP(stats.totalInvestedCOP)}
+        value={formatCurrency(stats.totalInvestedCOP)}
         description={`En ${stats.totalRecords} compras realizadas`}
       />
       <KpiCard
         icon={TrendingUp}
         title="TRM Promedio Producto"
-        value={stats.avgProductTrm > 0 ? formatTRM(stats.avgProductTrm) : "—"}
+        value={stats.avgProductTrm > 0 ? formatCurrency(stats.avgProductTrm) : "—"}
         description="Dólar promedio al comprar equipos"
       />
       <KpiCard
         icon={TrendingUp}
         title="TRM Promedio Casillero"
         value={
-          stats.avgCasilleroTrm > 0 ? formatTRM(stats.avgCasilleroTrm) : "—"
+          stats.avgCasilleroTrm > 0 ? formatCurrency(stats.avgCasilleroTrm) : "—"
         }
         description="Dólar promedio al pagar casillero"
       />

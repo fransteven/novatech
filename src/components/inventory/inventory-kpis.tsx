@@ -1,5 +1,5 @@
 import { Package, DollarSign, AlertTriangle, TrendingUp } from "lucide-react";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, formatNumberCO } from "@/lib/formatters";
 
 interface InventoryKPIsProps {
   stats: {
@@ -15,7 +15,7 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
       label: "Valor Total del Inventario",
       icon: DollarSign,
       value: formatCurrency(stats.totalValue),
-      unit: "MXN",
+      unit: "COP",
       delta: { variant: "up" as const, label: "+", text: "Valor de mercancía" },
       glow: "oklch(0.65 0.16 150 / 0.16)",
       iconBg: "oklch(0.95 0.05 150)",
@@ -25,7 +25,7 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
     {
       label: "Unidades Totales",
       icon: Package,
-      value: stats.totalUnits.toLocaleString("es-MX"),
+      value: formatNumberCO(stats.totalUnits),
       unit: "unidades",
       delta: { variant: "up" as const, label: "+", text: "Productos disponibles" },
       glow: "oklch(0.62 0.18 265 / 0.18)",
@@ -55,7 +55,7 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
       {cards.map((card, i) => (
         <div
           key={i}
-          className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--tf-shadow-md)]"
+          className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]"
           style={
             {
               "--kpi-glow": card.glow,

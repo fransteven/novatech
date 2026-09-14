@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -383,16 +383,13 @@ export function CreditorDetailDialog({
                 <Label htmlFor="pay-amount">
                   Monto a pagar (COP) <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <MoneyInput
                   id="pay-amount"
-                  type="number"
                   min={0}
                   max={outstanding}
                   placeholder={`Máx. ${formatCurrency(outstanding)}`}
-                  value={paymentForm.amount}
-                  onChange={(e) =>
-                    setPaymentForm((f) => ({ ...f, amount: e.target.value }))
-                  }
+                  value={paymentForm.amount ? Number(paymentForm.amount) : null}
+                  onValueChange={(value) => setPaymentForm((f) => ({ ...f, amount: value === null ? "" : String(value) }))}
                 />
               </div>
 
@@ -503,15 +500,12 @@ export function CreditorDetailDialog({
                 <Label htmlFor="accrual-amount">
                   Monto (COP) <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <MoneyInput
                   id="accrual-amount"
-                  type="number"
                   min={0}
                   placeholder="Ej. 100000"
-                  value={accrualForm.amount}
-                  onChange={(e) =>
-                    setAccrualForm((f) => ({ ...f, amount: e.target.value }))
-                  }
+                  value={accrualForm.amount ? Number(accrualForm.amount) : null}
+                  onValueChange={(value) => setAccrualForm((f) => ({ ...f, amount: value === null ? "" : String(value) }))}
                 />
               </div>
 

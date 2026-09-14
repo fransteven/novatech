@@ -1,15 +1,19 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { formatNumberCO, parseCurrencyInput } from "@/lib/formatters";
 
 export interface MoneyInputProps
-  extends Omit<React.ComponentProps<"input">, "type"> {
+  extends Omit<React.ComponentProps<"input">, "type" | "value" | "onChange"> {
   currencySymbol?: string;
-  type?: "number" | "text";
+  /** Valor numérico en pesos COP; el vacío se representa con null. */
+  value: number | null;
+  onValueChange: (value: number | null) => void;
 }
 
 export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
-  ({ className, currencySymbol = "$", type = "number", ...props }, ref) => {
+  ({ className, currencySymbol = "$", value, onValueChange, onBlur, ...props }, ref) => {
+    const displayValue = value === null ? "" : formatNumberCO(value);
     return (
       <div className="relative w-full">
         <span
@@ -20,9 +24,15 @@ export const MoneyInput = React.forwardRef<HTMLInputElement, MoneyInputProps>(
         </span>
         <Input
           ref={ref}
-          type={type}
-          inputMode="decimal"
-          className={cn("pl-7 text-right font-mono", className)}
+          type="text"
+          inputMode="numeric"
+          value={displayValue}
+          onChange={(event) => {
+            const nextValue = parseCurrencyInput(event.target.value);
+            onValueChange(nextValue);
+          }}
+          onBlur={onBlur}
+          className={cn("pl-7 text-right font-mono tabular-nums", className)}
           {...props}
         />
       </div>

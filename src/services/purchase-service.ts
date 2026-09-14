@@ -17,6 +17,7 @@ import {
   type ReceiveStockLine,
 } from "@/services/inventory-service";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
+import { formatCurrency } from "@/lib/formatters";
 
 export interface PurchaseDetailInput {
   productId: string;
@@ -198,7 +199,7 @@ export const PurchaseService = {
         TOTAL_MISMATCH_TOLERANCE
     ) {
       throw new Error(
-        `El total enviado ($${input.expectedTotal.toLocaleString("es-CO")}) no coincide con el calculado ($${allocation.total.toLocaleString("es-CO")}). Recarga el formulario e intenta de nuevo.`,
+        `El total enviado (${formatCurrency(input.expectedTotal)}) no coincide con el calculado (${formatCurrency(allocation.total)}). Recarga el formulario e intenta de nuevo.`,
       );
     }
 
@@ -382,7 +383,7 @@ export const PurchaseService = {
       const amount = round2(input.amount);
       if (amount > pending + TOTAL_MISMATCH_TOLERANCE) {
         throw new Error(
-          `El abono supera el saldo pendiente ($${pending.toLocaleString("es-CO")}).`,
+          `El abono supera el saldo pendiente (${formatCurrency(pending)}).`,
         );
       }
 

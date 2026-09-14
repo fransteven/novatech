@@ -20,6 +20,7 @@ import { eq, and, or } from "drizzle-orm";
 import { sendEmail } from "@/lib/email/send";
 import { renderCollectionsDigestEmail } from "@/lib/email/templates/collections-digest";
 import { getLLMProvider } from "@/lib/llm";
+import { formatCurrency } from "@/lib/formatters";
 
 const POR_VENCER_DAYS = 3;
 
@@ -48,14 +49,6 @@ export interface DailyCollections {
 export function rowKey(row: CollectionRow): string {
   return `${row.tipo}:${row.sourceId ?? row.layawayId}:${row.cuotaNumero ?? "unica"}`;
 }
-
-const formatCOP = (value: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 
 /**
  * Fecha (00:00 UTC) del día calendario de `date`, en UTC — nunca en la
@@ -255,8 +248,8 @@ export async function generateDigestNarrative(
     `Redacta un resumen ejecutivo de máximo 3 frases (sin saludo ni despedida) ` +
     `para el equipo de cobros de NovaTech, una tienda de electrónica en Colombia, ` +
     `sobre la jornada de cobros del ${fechaFmt}. Datos: ${vencenHoy.length} cobros ` +
-    `vencen hoy por ${formatCOP(totalHoy)}; ${enMora.length} están en mora por ` +
-    `${formatCOP(totalMora)} en total (el caso más antiguo lleva ${peorMora} días); ` +
+    `vencen hoy por ${formatCurrency(totalHoy)}; ${enMora.length} están en mora por ` +
+    `${formatCurrency(totalMora)} en total (el caso más antiguo lleva ${peorMora} días); ` +
     `${porVencer.length} vencen en los próximos días. Indica qué priorizar primero. ` +
     `Tono directo y profesional, en español.`;
 
@@ -278,7 +271,7 @@ export async function generateMoraMessages(enMora: CollectionRow[]): Promise<Map
       const prompt =
         `Escribe un mensaje corto de WhatsApp (máximo 3 líneas, sin emojis) ` +
         `recordándole a ${row.clienteNombre} que tiene ${row.diasMora} días de mora ` +
-        `en su ${tipoLabel} por ${formatCOP(row.monto)} con NovaTech. Tono cordial ` +
+        `en su ${tipoLabel} por ${formatCurrency(row.monto)} con NovaTech. Tono cordial ` +
         `pero firme, sin amenazas, en español de Colombia.`;
       const text = await safeLLMGenerate(prompt, 150);
       if (text) messages.set(rowKey(row), text);

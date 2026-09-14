@@ -16,7 +16,7 @@ interface KpiCardProps {
 function KpiCard({ label, value, sub, icon, iconBg, iconFg, glow, alert }: KpiCardProps) {
   return (
     <div
-      className={`relative overflow-hidden bg-card border border-border rounded-[14px] p-5 transition-all duration-200 hover:-translate-y-0.5${alert ? " tf-kpi-alert" : ""}`}
+      className={`relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]${alert ? " tf-kpi-alert" : ""}`}
       style={{ boxShadow: "var(--tf-shadow-sm)" }}
     >
       <div

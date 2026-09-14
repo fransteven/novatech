@@ -74,12 +74,12 @@ export function LoanPaymentSheet({
   const [soloInteresScheduleNum, setSoloInteresScheduleNum] = useState<number | "">("");
 
   // Abono a capital
-  const [capitalAmount, setCapitalAmount] = useState<number | "">("");
+  const [capitalAmount, setCapitalAmount] = useState<number | null>(null);
   const [capitalStrategy, setCapitalStrategy] = useState<"reduce_term" | "reduce_installment">("reduce_term");
 
   // Abono parcial a cuota
   const [abonoCuotaNum, setAbonoCuotaNum] = useState<number | "">("");
-  const [abonoCuotaAmount, setAbonoCuotaAmount] = useState<number | "">("");
+  const [abonoCuotaAmount, setAbonoCuotaAmount] = useState<number | null>(null);
 
   // Campos comunes
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer" | "card">("cash");
@@ -369,10 +369,7 @@ export function LoanPaymentSheet({
                 <MoneyInput
                   placeholder="Ej: 500,000"
                   value={capitalAmount}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setCapitalAmount(isNaN(val) ? "" : val);
-                  }}
+                  onValueChange={setCapitalAmount}
                   className="h-11 font-mono"
                 />
                 <p className="text-[11px] text-muted-foreground">
@@ -429,10 +426,7 @@ export function LoanPaymentSheet({
                 <MoneyInput
                   placeholder={`Máx: ${formatCurrency(abonoCuotaRemaining)}`}
                   value={abonoCuotaAmount}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setAbonoCuotaAmount(isNaN(val) ? "" : val);
-                  }}
+                  onValueChange={setAbonoCuotaAmount}
                   className="h-11 font-mono"
                 />
                 {selectedAbonoCuota && (

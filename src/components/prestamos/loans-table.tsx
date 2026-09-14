@@ -286,6 +286,9 @@ export function LoansTable({ data, accounts, onRefresh }: LoansTableProps) {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            data-search-shortcut
+            data-search-id="loans-search"
+            data-search-label="Buscar préstamos"
             placeholder="Buscar por cliente, documento, teléfono o garantía..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

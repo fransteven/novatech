@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -143,15 +144,12 @@ export function AddLoanDialog({
             <Label htmlFor="amount">
               Monto prestado (COP) <span className="text-destructive">*</span>
             </Label>
-            <Input
+            <MoneyInput
               id="amount"
-              type="number"
               min={0}
               placeholder="Ej. 2000000"
-              value={form.amount}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, amount: e.target.value }))
-              }
+              value={form.amount ? Number(form.amount) : null}
+              onValueChange={(value) => setForm((f) => ({ ...f, amount: value === null ? "" : String(value) }))}
             />
           </div>
 
@@ -257,18 +255,12 @@ export function AddLoanDialog({
                 Comisión por transacción (COP){" "}
                 <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <MoneyInput
                 id="fee"
-                type="number"
                 min={0}
                 placeholder="Ej. 100000"
-                value={form.perTransactionFee}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    perTransactionFee: e.target.value,
-                  }))
-                }
+                value={form.perTransactionFee ? Number(form.perTransactionFee) : null}
+                onValueChange={(value) => setForm((f) => ({ ...f, perTransactionFee: value === null ? "" : String(value) }))}
               />
               <p className="text-xs text-muted-foreground">
                 Esta comisión se devenga manualmente desde el detalle del

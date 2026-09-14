@@ -524,11 +524,11 @@ export function PurchaseForm({
           fields={extraCostsArray.fields}
           watchedExtraCosts={watchedExtraCosts}
           register={form.register}
+          setValue={form.setValue}
           errors={form.formState.errors}
           onAppend={(cost) => extraCostsArray.append(cost)}
           onRemove={(index) => extraCostsArray.remove(index)}
           totalExtraCosts={totalExtraCosts}
-          numberField={numberField}
         />
 
         <Separator />
@@ -546,7 +546,6 @@ export function PurchaseForm({
           register={form.register}
           errors={form.formState.errors}
           setValue={form.setValue}
-          numberField={numberField}
         />
 
         <Separator />

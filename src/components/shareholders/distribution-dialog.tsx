@@ -26,14 +26,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/formatters";
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  }).format(amount);
+const fmt = formatCurrency;
 
 interface DistributionDialogProps {
   defaultNetProfit?: number;
@@ -112,13 +109,11 @@ export function DistributionDialog({ defaultNetProfit }: DistributionDialogProps
                 <FormItem>
                   <FormLabel>Utilidad neta total (COP) *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="1"
+                    <MoneyInput
                       placeholder="0"
-                      value={field.value as number}
+                      value={typeof field.value === "number" ? field.value : Number(field.value) || null}
                       onBlur={field.onBlur}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      onValueChange={(value) => field.onChange(value ?? 0)}
                     />
                   </FormControl>
                   <FormMessage />

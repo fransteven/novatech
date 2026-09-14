@@ -348,6 +348,9 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
+              data-search-shortcut
+              data-search-id="layaways-search"
+              data-search-label="Buscar apartados"
               placeholder="Buscar por cliente, documento, IMEI o serial..."
               value={globalFilter ?? ""}
               onChange={(e) => setGlobalFilter(e.target.value)}

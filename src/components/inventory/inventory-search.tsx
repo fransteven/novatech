@@ -44,11 +44,14 @@ export function InventorySearch() {
 
   return (
     <div
-      className="flex items-center gap-2 flex-1 min-w-[240px] h-9 rounded-lg border border-transparent px-3 tf-focus-ring transition-all duration-150"
+      className="flex items-center gap-2 flex-1 min-w-[240px] h-9 rounded-lg border border-transparent px-3 tf-focus-ring transition-[border-color,box-shadow] duration-150"
       style={{ background: "var(--tf-bg-muted)" }}
     >
       <Search className="h-[15px] w-[15px] text-[color:var(--tf-fg-subtle)] shrink-0" />
       <input
+        data-search-shortcut
+        data-search-id="inventory-search"
+        data-search-label="Buscar inventario"
         type="text"
         placeholder="Buscar por nombre, SKU o IMEI/serial..."
         value={query}

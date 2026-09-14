@@ -140,7 +140,7 @@ export default function PosPage() {
           {cartItems.length > 0 && (
             <button
               aria-label="Vaciar carrito"
-              className="w-7 h-7 rounded-[7px] flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-all duration-100"
+              className="w-7 h-7 rounded-[7px] flex items-center justify-center text-muted-foreground hover:bg-card hover:text-foreground transition-[background-color,color] duration-100"
               onClick={() => setCartItems([])}
             >
               <Trash2 className="h-3.5 w-3.5" />

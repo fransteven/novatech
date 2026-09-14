@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/formatters";
 import {
   Dialog,
   DialogContent,
@@ -43,13 +43,7 @@ export function PrintLabelsDialog({
       ? /^\d{8,14}$/.test(data.product.sku)
       : false;
 
-  const formatPrice = (value: number | string) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(Number(value));
-  };
+  const formatPrice = formatCurrency;
 
   const handleDownloadExcel = () => {
     if (!data) return;

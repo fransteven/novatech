@@ -261,7 +261,7 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
                         align="start"
                       >
                         <Command>
-                          <CommandInput placeholder="Buscar por nombre, atributo o SKU..." />
+                          <CommandInput data-search-shortcut data-search-id="inventory-product-picker" data-search-label="Buscar producto" data-search-priority="overlay" placeholder="Buscar por nombre, atributo o SKU..." />
                           <CommandList>
                             <CommandEmpty>No se encontró ningún producto.</CommandEmpty>
                             <CommandGroup>

@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,33 +49,33 @@
 /* ── TechFlow design tokens (light) ─────────────────────────── */
 :root {
   /* Raw design tokens */
-  --tf-bg:           oklch(0.99 0.003 80);
-  --tf-bg-elev:      oklch(1 0 0);
-  --tf-bg-muted:     oklch(0.97 0.004 80);
-  --tf-border:       oklch(0.92 0.005 80);
-  --tf-border-strong:oklch(0.88 0.006 80);
-  --tf-fg:           oklch(0.18 0.01 260);
-  --tf-fg-muted:     oklch(0.46 0.012 260);
-  --tf-fg-subtle:    oklch(0.62 0.012 260);
+  --tf-bg:           oklch(0.982 0.014 84);
+  --tf-bg-elev:      oklch(0.995 0.006 84);
+  --tf-bg-muted:     oklch(0.955 0.018 84);
+  --tf-border:       oklch(0.885 0.018 84);
+  --tf-border-strong:oklch(0.81 0.022 84);
+  --tf-fg:           oklch(0.235 0.026 258);
+  --tf-fg-muted:     oklch(0.47 0.028 258);
+  --tf-fg-subtle:    oklch(0.61 0.022 258);
 
-  --tf-accent:       oklch(0.58 0.19 265);
-  --tf-accent-fg:    oklch(0.99 0 0);
-  --tf-accent-soft:  oklch(0.95 0.04 265);
-  --tf-accent-ring:  oklch(0.58 0.19 265 / 0.25);
+  --tf-accent:       oklch(0.47 0.155 269);
+  --tf-accent-fg:    oklch(0.99 0.005 84);
+  --tf-accent-soft:  oklch(0.93 0.042 269);
+  --tf-accent-ring:  oklch(0.47 0.155 269 / 0.24);
 
-  --tf-green:        oklch(0.62 0.15 150);
-  --tf-green-soft:   oklch(0.95 0.05 150);
-  --tf-amber:        oklch(0.72 0.15 70);
-  --tf-amber-soft:   oklch(0.96 0.06 70);
-  --tf-red:          oklch(0.6 0.2 25);
-  --tf-red-soft:     oklch(0.96 0.04 25);
+  --tf-green:        oklch(0.48 0.115 158);
+  --tf-green-soft:   oklch(0.93 0.038 158);
+  --tf-amber:        oklch(0.62 0.13 72);
+  --tf-amber-soft:   oklch(0.945 0.052 72);
+  --tf-red:          oklch(0.53 0.17 27);
+  --tf-red-soft:     oklch(0.94 0.042 27);
 
   --tf-shadow-sm: 0 1px 2px oklch(0.2 0.02 260 / 0.04);
   --tf-shadow-md: 0 4px 12px oklch(0.2 0.02 260 / 0.06), 0 1px 3px oklch(0.2 0.02 260 / 0.04);
   --tf-shadow-lg: 0 12px 32px oklch(0.2 0.02 260 / 0.1), 0 4px 8px oklch(0.2 0.02 260 / 0.05);
 
   /* Shadcn semantic tokens mapped to design */
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   --background:          var(--tf-bg);
   --foreground:          var(--tf-fg);
@@ -115,26 +115,26 @@
 /* ── Dark theme ──────────────────────────────────────────────── */
 [data-theme="dark"],
 .dark {
-  --tf-bg:           oklch(0.16 0.01 260);
-  --tf-bg-elev:      oklch(0.2 0.012 260);
-  --tf-bg-muted:     oklch(0.22 0.012 260);
-  --tf-border:       oklch(0.28 0.012 260);
-  --tf-border-strong:oklch(0.34 0.014 260);
-  --tf-fg:           oklch(0.97 0.004 260);
-  --tf-fg-muted:     oklch(0.72 0.012 260);
-  --tf-fg-subtle:    oklch(0.58 0.012 260);
+  --tf-bg:           oklch(0.185 0.024 258);
+  --tf-bg-elev:      oklch(0.225 0.025 258);
+  --tf-bg-muted:     oklch(0.27 0.026 258);
+  --tf-border:       oklch(0.335 0.024 258);
+  --tf-border-strong:oklch(0.42 0.028 258);
+  --tf-fg:           oklch(0.94 0.012 84);
+  --tf-fg-muted:     oklch(0.74 0.018 245);
+  --tf-fg-subtle:    oklch(0.59 0.018 245);
 
-  --tf-accent:       oklch(0.7 0.17 265);
-  --tf-accent-fg:    oklch(0.15 0.01 260);
-  --tf-accent-soft:  oklch(0.28 0.06 265);
-  --tf-accent-ring:  oklch(0.7 0.17 265 / 0.3);
+  --tf-accent:       oklch(0.72 0.135 269);
+  --tf-accent-fg:    oklch(0.19 0.024 258);
+  --tf-accent-soft:  oklch(0.31 0.072 269);
+  --tf-accent-ring:  oklch(0.72 0.135 269 / 0.3);
 
-  --tf-green:        oklch(0.74 0.16 150);
-  --tf-green-soft:   oklch(0.28 0.06 150);
-  --tf-amber:        oklch(0.8 0.16 70);
-  --tf-amber-soft:   oklch(0.32 0.07 70);
-  --tf-red:          oklch(0.72 0.18 25);
-  --tf-red-soft:     oklch(0.3 0.08 25);
+  --tf-green:        oklch(0.75 0.12 158);
+  --tf-green-soft:   oklch(0.3 0.06 158);
+  --tf-amber:        oklch(0.81 0.13 72);
+  --tf-amber-soft:   oklch(0.34 0.065 72);
+  --tf-red:          oklch(0.72 0.15 27);
+  --tf-red-soft:     oklch(0.33 0.075 27);
 
   --tf-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
   --tf-shadow-md: 0 4px 12px oklch(0 0 0 / 0.35), 0 1px 3px oklch(0 0 0 / 0.25);
@@ -147,14 +147,14 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-plex-sans), -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.005em;
   }
   .mono {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-feature-settings: "ss01", "cv01";
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -351,5 +351,14 @@
   [data-slot="button"][data-size="icon-xs"] {
     min-width: 40px;
     min-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

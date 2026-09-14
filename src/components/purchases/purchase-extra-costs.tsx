@@ -5,6 +5,7 @@ import type {
   FieldArrayWithId,
   FieldErrors,
   UseFormRegister,
+  UseFormSetValue,
 } from "react-hook-form";
 import { Check, Plus, Trash2 } from "lucide-react";
 
@@ -22,11 +23,11 @@ interface PurchaseExtraCostsProps {
   fields: FieldArrayWithId<CreatePurchaseSchema, "extraCosts", "id">[];
   watchedExtraCosts: CreatePurchaseSchema["extraCosts"];
   register: UseFormRegister<CreatePurchaseSchema>;
+  setValue: UseFormSetValue<CreatePurchaseSchema>;
   errors: FieldErrors<CreatePurchaseSchema>;
   onAppend: (cost: { concept: string; amount: number }) => void;
   onRemove: (index: number) => void;
   totalExtraCosts: number;
-  numberField: { setValueAs: (v: unknown) => number };
 }
 
 const FieldError = ({ message }: { message?: string }) =>
@@ -36,11 +37,11 @@ export function PurchaseExtraCosts({
   fields,
   watchedExtraCosts,
   register,
+  setValue,
   errors,
   onAppend,
   onRemove,
   totalExtraCosts,
-  numberField,
 }: PurchaseExtraCostsProps) {
   const amountInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -94,7 +95,7 @@ export function PurchaseExtraCosts({
                 type="button"
                 onClick={() => handlePresetClick(preset)}
                 className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border transition-all cursor-pointer select-none",
+                  "inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full border transition-[background-color,border-color,color] cursor-pointer select-none",
                   exists
                     ? "bg-[color:var(--tf-accent-soft)] text-[color:var(--tf-accent)] border-[color:var(--tf-accent)]/40 font-medium"
                     : "bg-card text-muted-foreground border-border hover:bg-muted/60 hover:text-foreground",
@@ -113,11 +114,6 @@ export function PurchaseExtraCosts({
       </div>
 
       {fields.map((field, index) => {
-        const amountRegistration = register(
-          `extraCosts.${index}.amount`,
-          numberField,
-        );
-
         return (
           <div key={field.id} className="flex items-center gap-2">
             <div className="flex-1 space-y-1">
@@ -135,13 +131,12 @@ export function PurchaseExtraCosts({
             <div className="w-40 sm:w-48 space-y-1">
               <MoneyInput
                 id={`extra-cost-${index}-amount`}
-                step="0.01"
                 min="0"
                 placeholder="0"
                 className="h-9 text-[13px]"
-                {...amountRegistration}
+                value={watchedExtraCosts?.[index]?.amount ?? 0}
+                onValueChange={(value) => setValue(`extraCosts.${index}.amount`, value ?? 0, { shouldValidate: true, shouldDirty: true })}
                 ref={(element) => {
-                  amountRegistration.ref(element);
                   amountInputsRef.current[index] = element;
                 }}
               />

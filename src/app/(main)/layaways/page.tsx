@@ -7,15 +7,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { formatCurrency } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export default async function LayawaysPage() {
   const [response, accountsRes] = await Promise.all([
@@ -71,14 +65,14 @@ export default async function LayawaysPage() {
         <KpiCard
           icon={DollarSign}
           title="Saldo por Cobrar"
-          value={fmt(totalPending)}
+          value={formatCurrency(totalPending)}
           valueClassName="text-primary"
           description="Total en apartados activos"
         />
         <KpiCard
           icon={TrendingUp}
           title="Capital Insoluto"
-          value={fmt(totalOutstanding)}
+          value={formatCurrency(totalOutstanding)}
           valueClassName="text-blue-600 dark:text-blue-400"
           description="Capital pendiente en créditos"
         />

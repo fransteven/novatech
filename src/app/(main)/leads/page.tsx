@@ -5,15 +5,9 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { Target, TrendingUp, DollarSign, Trophy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { formatCurrency } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export default async function LeadsPage() {
   const response = await getLeadsAction();
@@ -69,14 +63,14 @@ export default async function LeadsPage() {
         <KpiCard
           icon={DollarSign}
           title="Valor pipeline"
-          value={fmt(totalPipeline)}
+          value={formatCurrency(totalPipeline)}
           valueClassName="text-primary"
           description="Suma de precios de venta activos"
         />
         <KpiCard
           icon={TrendingUp}
           title="Margen potencial"
-          value={fmt(totalMargin)}
+          value={formatCurrency(totalMargin)}
           valueClassName="text-green-600 dark:text-green-400"
           description="Ganancia estimada en leads activos"
         />

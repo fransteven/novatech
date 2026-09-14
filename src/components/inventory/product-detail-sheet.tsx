@@ -23,6 +23,7 @@ import { Copy, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { EditSerialDialog } from "./edit-serial-dialog";
+import { formatCurrency } from "@/lib/formatters";
 
 interface ProductDetailSheetProps {
   product: {
@@ -71,14 +72,8 @@ export function ProductDetailSheet({
     }
   };
 
-  const formatPrice = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined) return "N/A";
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(Number(value));
-  };
+  const formatPrice = (value: number | string | null | undefined) =>
+    value === null || value === undefined ? "N/A" : formatCurrency(value);
 
   useEffect(() => {
     if (open && product?.productId && product.isSerialized) {

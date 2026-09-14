@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -141,12 +142,7 @@ export function CreateAccountDialog() {
                 <FormItem>
                   <FormLabel>Saldo inicial</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="1000"
-                      placeholder="0"
-                      {...field}
-                    />
+                    <MoneyInput placeholder="0" value={Number(field.value) || null} onValueChange={(value) => field.onChange(value ?? 0)} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

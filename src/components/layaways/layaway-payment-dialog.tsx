@@ -4,7 +4,6 @@ import { useState } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { addLayawayPaymentAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
-import { DollarSign } from "lucide-react";
 
 type CashAccount = { id: string; name: string };
 
@@ -17,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -45,7 +44,7 @@ export function LayawayPaymentDialog({
   accounts,
 }: LayawayPaymentDialogProps) {
   const [processing, setProcessing] = useState(false);
-  const [amount, setAmount] = useState<number | "">("");
+  const [amount, setAmount] = useState<number | null>(null);
   const [method, setMethod] = useState<string>("cash");
   const [accountId, setAccountId] = useState<string>("");
 
@@ -75,7 +74,7 @@ export function LayawayPaymentDialog({
 
       if (res.success) {
         toast.success(amount === balance ? "Apartado Completado. Inventario y Venta registrados." : "Abono registrado exitosamente");
-        setAmount("");
+        setAmount(null);
         setMethod("cash");
         setAccountId("");
         onSuccess();
@@ -104,15 +103,12 @@ export function LayawayPaymentDialog({
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
             <Label htmlFor="amount" className="sm:w-24 sm:text-right">Monto a Pagar</Label>
             <div className="relative flex-1">
-              <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+              <MoneyInput
                 id="amount"
-                type="number"
                 min="1"
                 max={balance}
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                className="pl-8"
+                onValueChange={setAmount}
               />
             </div>
           </div>

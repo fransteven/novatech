@@ -11,29 +11,29 @@ Shadcn semantic names (`--primary`, `--muted`, `--border`, etc.) are mapped to `
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--tf-bg` | `oklch(0.99 0.003 80)` | `oklch(0.16 0.01 260)` | Page background |
-| `--tf-bg-elev` | `oklch(1 0 0)` | `oklch(0.2 0.012 260)` | Cards, sidebar, panels |
-| `--tf-bg-muted` | `oklch(0.97 0.004 80)` | `oklch(0.22 0.012 260)` | Hover, table headers, muted zones |
-| `--tf-border` | `oklch(0.92 0.005 80)` | `oklch(0.28 0.012 260)` | Default borders |
-| `--tf-border-strong` | `oklch(0.88 0.006 80)` | `oklch(0.34 0.014 260)` | Input borders, strong dividers |
-| `--tf-fg` | `oklch(0.18 0.01 260)` | `oklch(0.97 0.004 260)` | Primary text |
-| `--tf-fg-muted` | `oklch(0.46 0.012 260)` | `oklch(0.72 0.012 260)` | Secondary text |
-| `--tf-fg-subtle` | `oklch(0.62 0.012 260)` | `oklch(0.58 0.012 260)` | Tertiary text, placeholders |
-| **`--tf-accent`** | `oklch(0.58 0.19 265)` | `oklch(0.7 0.17 265)` | **Primary action — indigo** |
-| `--tf-accent-fg` | `oklch(0.99 0 0)` | `oklch(0.15 0.01 260)` | Text on accent bg |
-| `--tf-accent-soft` | `oklch(0.95 0.04 265)` | `oklch(0.28 0.06 265)` | Accent hover surface |
-| `--tf-accent-ring` | `oklch(0.58 0.19 265 / 0.25)` | `oklch(0.7 0.17 265 / 0.3)` | Focus rings |
-| `--tf-green` | `oklch(0.62 0.15 150)` | `oklch(0.74 0.16 150)` | Normal/OK status |
-| `--tf-green-soft` | `oklch(0.95 0.05 150)` | `oklch(0.28 0.06 150)` | Green badge bg |
-| `--tf-amber` | `oklch(0.72 0.15 70)` | `oklch(0.8 0.16 70)` | Warning / low stock |
-| `--tf-amber-soft` | `oklch(0.96 0.06 70)` | `oklch(0.32 0.07 70)` | Amber badge bg |
-| `--tf-red` | `oklch(0.6 0.2 25)` | `oklch(0.72 0.18 25)` | Error / out of stock |
-| `--tf-red-soft` | `oklch(0.96 0.04 25)` | `oklch(0.3 0.08 25)` | Red badge bg |
+| `--tf-bg` | `oklch(0.982 0.014 84)` | `oklch(0.185 0.024 258)` | Lienzo marfil de recibo / grafito azulado |
+| `--tf-bg-elev` | `oklch(0.995 0.006 84)` | `oklch(0.225 0.025 258)` | Cards, sidebar, panels |
+| `--tf-bg-muted` | `oklch(0.955 0.018 84)` | `oklch(0.27 0.026 258)` | Hover, table headers, muted zones |
+| `--tf-border` | `oklch(0.885 0.018 84)` | `oklch(0.335 0.024 258)` | Default borders |
+| `--tf-border-strong` | `oklch(0.81 0.022 84)` | `oklch(0.42 0.028 258)` | Input borders, strong dividers |
+| `--tf-fg` | `oklch(0.235 0.026 258)` | `oklch(0.94 0.012 84)` | Primary text |
+| `--tf-fg-muted` | `oklch(0.47 0.028 258)` | `oklch(0.74 0.018 245)` | Secondary text |
+| `--tf-fg-subtle` | `oklch(0.61 0.022 258)` | `oklch(0.59 0.018 245)` | Tertiary text, placeholders |
+| **`--tf-accent`** | `oklch(0.47 0.155 269)` | `oklch(0.72 0.135 269)` | **Primary action — índigo tinta** |
+| `--tf-accent-fg` | `oklch(0.99 0.005 84)` | `oklch(0.19 0.024 258)` | Text on accent bg |
+| `--tf-accent-soft` | `oklch(0.93 0.042 269)` | `oklch(0.31 0.072 269)` | Accent hover surface |
+| `--tf-accent-ring` | `oklch(0.47 0.155 269 / 0.24)` | `oklch(0.72 0.135 269 / 0.3)` | Focus rings |
+| `--tf-green` | `oklch(0.48 0.115 158)` | `oklch(0.75 0.12 158)` | Normal/OK status |
+| `--tf-green-soft` | `oklch(0.93 0.038 158)` | `oklch(0.3 0.06 158)` | Green badge bg |
+| `--tf-amber` | `oklch(0.62 0.13 72)` | `oklch(0.81 0.13 72)` | Warning / low stock |
+| `--tf-amber-soft` | `oklch(0.945 0.052 72)` | `oklch(0.34 0.065 72)` | Amber badge bg |
+| `--tf-red` | `oklch(0.53 0.17 27)` | `oklch(0.72 0.15 27)` | Error / out of stock |
+| `--tf-red-soft` | `oklch(0.94 0.042 27)` | `oklch(0.33 0.075 27)` | Red badge bg |
 
 ### Typography
 
-- **UI**: Inter (loaded via `next/font/google`)
-- **Monospace** (SKU, IMEI, prices): JetBrains Mono — use `className="mono"` or `font-mono`
+- **UI**: IBM Plex Sans (loaded via `next/font/google`)
+- **Monospace** (SKU, IMEI, prices): IBM Plex Mono — use `className="mono"` or `font-mono`; importes usan cifras tabulares.
 - Base size: 14px · Line height 1.5 · Letter spacing -0.005em
 - Headings: `text-[28px] font-bold tracking-[-0.025em]`
 - Metadata: `text-[10px]`
@@ -43,11 +43,11 @@ Shadcn semantic names (`--primary`, `--muted`, `--border`, etc.) are mapped to `
 
 | Utility | Value |
 |---|---|
-| `--radius` (base) | 10px (`0.625rem`) |
-| `rounded-sm` | 6px |
-| `rounded` | 10px |
-| `rounded-lg` | 14px |
-| `rounded-xl` | 20px |
+| `--radius` (base) | 12px (`0.75rem`) |
+| `rounded-sm` | 8px |
+| `rounded` | 12px |
+| `rounded-lg` | 12px |
+| `rounded-xl` | 16px |
 
 ### Shadows
 
@@ -63,11 +63,9 @@ All transitions: `cubic-bezier(.4,0,.2,1)` — standard Material easing.
 
 | Duration | Use |
 |---|---|
-| 100ms | Instant hover bg |
-| 150ms | Color, border transitions |
-| 200ms | Fade in/out |
-| 250ms | Row stagger, slide-in |
-| 280ms | Sheets, dialogs |
+| 120ms | Hover y foco |
+| 180ms | Cambios de estado |
+| 240ms | Sheets, diálogos y overlays |
 
 Keyframes available: `tf-pulse`, `tf-row-in`, `tf-menu-in` (in globals.css).
 
@@ -89,7 +87,8 @@ Keyframes available: `tf-pulse`, `tf-row-in`, `tf-menu-in` (in globals.css).
 
 ### KPI Cards
 
-- `bg-card border border-border rounded-[14px] p-5` + hover `-translate-y-0.5`
+- `bg-card border border-border rounded-[14px] p-5`, sin elevación al pasar el cursor si el dato es estático.
+- Las variantes `metric`/KPI incluyen una **línea de registro**: riel izquierdo de 1px en `--tf-accent`, con 20px de margen vertical. Es una firma informativa, no un gradiente decorativo.
 - Alert variant (low stock): add `.tf-kpi-alert` + `border-amber`
 
 ### Table

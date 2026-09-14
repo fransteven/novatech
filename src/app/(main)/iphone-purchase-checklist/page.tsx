@@ -87,7 +87,7 @@ export default function IPhonePurchaseChecklistPage() {
             <Card
               key={phase.id}
               className={cn(
-                'relative border-l-4 transition-all duration-300',
+                'relative border-l-4 transition-[border-color,box-shadow,opacity,filter] duration-300',
                 unlocked ? 'border-l-primary shadow-sm' : 'border-l-muted opacity-60 grayscale-[0.5]',
                 completed && 'border-l-green-500'
               )}

@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { Edit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -27,6 +25,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { updateProductAction } from "@/app/actions/product-actions";
@@ -52,10 +51,29 @@ interface EditProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface CategoryAttribute {
+  key: string;
+  label: string;
+  type: string;
+  options?: string[];
+}
+
+interface ProductCategory {
+  id: string;
+  name: string;
+  template: unknown;
+}
+
+const isCategoryTemplate = (value: unknown): value is CategoryAttribute[] =>
+  Array.isArray(value) && value.every((attribute) =>
+    typeof attribute === "object" && attribute !== null &&
+    typeof attribute.key === "string" &&
+    typeof attribute.label === "string" &&
+    typeof attribute.type === "string",
+  );
+
 export function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
-  const [categories, setCategories] = useState<
-    { id: string; name: string; template: any }[]
-  >([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -83,7 +101,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
       categoryId: product.categoryId || "",
       isSerialized: product.isSerialized,
       warrantyMonths: product.warrantyMonths ?? undefined,
-      attributes: (product.attributes as Record<string, any>) || {},
+      attributes: (product.attributes as Record<string, unknown>) || {},
     },
   });
 
@@ -98,13 +116,16 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         categoryId: product.categoryId || "",
         isSerialized: product.isSerialized,
         warrantyMonths: product.warrantyMonths ?? undefined,
-        attributes: (product.attributes as Record<string, any>) || {},
+        attributes: (product.attributes as Record<string, unknown>) || {},
       });
     }
   }, [open, product, form]);
 
   const selectedCategoryId = form.watch("categoryId");
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  const categoryTemplate = isCategoryTemplate(selectedCategory?.template)
+    ? selectedCategory.template
+    : [];
 
   function onSubmit(values: z.infer<typeof productSchema>) {
     startTransition(async () => {
@@ -206,9 +227,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               )}
             />
 
-            {selectedCategory &&
-              selectedCategory.template &&
-              (selectedCategory.template as any[]).map((attr: any) => (
+            {categoryTemplate.map((attr) => (
                 <FormField
                   key={attr.key}
                   control={form.control}
@@ -282,12 +301,12 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                 <FormItem>
                   <FormLabel>Precio de Venta (COP)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      {...field}
+                    <MoneyInput
+                      placeholder="0"
                       min="0"
-                      step="0.01"
+                      value={Number(field.value) || null}
+                      onBlur={field.onBlur}
+                      onValueChange={(value) => field.onChange(String(value ?? 0))}
                     />
                   </FormControl>
                   <FormMessage />

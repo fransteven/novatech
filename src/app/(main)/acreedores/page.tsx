@@ -6,15 +6,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { formatCurrency } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(amount);
 
 export default async function AcreedoresPage() {
   const [response, accountsRes] = await Promise.all([
@@ -67,21 +61,21 @@ export default async function AcreedoresPage() {
         <KpiCard
           icon={TrendingDown}
           title="Saldo Adeudado"
-          value={fmt(totalOutstanding)}
+          value={formatCurrency(totalOutstanding)}
           valueClassName="text-destructive"
           description="Deuda total con todos los acreedores"
         />
         <KpiCard
           icon={DollarSign}
           title="Capital Recibido"
-          value={fmt(totalLent)}
+          value={formatCurrency(totalLent)}
           valueClassName="text-primary"
           description="Total prestado históricamente"
         />
         <KpiCard
           icon={HandCoins}
           title="Total Pagado"
-          value={fmt(totalPaid)}
+          value={formatCurrency(totalPaid)}
           valueClassName="text-green-600 dark:text-green-400"
           description="Total devuelto a acreedores"
         />

@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Banknote } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { formatCurrency } from "@/lib/formatters";
 
 export default async function ExpensesPage() {
   const { success, data, error } = await getExpensesAction();
@@ -47,10 +48,7 @@ export default async function ExpensesPage() {
         <KpiCard
           icon={Banknote}
           title="Gastos Totales"
-          value={new Intl.NumberFormat("es-CO", {
-            style: "currency",
-            currency: "COP",
-          }).format(totalExpenses)}
+          value={formatCurrency(totalExpenses)}
           description="Total histórico registrado"
         />
       </div>

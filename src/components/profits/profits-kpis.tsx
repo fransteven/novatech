@@ -8,13 +8,7 @@ import {
   Landmark,
 } from "lucide-react";
 import type { ProfitsKPIs } from "@/services/profits-service";
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  }).format(amount);
+import { formatCurrency, formatPercentCO } from "@/lib/formatters";
 
 interface ProfitsKPIsProps {
   kpis: ProfitsKPIs;
@@ -40,49 +34,49 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
       <KpiCard
         icon={ShoppingCart}
         title="Ingresos por Ventas"
-        value={fmt(salesRevenue)}
+        value={formatCurrency(salesRevenue)}
         description={`${totalSold} unidad${totalSold === 1 ? "" : "es"} vendida${totalSold === 1 ? "" : "s"}`}
       />
       <KpiCard
         icon={Percent}
         title="Ingresos por Intereses"
-        value={fmt(interestIncome)}
+        value={formatCurrency(interestIncome)}
         description="Intereses cobrados en créditos"
         valueClassName="text-[color:var(--tf-accent)]"
       />
       <KpiCard
         icon={CircleDollarSign}
         title="Ingresos Totales"
-        value={fmt(totalIncome)}
+        value={formatCurrency(totalIncome)}
         description={
           otherIncome > 0
-            ? `Ventas, intereses y ${fmt(otherIncome)} de otros ingresos`
+            ? `Ventas, intereses y ${formatCurrency(otherIncome)} de otros ingresos`
             : "Ventas más intereses de crédito"
         }
       />
       <KpiCard
         icon={TrendingDown}
         title="Costo de Ventas"
-        value={fmt(totalCost)}
-        description={`Costo de los productos vendidos · margen de producto ${productMarginPct.toFixed(1)}%`}
+        value={formatCurrency(totalCost)}
+        description={`Costo de los productos vendidos · margen de producto ${formatPercentCO(productMarginPct / 100)}`}
       />
       <KpiCard
         icon={TrendingUp}
         title="Utilidad Bruta"
-        value={fmt(grossProfit)}
-        description={`Ingresos totales menos costo · margen ${grossMarginPct.toFixed(1)}%`}
+        value={formatCurrency(grossProfit)}
+        description={`Ingresos totales menos costo · margen ${formatPercentCO(grossMarginPct / 100)}`}
         valueClassName="text-[color:var(--tf-green)]"
       />
       <KpiCard
         icon={TrendingDown}
         title="Gastos Operativos"
-        value={fmt(totalExpenses)}
+        value={formatCurrency(totalExpenses)}
         description="Gastos registrados en el período"
       />
       <KpiCard
         icon={CircleDollarSign}
         title="Utilidad Neta"
-        value={fmt(netProfit)}
+        value={formatCurrency(netProfit)}
         description="Utilidad bruta menos gastos"
         valueClassName={
           netProfit >= 0
@@ -93,7 +87,7 @@ export function ProfitsKPIs({ kpis }: ProfitsKPIsProps) {
       <KpiCard
         icon={Landmark}
         title="Cartera Prestada"
-        value={fmt(kpis.activeLoanPortfolio ?? 0)}
+        value={formatCurrency(kpis.activeLoanPortfolio ?? 0)}
         description="Capital insoluto activo en préstamos"
         valueClassName="text-primary"
       />

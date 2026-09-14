@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -149,7 +150,7 @@ export function CreateMovementDialog({ accounts }: CreateMovementDialogProps) {
                 <FormItem>
                   <FormLabel>Monto</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <MoneyInput value={Number(field.value) || null} onValueChange={(value) => field.onChange(value ?? 0)} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

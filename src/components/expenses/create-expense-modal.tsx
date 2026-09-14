@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -102,7 +103,7 @@ export function CreateExpenseModal({ categories }: CreateExpenseModalProps) {
                 <FormItem>
                   <FormLabel>Monto</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" {...field} />
+                    <MoneyInput value={Number(field.value) || null} onValueChange={(value) => field.onChange(value ?? 0)} onBlur={field.onBlur} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

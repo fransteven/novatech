@@ -27,6 +27,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { createProductAction } from "@/app/actions/product-actions";
@@ -50,6 +51,27 @@ export interface CreatedProduct {
   price: string;
   attributes: unknown;
 }
+
+interface CategoryAttribute {
+  key: string;
+  label: string;
+  type: string;
+  options?: string[];
+}
+
+interface ProductCategory {
+  id: string;
+  name: string;
+  template: unknown;
+}
+
+const isCategoryTemplate = (value: unknown): value is CategoryAttribute[] =>
+  Array.isArray(value) && value.every((attribute) =>
+    typeof attribute === "object" && attribute !== null &&
+    typeof attribute.key === "string" &&
+    typeof attribute.label === "string" &&
+    typeof attribute.type === "string",
+  );
 
 interface CreateProductDialogProps {
   /** Controla el diálogo desde afuera (ej. abrirlo desde el buscador de compras). */
@@ -77,9 +99,7 @@ export function CreateProductDialog({
     if (!isControlled) setUncontrolledOpen(next);
     onOpenChange?.(next);
   };
-  const [categories, setCategories] = useState<
-    { id: string; name: string; template: any }[]
-  >([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -121,6 +141,9 @@ export function CreateProductDialog({
 
   const selectedCategoryId = form.watch("categoryId");
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  const categoryTemplate = isCategoryTemplate(selectedCategory?.template)
+    ? selectedCategory.template
+    : [];
 
   function onSubmit(values: z.infer<typeof productSchema>) {
     startTransition(async () => {
@@ -236,9 +259,7 @@ export function CreateProductDialog({
               )}
             />
 
-            {selectedCategory &&
-              selectedCategory.template &&
-              (selectedCategory.template as any[]).map((attr: any) => (
+            {categoryTemplate.map((attr) => (
                 <FormField
                   key={attr.key}
                   control={form.control}
@@ -312,12 +333,12 @@ export function CreateProductDialog({
                 <FormItem>
                   <FormLabel>Precio de Venta (COP)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      {...field}
+                    <MoneyInput
+                      placeholder="0"
                       min="0"
-                      step="0.01"
+                      value={Number(field.value) || null}
+                      onBlur={field.onBlur}
+                      onValueChange={(value) => field.onChange(String(value ?? 0))}
                     />
                   </FormControl>
                   <FormMessage />

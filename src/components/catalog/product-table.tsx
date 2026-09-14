@@ -329,7 +329,7 @@ export function ProductTable({ data }: ProductTableProps) {
               style={{ background: "var(--tf-bg-muted)" }}
             >
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-[width] duration-500"
                 style={{ width: `${pct}%`, background: barColor }}
               />
             </div>
@@ -457,9 +457,12 @@ export function ProductTable({ data }: ProductTableProps) {
     <>
       {/* Toolbar */}
       <div className="flex items-center gap-2.5 px-3 py-2.5 bg-card border border-border rounded-t-[14px] flex-wrap">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px] h-9 px-3 bg-muted/50 border border-transparent rounded-[8px] tf-focus-ring transition-all duration-150">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px] h-9 px-3 bg-muted/50 border border-transparent rounded-[8px] tf-focus-ring transition-[border-color,box-shadow] duration-150">
           <Search className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <input
+            data-search-shortcut
+            data-search-id="catalog-search"
+            data-search-label="Buscar catálogo"
             type="text"
             placeholder="Buscar por nombre o SKU..."
             value={globalFilter}

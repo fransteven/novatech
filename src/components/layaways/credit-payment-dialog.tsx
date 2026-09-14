@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { formatCurrency } from "@/lib/formatters";
 import { registerCreditPaymentAction, getLayawayDetailsAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
-import { DollarSign, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -241,15 +242,12 @@ export function CreditPaymentDialog({
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
               <Label className="sm:w-32 sm:text-right">Monto interés</Label>
-              <div className="relative flex-1">
-                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="number"
+              <div className="flex-1">
+                <MoneyInput
                   min="1"
                   placeholder="Interés del periodo"
-                  value={soloInteresAmount}
-                  onChange={(e) => setSoloInteresAmount(Number(e.target.value) || "")}
-                  className="pl-8"
+                  value={typeof soloInteresAmount === "number" ? soloInteresAmount : null}
+                  onValueChange={(value) => setSoloInteresAmount(value ?? "")}
                 />
               </div>
             </div>
@@ -274,16 +272,13 @@ export function CreditPaymentDialog({
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
               <Label className="sm:w-32 sm:text-right">Monto a abonar</Label>
-              <div className="relative flex-1">
-                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="number"
+              <div className="flex-1">
+                <MoneyInput
                   min="1"
                   max={cuotaRemaining || undefined}
                   placeholder="Monto a abonar"
-                  value={abonoCuotaAmount}
-                  onChange={(e) => setAbonoCuotaAmount(Number(e.target.value) || "")}
-                  className="pl-8"
+                  value={typeof abonoCuotaAmount === "number" ? abonoCuotaAmount : null}
+                  onValueChange={(value) => setAbonoCuotaAmount(value ?? "")}
                 />
               </div>
             </div>
@@ -314,16 +309,13 @@ export function CreditPaymentDialog({
             </p>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
               <Label className="sm:w-32 sm:text-right">Monto abono</Label>
-              <div className="relative flex-1">
-                <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="number"
+              <div className="flex-1">
+                <MoneyInput
                   min="1"
                   max={outstandingPrincipal - 1}
                   placeholder="Monto a abonar"
-                  value={capitalAmount}
-                  onChange={(e) => setCapitalAmount(Number(e.target.value) || "")}
-                  className="pl-8"
+                  value={typeof capitalAmount === "number" ? capitalAmount : null}
+                  onValueChange={(value) => setCapitalAmount(value ?? "")}
                 />
               </div>
             </div>

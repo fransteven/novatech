@@ -49,16 +49,10 @@ interface PurchasePaymentSectionProps {
   register: UseFormRegister<CreatePurchaseSchema>;
   errors: FieldErrors<CreatePurchaseSchema>;
   setValue: UseFormSetValue<CreatePurchaseSchema>;
-  numberField: { setValueAs: (v: unknown) => number };
 }
 
 const FieldError = ({ message }: { message?: string }) =>
   message ? <p className="text-destructive text-xs">{message}</p> : null;
-
-const toNumber = (value: unknown): number => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
 
 export function PurchasePaymentSection({
   paymentMode,
@@ -72,7 +66,6 @@ export function PurchasePaymentSection({
   register,
   errors,
   setValue,
-  numberField,
 }: PurchasePaymentSectionProps) {
   const selectedAccount = cashAccounts.find((acc) => acc.id === accountId);
   const accountBalance = Number(selectedAccount?.balance ?? 0);
@@ -115,7 +108,7 @@ export function PurchasePaymentSection({
                 aria-checked={isActive}
                 onClick={() => onPaymentModeChange(mode.id)}
                 className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-[8px] transition-all cursor-pointer select-none",
+                  "px-3 py-1 text-xs font-medium rounded-[8px] transition-[background-color,color,box-shadow] cursor-pointer select-none",
                   isActive
                     ? "bg-card text-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:text-foreground",
@@ -182,15 +175,11 @@ export function PurchasePaymentSection({
               </div>
               <MoneyInput
                 id="amount-paid-input"
-                step="0.01"
                 min="0"
                 max={total > 0 ? total : undefined}
                 className="h-9 text-[14px]"
-                {...register("amountPaid", {
-                  ...numberField,
-                  onChange: (event) =>
-                    handleAmountChange(toNumber(event.target.value)),
-                })}
+                value={amountPaid}
+                onValueChange={(value) => handleAmountChange(value ?? 0)}
               />
               <FieldError message={errors.amountPaid?.message} />
             </div>

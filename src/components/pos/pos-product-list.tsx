@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { ScanBarcode, Plus, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -37,21 +38,6 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
   const [result, setResult] = useState<ProductSearchResult | null>(null);
   const [salePrice, setSalePrice] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (
-        e.key === "/" &&
-        document.activeElement?.tagName !== "INPUT" &&
-        document.activeElement?.tagName !== "TEXTAREA"
-      ) {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
 
   const executeSearch = async (queryValue: string) => {
     const clean = queryValue.trim();
@@ -141,7 +127,7 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
         <form onSubmit={handleSearch} className="relative flex gap-2.5 items-stretch">
           {/* Input */}
           <div
-            className="flex flex-1 items-center gap-3 h-14 px-4 bg-background border border-input rounded-[12px] transition-all duration-150 tf-focus-ring"
+            className="flex flex-1 items-center gap-3 h-14 px-4 bg-background border border-input rounded-[12px] transition-[background-color,border-color,box-shadow] duration-150 tf-focus-ring"
             style={{ borderWidth: "1.5px" }}
           >
             {/* Pulsing barcode icon */}
@@ -151,6 +137,9 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
 
             <Input
               ref={inputRef}
+              data-search-shortcut
+              data-search-id="pos-product-search"
+              data-search-label="Buscar producto para venta"
               placeholder="Escanea un código de barras o escribe el SKU..."
               className="flex-1 h-auto border-0 bg-transparent p-0 text-base font-medium font-mono placeholder:font-sans placeholder:font-normal placeholder:text-muted-foreground shadow-none focus-visible:ring-0"
               value={barcode}
@@ -176,7 +165,7 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
 
             {/* Keyboard hint */}
             <span className="hidden sm:block font-mono text-[10.5px] px-1.5 py-0.5 bg-muted border border-border rounded-[5px] text-muted-foreground whitespace-nowrap select-none">
-              / para enfocar
+              ⌘K para enfocar
             </span>
           </div>
 
@@ -252,11 +241,9 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <Input
-                      type="number"
-                      step="0.01"
+                    <MoneyInput
                       value={salePrice}
-                      onChange={(e) => setSalePrice(Number(e.target.value))}
+                      onValueChange={(value) => setSalePrice(value ?? 0)}
                       className={`font-mono ${isPriceInvalid ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     />
                     {isPriceInvalid && (

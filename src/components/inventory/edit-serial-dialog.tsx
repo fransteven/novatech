@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -236,14 +237,11 @@ export function EditSerialDialog({
                 <Label htmlFor="unitCost">
                   Costo unitario (COP) <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <MoneyInput
                   id="unitCost"
-                  type="number"
                   min={0}
-                  value={form.unitCost}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, unitCost: e.target.value }))
-                  }
+                  value={form.unitCost ? Number(form.unitCost) : null}
+                  onValueChange={(value) => setForm((f) => ({ ...f, unitCost: value === null ? "" : String(value) }))}
                 />
               </div>
 

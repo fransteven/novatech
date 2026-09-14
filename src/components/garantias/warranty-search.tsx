@@ -104,6 +104,9 @@ export function WarrantySearch({ canAdjust }: WarrantySearchProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="warranty-q"
+              data-search-shortcut
+              data-search-id="warranty-search"
+              data-search-label="Buscar garantías"
               placeholder="IMEI, cliente, cédula, teléfono, producto o N° de venta"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

@@ -4,18 +4,14 @@ import { Fragment, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MonthlyProfit, MonthlyProfitBreakdown } from "@/services/profits-service";
 import { getMonthlyProfitBreakdownAction } from "@/app/actions/profits-actions";
+import { formatCurrency } from "@/lib/formatters";
 
 const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  }).format(amount);
+const fmt = formatCurrency;
 
 const fmtDate = (date: Date | string) =>
   new Date(date).toLocaleDateString("es-ES");

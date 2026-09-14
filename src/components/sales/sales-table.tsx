@@ -17,12 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchField } from "@/components/ui/search-field";
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { SaleDetailsModal } from "./sale-details-modal";
+import { formatCurrency } from "@/lib/formatters";
 
 interface Sale {
   id: string;
@@ -93,12 +94,7 @@ export function SalesTable({ data }: SalesTableProps) {
         meta: { mobileLabel: "Total" },
         cell: ({ row }) => {
           const amount = parseFloat(row.getValue("totalAmount"));
-          const formatted = new Intl.NumberFormat("es-CO", {
-            style: "currency",
-            currency: "COP",
-          }).format(amount);
-
-          return <div className="font-medium">{formatted}</div>;
+          return <div className="font-medium">{formatCurrency(amount)}</div>;
         },
       },
       {
@@ -136,10 +132,13 @@ export function SalesTable({ data }: SalesTableProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center py-4">
-        <Input
+        <SearchField
+          searchId="sales-search"
+          searchLabel="Filtrar ventas"
           placeholder="Filtrar ventas..."
           value={globalFilter ?? ""}
           onChange={(event) => setGlobalFilter(event.target.value)}
+          onClear={() => setGlobalFilter("")}
           className="max-w-sm"
         />
       </div>

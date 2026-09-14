@@ -6,13 +6,9 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { markDistributionItemPaidAction } from "@/app/actions/shareholder-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/formatters";
 
-const fmt = (amount: number | string) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-  }).format(Number(amount));
+const fmt = formatCurrency;
 
 interface DistributionItem {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { formatCurrency } from "@/lib/formatters";
-import { HandCoins, DollarSign } from "lucide-react";
+import { HandCoins } from "lucide-react";
 import { toast } from "sonner";
 import { createLayawayAction } from "@/app/actions/layaway-actions";
 import { getCashAccountsAction } from "@/app/actions/cash-actions";
@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -161,7 +162,7 @@ export function CreditDialog({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="w-full h-[46px] font-bold text-[13px] border-input bg-card hover:bg-muted hover:border-primary hover:text-primary text-foreground cursor-pointer gap-2 transition-all duration-150"
+          className="w-full h-[46px] font-bold text-[13px] border-input bg-card hover:bg-muted hover:border-primary hover:text-primary text-foreground cursor-pointer gap-2 transition-[background-color,border-color,color] duration-150"
           disabled={cartItems.length === 0}
         >
           <HandCoins className="h-4 w-4" />
@@ -192,16 +193,13 @@ export function CreditDialog({
             <div className="flex items-center gap-4">
               <Label htmlFor="deposit" className="text-xs w-24">Cuota Inicial</Label>
               <div className="relative flex-1">
-                <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
+                <MoneyInput
                   id="deposit"
-                  type="number"
                   min="0"
                   max={totalAmount}
-                  value={deposit || ""}
-                  onChange={(e) => setDeposit(Number(e.target.value))}
-                  className="pl-8"
-                  placeholder="0.00"
+                  value={deposit}
+                  onValueChange={(value) => setDeposit(value ?? 0)}
+                  placeholder="0"
                 />
               </div>
             </div>
