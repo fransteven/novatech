@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { AlertTriangle, Check, CircleDashed, CircleDollarSign, Clock, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { getLayawayDetailsAction } from "@/app/actions/layaway-actions";
 import { DetailSheet } from "@/components/ui/detail-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getInstallmentVisual,
+  INSTALLMENT_STATE_STYLES,
+  type InstallmentVisualState,
+} from "@/lib/installment-status";
+import { cn } from "@/lib/utils";
 
 interface LayawayDetailsDialogProps {
   layawayId: string | null;
@@ -77,11 +83,21 @@ interface LayawayDetails {
   riskHistory: RiskHistoryEntry[];
 }
 
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  pendiente: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  vencida:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  pagada:    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+const STATE_ICONS: Record<InstallmentVisualState, typeof Check> = {
+  pagada: Check,
+  parcial: CircleDollarSign,
+  vencida: AlertTriangle,
+  por_vencer: Clock,
+  pendiente: CircleDashed,
 };
+
+const SCHEDULE_LEGEND: { state: InstallmentVisualState; label: string }[] = [
+  { state: "pagada", label: "Pagada" },
+  { state: "parcial", label: "Abono parcial" },
+  { state: "vencida", label: "Vencida" },
+  { state: "por_vencer", label: "Por vencer" },
+  { state: "pendiente", label: "Pendiente" },
+];
 
 const RISK_COLORS: Record<string, string> = {
   verde:    "text-green-600 dark:text-green-400",
@@ -259,10 +275,28 @@ export function LayawayDetailsDialog({
                   {details.schedule.length === 0 ? (
                     <p className="text-sm text-muted-foreground">Sin cronograma generado.</p>
                   ) : (
+                    <>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+                      {SCHEDULE_LEGEND.map((item) => (
+                        <span
+                          key={item.state}
+                          className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground"
+                        >
+                          <span
+                            className={cn(
+                              "h-2 w-2 rounded-full",
+                              INSTALLMENT_STATE_STYLES[item.state].accentClass,
+                            )}
+                          />
+                          {item.label}
+                        </span>
+                      ))}
+                    </div>
                     <div className="overflow-x-auto rounded-md border">
                       <table className="w-full min-w-[720px] text-xs border-collapse">
                         <thead>
                           <tr className="border-b text-muted-foreground bg-muted/40">
+                            <th className="w-1 p-0" aria-hidden />
                             <th className="text-left py-1.5 px-2 whitespace-nowrap">#</th>
                             <th className="text-left py-1.5 px-2 whitespace-nowrap">Vencimiento</th>
                             <th className="text-right py-1.5 px-2 whitespace-nowrap">Capital</th>
@@ -275,23 +309,68 @@ export function LayawayDetailsDialog({
                         </thead>
                         <tbody>
                           {details.schedule.map((entry) => {
+                            const visual = getInstallmentVisual({
+                              status: entry.status,
+                              dueDate: entry.dueDate,
+                              totalAmount: entry.totalAmount,
+                              paidAmount: entry.paidAmount,
+                            });
+                            const StateIcon = STATE_ICONS[visual.state];
                             const paidAmount = Number(entry.paidAmount ?? 0);
-                            const isPartial = entry.status !== "pagada" && paidAmount > 0;
+                            const missing = Number(entry.totalAmount) - paidAmount;
                             return (
-                              <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
+                              <tr
+                                key={entry.id}
+                                className={cn(
+                                  "border-b last:border-0 transition-colors hover:brightness-[0.98]",
+                                  visual.rowClass,
+                                )}
+                              >
+                                <td className="p-0">
+                                  <span
+                                    className={cn("block h-full min-h-[28px] w-1", visual.accentClass)}
+                                    aria-hidden
+                                  />
+                                </td>
                                 <td className="py-1.5 px-2 font-medium">{entry.number}</td>
-                                <td className="py-1.5 px-2 text-muted-foreground whitespace-nowrap">
-                                  {new Date(entry.dueDate).toLocaleDateString("es-CO", {
-                                    day: "2-digit", month: "short", year: "numeric",
-                                  })}
+                                <td className="py-1.5 px-2 whitespace-nowrap">
+                                  <span className={visual.state === "pendiente" ? "text-muted-foreground" : "text-foreground"}>
+                                    {new Date(entry.dueDate).toLocaleDateString("es-CO", {
+                                      day: "2-digit", month: "short", year: "numeric",
+                                    })}
+                                  </span>
+                                  {visual.hint && (
+                                    <span
+                                      className={cn(
+                                        "block text-[10px]",
+                                        visual.state === "vencida"
+                                          ? "text-rose-600 dark:text-rose-400 font-medium"
+                                          : "text-muted-foreground",
+                                      )}
+                                    >
+                                      {visual.hint}
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.principal))}</td>
                                 <td className="py-1.5 px-2 text-right text-muted-foreground whitespace-nowrap">{formatCurrency(Number(entry.interest))}</td>
                                 <td className="py-1.5 px-2 text-right font-medium whitespace-nowrap">{formatCurrency(Number(entry.totalAmount))}</td>
                                 <td className="py-1.5 px-2 text-right whitespace-nowrap">
-                                  {isPartial ? (
-                                    <span className="text-amber-600 dark:text-amber-400">
-                                      {formatCurrency(paidAmount)} / falta {formatCurrency(Number(entry.totalAmount) - paidAmount)}
+                                  {visual.state === "pagada" ? (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                      {formatCurrency(Number(entry.totalAmount))}
+                                    </span>
+                                  ) : paidAmount > 0 ? (
+                                    <span className="inline-flex flex-col items-end gap-1">
+                                      <span className={visual.state === "vencida" ? "text-rose-600 dark:text-rose-400" : "text-amber-600 dark:text-amber-400"}>
+                                        {formatCurrency(paidAmount)} / falta {formatCurrency(missing)}
+                                      </span>
+                                      <span className="block h-1 w-20 rounded-full bg-border overflow-hidden">
+                                        <span
+                                          className={cn("block h-full rounded-full", visual.accentClass)}
+                                          style={{ width: `${visual.progress}%` }}
+                                        />
+                                      </span>
                                     </span>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
@@ -300,13 +379,13 @@ export function LayawayDetailsDialog({
                                 <td className="py-1.5 px-2 text-right whitespace-nowrap">{formatCurrency(Number(entry.remainingBalance))}</td>
                                 <td className="py-1.5 px-2 text-center">
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                      isPartial
-                                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                        : STATUS_BADGE_STYLES[entry.status] ?? ""
-                                    }`}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium whitespace-nowrap",
+                                      visual.badgeClass,
+                                    )}
                                   >
-                                    {isPartial ? "parcial" : entry.status}
+                                    <StateIcon className="h-3 w-3" />
+                                    {visual.label}
                                   </span>
                                 </td>
                               </tr>
@@ -315,6 +394,7 @@ export function LayawayDetailsDialog({
                         </tbody>
                       </table>
                     </div>
+                    </>
                   )}
                 </div>
               </div>
