@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { WarrantyStatusBadge } from "@/components/garantias/warranty-status-badge";
+import { Button } from "@/components/ui/button";
 import { formatWarrantyDate, formatDocumentNumber } from "@/lib/warranty/format";
 import type { WarrantySearchRow } from "@/services/warranty-service";
 
@@ -34,15 +35,14 @@ export function WarrantyResultsTable({
             <TableHead>Entrega</TableHead>
             <TableHead>Vence</TableHead>
             <TableHead className="text-right">Garantía</TableHead>
+            <TableHead className="text-right">
+              <span className="sr-only">Acciones</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow
-              key={row.key}
-              onClick={() => onSelect(row)}
-              className="cursor-pointer"
-            >
+            <TableRow key={row.key}>
               <TableCell className="font-medium">{row.productName}</TableCell>
               <TableCell className="font-mono text-[12.5px]">
                 {row.serialNumber ?? (
@@ -76,6 +76,11 @@ export function WarrantyResultsTable({
               </TableCell>
               <TableCell className="text-right">
                 <WarrantyStatusBadge status={row.status} />
+              </TableCell>
+              <TableCell className="text-right" data-label="Acciones">
+                <Button type="button" variant="outline" size="sm" onClick={() => onSelect(row)}>
+                  Ver detalle
+                </Button>
               </TableCell>
             </TableRow>
           ))}

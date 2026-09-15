@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import {
   Table,
   TableBody,
@@ -98,9 +92,9 @@ export function ProductDetailSheet({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "available":
-        return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600">Disponible</Badge>;
+        return <Badge variant="outline" className="tf-badge-normal">Disponible</Badge>;
       case "reserved":
-        return <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-50">Apartado</Badge>;
+        return <Badge variant="outline" className="tf-badge-low">Apartado</Badge>;
       case "sold":
         return <Badge variant="secondary">Vendido</Badge>;
       case "defective":
@@ -111,18 +105,19 @@ export function ProductDetailSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col overflow-y-auto sm:max-w-2xl p-6">
-        <SheetHeader className="space-y-2 pb-6">
-          <SheetTitle>Detalles: {product?.productName || "Producto"}</SheetTitle>
-          <SheetDescription>
-            {product?.isSerialized
-              ? "Lista de seriales/IMEIs registrados para este producto"
-              : "Información de inventario para producto genérico"}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="flex-1">
+    <>
+    <DetailSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Detalles: ${product?.productName || "Producto"}`}
+      description={
+        product?.isSerialized
+          ? "Lista de seriales/IMEIs registrados para este producto."
+          : "Información de inventario para producto genérico."
+      }
+      wide
+      bodyClassName="p-5 sm:p-6"
+    >
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <p className="text-muted-foreground">Cargando...</p>
@@ -172,7 +167,7 @@ export function ProductDetailSheet({
                               <button
                                 onClick={() => copyToClipboard(serial.serialNumber || serial.id, "Serial")}
                                 title="Copiar para vender en POS"
-                                className="text-slate-400 hover:text-indigo-600 transition-colors p-0.5 rounded flex-shrink-0"
+                                className="flex shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-primary"
                               >
                                 <Copy className="h-3.5 w-3.5" />
                               </button>
@@ -211,7 +206,7 @@ export function ProductDetailSheet({
                             <button
                               onClick={() => setEditingSerial(serial)}
                               title="Corregir registro (admin)"
-                              className="text-slate-400 hover:text-indigo-600 transition-colors p-0.5 rounded"
+                              className="rounded p-0.5 text-muted-foreground transition-colors hover:text-primary"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
@@ -230,8 +225,7 @@ export function ProductDetailSheet({
               </p>
             </div>
           )}
-        </div>
-      </SheetContent>
+    </DetailSheet>
 
       {isAdmin && (
         <EditSerialDialog
@@ -243,6 +237,6 @@ export function ProductDetailSheet({
           onSuccess={refreshSerials}
         />
       )}
-    </Sheet>
+    </>
   );
 }

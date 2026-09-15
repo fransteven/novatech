@@ -112,11 +112,11 @@ export function PrintLabelsDialog({
               </p>
             </div>
           ) : (
-            <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium">
+            <div className="rounded-md border border-border bg-muted p-4">
+              <p className="text-sm font-medium text-foreground">
                 Se generarán etiquetas para:
               </p>
-              <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
                 {data.type === "serialized" ? (
                   <li>{data.items.length} equipo(s) serializado(s).</li>
                 ) : (

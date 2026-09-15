@@ -1,41 +1,26 @@
 import { db } from "@/db";
-import { sales, user, products, reservations, productItems } from "@/db/schema";
+import { customers, productItems, products, reservations, sales } from "@/db/schema";
 import { eq, desc, sum, count, sql, and, gte, lt } from "drizzle-orm";
-import { startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { addDays, addMonths, format, startOfDay, startOfMonth, subDays, subMonths } from "date-fns";
 
 export async function getDashboardKPIs() {
   const now = new Date();
 
-  // Rango Mes Actual
+  // Los límites superiores exclusivos no pierden las ventas del último día
+  // y dejan fuera datos creados a futuro.
   const currentMonthStart = startOfMonth(now);
-  const currentMonthEnd = endOfMonth(now);
+  const nextMonthStart = startOfMonth(addMonths(now, 1));
 
-  // Rango Mes Pasado
   const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
   // 1. Ventas Totales (Current vs Last Month)
-  const currentSalesData = await db
-    .select({ total: sum(sales.totalAmount) })
-    .from(sales)
-    .where(
-      and(
-        eq(sales.status, "completed"),
-        gte(sales.createdAt, currentMonthStart),
-        lt(sales.createdAt, currentMonthEnd),
-      ),
-    );
-
-  const lastSalesData = await db
-    .select({ total: sum(sales.totalAmount) })
-    .from(sales)
-    .where(
-      and(
-        eq(sales.status, "completed"),
-        gte(sales.createdAt, lastMonthStart),
-        lt(sales.createdAt, lastMonthEnd),
-      ),
-    );
+  const [currentSalesData, lastSalesData, reservationsData, productsData, pendingPickupsData] = await Promise.all([
+    db.select({ total: sum(sales.totalAmount) }).from(sales).where(and(eq(sales.status, "completed"), gte(sales.createdAt, currentMonthStart), lt(sales.createdAt, nextMonthStart))),
+    db.select({ total: sum(sales.totalAmount) }).from(sales).where(and(eq(sales.status, "completed"), gte(sales.createdAt, lastMonthStart), lt(sales.createdAt, currentMonthStart))),
+    db.select({ count: count() }).from(reservations).where(eq(reservations.status, "active")),
+    db.select({ count: count() }).from(products),
+    db.select({ count: count() }).from(productItems).where(eq(productItems.status, "reserved")),
+  ]);
 
   const totalSalesCurrent = Number(currentSalesData[0]?.total || 0);
   const totalSalesLast = Number(lastSalesData[0]?.total || 0);
@@ -47,26 +32,8 @@ export async function getDashboardKPIs() {
     salesGrowth = 100;
   }
 
-  // 2. Reservas Activas
-  const reservationsData = await db
-    .select({ count: count() })
-    .from(reservations)
-    .where(eq(reservations.status, "active"));
-
   const currentReservations = Number(reservationsData[0]?.count || 0);
-
-  // 3. Total Productos
-  const productsData = await db.select({ count: count() }).from(products);
-
   const totalProducts = Number(productsData[0]?.count || 0);
-
-  // 4. Por Retirar (Stock reservado pero no entregado aún)
-  // Usaremos productItems con status 'reserved' como la métrica más precisa para "por retirar"
-  const pendingPickupsData = await db
-    .select({ count: count() })
-    .from(productItems)
-    .where(eq(productItems.status, "reserved"));
-
   const pendingPickups = Number(pendingPickupsData[0]?.count || 0);
 
   return {
@@ -86,25 +53,58 @@ export async function getDashboardKPIs() {
   };
 }
 
-export async function getRecentSales(limit = 5) {
+export interface DashboardSalesTrendPoint {
+  date: string;
+  total: number;
+}
+
+export async function getSalesTrend(days = 30): Promise<DashboardSalesTrendPoint[]> {
+  const startDate = startOfDay(subDays(new Date(), days - 1));
+  const endDate = addDays(startDate, days);
+  const day = sql<string>`to_char(date_trunc('day', ${sales.createdAt}), 'YYYY-MM-DD')`;
+  const rows = await db
+    .select({ day, total: sql<string>`coalesce(sum(${sales.totalAmount}), 0)` })
+    .from(sales)
+    .where(and(eq(sales.status, "completed"), gte(sales.createdAt, startDate), lt(sales.createdAt, endDate)))
+    .groupBy(day)
+    .orderBy(day);
+  const totalByDay = new Map(rows.map((row) => [row.day, Number(row.total)]));
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = addDays(startDate, index);
+    const key = format(date, "yyyy-MM-dd");
+    return { date: key, total: totalByDay.get(key) ?? 0 };
+  });
+}
+
+export interface DashboardRecentSale {
+  id: string;
+  totalAmount: number;
+  createdAt: Date;
+  customerName: string;
+  customerEmail: string;
+}
+
+export async function getRecentSales(limit = 5): Promise<DashboardRecentSale[]> {
   const recentSales = await db
     .select({
       id: sales.id,
       totalAmount: sales.totalAmount,
       createdAt: sales.createdAt,
-      userId: sales.userId,
-      userName: user.name,
-      userEmail: user.email,
+      customerName: customers.name,
+      customerEmail: customers.email,
     })
     .from(sales)
-    .leftJoin(user, eq(sales.userId, user.id))
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(eq(sales.status, "completed"))
     .orderBy(desc(sales.createdAt))
     .limit(limit);
 
   return recentSales.map((sale) => ({
-    ...sale,
-    customerName: sale.userName || "Cliente Genérico",
-    customerEmail: sale.userEmail || "Venta en tienda",
+    id: sale.id,
     totalAmount: Number(sale.totalAmount),
+    createdAt: sale.createdAt,
+    customerName: sale.customerName ?? "Cliente genérico",
+    customerEmail: sale.customerEmail ?? "Venta en tienda",
   }));
 }

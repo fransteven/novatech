@@ -16,8 +16,8 @@ const typeConfig: Record<
   },
   bank: {
     icon: Landmark,
-    iconBg: "oklch(0.58 0.19 265 / 0.15)",
-    iconFg: "oklch(0.58 0.19 265)",
+    iconBg: "var(--tf-accent-soft)",
+    iconFg: "var(--tf-accent)",
     label: "Banco",
   },
   wallet: {
@@ -52,7 +52,6 @@ export function CashAccountsGrid({
           <div
             key={account.id}
             className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]"
-            style={{ boxShadow: "var(--tf-shadow-sm)" }}
           >
             {/* Top row: icon chip + type badge */}
             <div className="flex items-center justify-between">

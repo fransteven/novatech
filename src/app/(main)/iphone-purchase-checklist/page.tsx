@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, ShieldAlert, CheckCircle2, RotateCcw, Smartphone, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PageShell } from '@/components/ui/page-shell';
 
 type ItemStatus = 'pending' | 'approved' | 'failed';
 
@@ -51,7 +52,7 @@ export default function IPhonePurchaseChecklistPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl space-y-8 animate-in fade-in duration-500">
+    <PageShell width="narrow" className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -165,6 +166,6 @@ export default function IPhonePurchaseChecklistPage() {
         isOpen={!!selectedItemForProtocol}
         onClose={() => setSelectedItemForProtocol(null)}
       />
-    </div>
+    </PageShell>
   );
 }

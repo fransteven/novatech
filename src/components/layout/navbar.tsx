@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
-import { Moon, Sun, Search, ChevronRight, LogOut, User as UserIcon, Settings, Menu } from "lucide-react";
+import { Moon, Sun, Search, ChevronRight, LogOut, Menu } from "lucide-react";
 import { NotificationsBell } from "@/components/layaways/notifications-bell";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 import {
   DropdownMenu,
@@ -57,36 +58,16 @@ export function Navbar() {
   const pathname = usePathname();
   const { activeLabel, focusActiveSearch } = useSearchShortcutContext();
 
-  const [theme, setTheme] = React.useState<"light" | "dark">("dark");
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
-
-  const applyTheme = React.useCallback((t: "light" | "dark") => {
-    document.documentElement.dataset.theme = t;
-    if (t === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    localStorage.setItem("tf-theme", t);
-  }, []);
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem("tf-theme") as "light" | "dark" | null;
-    const initial = saved ?? "dark";
-    applyTheme(initial);
-    setTheme(initial);
-  }, [applyTheme]);
+  const { resolvedTheme, setTheme } = useTheme();
 
   // Auto-close mobile nav on route change
   React.useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
 
-  const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    applyTheme(next);
-    setTheme(next);
-  };
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   const userInitials = user?.name
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -100,16 +81,11 @@ export function Navbar() {
       <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
 
       <header
-        className="sticky top-0 z-20 flex items-center gap-2 sm:gap-3 px-4 md:px-7 min-h-[60px] border-b border-border"
-        style={{
-          background: "color-mix(in oklch, var(--tf-bg-elev) 80%, transparent)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-        }}
+        className="tf-chrome sticky top-0 z-20 flex min-h-14 items-center gap-2 border-b border-border px-4 sm:gap-3 md:px-6"
       >
         {/* Mobile hamburger — inline in header, no fixed/overlap */}
         <button
-          className="md:hidden h-9 w-9 rounded-lg border border-border bg-card flex items-center justify-center text-[color:var(--tf-fg-muted)] hover:bg-muted transition-colors shrink-0"
+          className="lg:hidden flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-[color:var(--tf-fg-muted)] transition-colors hover:bg-muted"
           aria-label="Abrir menú"
           onClick={() => setMobileNavOpen(true)}
         >
@@ -146,8 +122,7 @@ export function Navbar() {
           type="button"
           onClick={focusActiveSearch}
           disabled={!activeLabel}
-          className="hidden sm:flex items-center gap-2 w-[280px] h-9 px-[10px] rounded-lg border border-transparent text-[13px] tf-focus-ring transition-[background-color,border-color,box-shadow] duration-150 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ background: "var(--tf-bg-muted)" }}
+          className="tf-focus-ring hidden h-9 w-[280px] items-center gap-2 rounded-md border border-transparent bg-muted px-[10px] text-[13px] transition-[background-color,border-color,box-shadow] duration-[140ms] disabled:cursor-not-allowed disabled:opacity-50 sm:flex"
           aria-label={activeLabel ? `Abrir ${activeLabel}` : "No hay búsqueda disponible en esta vista"}
           aria-keyshortcuts="Meta+K Control+K"
         >
@@ -170,7 +145,7 @@ export function Navbar() {
           className="h-9 w-9 rounded-lg grid place-items-center text-[color:var(--tf-fg-muted)] hover:bg-muted hover:text-foreground transition-colors duration-150"
           aria-label="Cambiar tema"
         >
-          {theme === "light" ? <Moon className="h-[17px] w-[17px]" /> : <Sun className="h-[17px] w-[17px]" />}
+          {isDark ? <Sun className="h-[17px] w-[17px]" /> : <Moon className="h-[17px] w-[17px]" />}
         </button>
 
         {/* Bell */}
@@ -196,19 +171,6 @@ export function Navbar() {
                 <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile" className="cursor-pointer">
-                <UserIcon className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings" className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configuración</span>
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/sign-out" className="cursor-pointer text-destructive focus:text-destructive">

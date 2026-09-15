@@ -12,23 +12,14 @@ interface KpiCardProps {
   icon: React.ReactNode;
   iconBg: string;
   iconFg: string;
-  glow: string;
   alert?: boolean;
 }
 
-function KpiCard({ label, value, sub, icon, iconBg, iconFg, glow, alert }: KpiCardProps) {
+function KpiCard({ label, value, sub, icon, iconBg, iconFg, alert }: KpiCardProps) {
   return (
     <div
       className={`relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]${alert ? " tf-kpi-alert" : ""}`}
-      style={{ boxShadow: "var(--tf-shadow-sm)" }}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(120% 60% at 100% 0%, ${glow}, transparent 50%)`,
-          opacity: 0.4,
-        }}
-      />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground mb-2">
@@ -66,18 +57,16 @@ export function CatalogKpis({ products }: { products: ProductWithStock[] }) {
         value={totalProducts}
         sub="Productos en el catálogo"
         icon={<Package className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.62 0.18 265 / 0.15)"
-        iconFg="oklch(0.62 0.18 265)"
-        glow="oklch(0.62 0.18 265 / 0.18)"
+        iconBg="var(--tf-accent-soft)"
+        iconFg="var(--tf-accent)"
       />
       <KpiCard
         label="Categorías Activas"
         value={activeCategories}
         sub="Categorías con productos"
         icon={<Tag className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.65 0.16 150 / 0.15)"
-        iconFg="oklch(0.65 0.16 150)"
-        glow="oklch(0.65 0.16 150 / 0.16)"
+        iconBg="var(--tf-green-soft)"
+        iconFg="var(--tf-green)"
       />
       <KpiCard
         label="Valor del Catálogo"
@@ -86,18 +75,16 @@ export function CatalogKpis({ products }: { products: ProductWithStock[] }) {
         }
         sub="Precio de venta × stock actual"
         icon={<DollarSign className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.65 0.16 200 / 0.15)"
-        iconFg="oklch(0.65 0.16 200)"
-        glow="oklch(0.65 0.16 200 / 0.16)"
+        iconBg="var(--tf-aluminum-soft)"
+        iconFg="var(--tf-fg-muted)"
       />
       <KpiCard
         label="Sin Categoría"
         value={noCategory}
         sub={noCategory > 0 ? "Requieren categorización" : "Todo categorizado"}
         icon={<AlertTriangle className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.72 0.15 70 / 0.15)"
-        iconFg="oklch(0.72 0.15 70)"
-        glow="oklch(0.72 0.15 70 / 0.18)"
+        iconBg="var(--tf-amber-soft)"
+        iconFg="var(--tf-amber)"
         alert={noCategory > 0}
       />
     </div>

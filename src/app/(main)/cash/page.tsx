@@ -7,6 +7,7 @@ import { CreateAccountDialog } from "@/components/cash/create-account-dialog";
 import { CreateMovementDialog } from "@/components/cash/create-movement-dialog";
 import { TransferDialog } from "@/components/cash/transfer-dialog";
 import { ReconciliationDialog } from "@/components/cash/reconciliation-dialog";
+import { PageShell } from "@/components/ui/page-shell";
 import {
   getCashAccountsWithBalanceAction,
   getCashFlowSummaryAction,
@@ -35,7 +36,7 @@ export default async function CashPage() {
 
   if (accounts.length === 0) {
     return (
-      <div className="space-y-5 p-4">
+      <PageShell width="standard" className="space-y-5">
         <PageHeader
           title="Caja"
           description="Controla el dinero por cuenta — efectivo, bancos, wallets y datáfonos."
@@ -45,8 +46,8 @@ export default async function CashPage() {
           <div
             className="w-16 h-16 rounded-[14px] flex items-center justify-center mb-5"
             style={{
-              background: "oklch(0.58 0.19 265 / 0.1)",
-              color: "oklch(0.58 0.19 265)",
+              background: "var(--tf-accent-soft)",
+              color: "var(--tf-accent)",
             }}
           >
             <Wallet className="h-8 w-8" />
@@ -58,12 +59,12 @@ export default async function CashPage() {
           </p>
           <CreateAccountDialog />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-5 p-4">
+    <PageShell width="standard" className="space-y-5">
       <PageHeader
         title="Caja"
         description="Controla el dinero por cuenta — efectivo, bancos, wallets y datáfonos."
@@ -84,6 +85,6 @@ export default async function CashPage() {
       />
       <CashAccountsGrid accounts={accounts} />
       <CashMovementsTable accounts={accounts} />
-    </div>
+    </PageShell>
   );
 }

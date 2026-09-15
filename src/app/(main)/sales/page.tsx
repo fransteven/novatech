@@ -4,13 +4,14 @@ import { SalesTable } from "@/components/sales/sales-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 
 export default async function SalesPage() {
   const { success, data, error } = await getSalesDataAction();
 
   if (!success || !data) {
     return (
-      <div className="container mx-auto space-y-8 p-8">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Ventas</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -19,14 +20,14 @@ export default async function SalesPage() {
             Error al cargar ventas: {error}
           </AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
   const { sales, kpis } = data;
 
   return (
-    <div className="container mx-auto space-y-8 p-8">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Ventas"
         description="Historial de ventas y rendimiento del negocio."
@@ -35,6 +36,6 @@ export default async function SalesPage() {
       <SalesKPIs kpis={kpis} />
 
       <SalesTable data={sales} />
-    </div>
+    </PageShell>
   );
 }

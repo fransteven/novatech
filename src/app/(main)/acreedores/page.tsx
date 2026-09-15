@@ -5,6 +5,7 @@ import { HandCoins, DollarSign, Users, TrendingDown } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -18,7 +19,7 @@ export default async function AcreedoresPage() {
 
   if (!response.success) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Acreedores</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -27,7 +28,7 @@ export default async function AcreedoresPage() {
             {response.error || "No se pudieron cargar los acreedores."}
           </AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
@@ -44,7 +45,7 @@ export default async function AcreedoresPage() {
   const totalPaid = creditors.reduce((sum, c) => sum + c.totalPaid, 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Acreedores"
         description="Gestiona el capital externo del negocio. Registra préstamos recibidos, paga a los acreedores y lleva el historial completo."
@@ -82,6 +83,6 @@ export default async function AcreedoresPage() {
       </div>
 
       <CreditorsTable data={creditors} accounts={accounts} />
-    </div>
+    </PageShell>
   );
 }

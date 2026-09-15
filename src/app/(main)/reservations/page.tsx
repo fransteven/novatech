@@ -1,6 +1,9 @@
 "use client";
 
 import { ReservationCard } from "@/components/reservations/reservation-card";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 
 // Mock data: Generate expiry times relative to now
 const now = new Date();
@@ -41,21 +44,19 @@ const mockReservations = [
 
 export default function ReservationsPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reservas Online</h1>
-          <p className="text-muted-foreground">
-            Gestiona los pedidos pendientes de retiro de la tienda online.
-          </p>
-        </div>
-      </div>
+    <PageShell className="space-y-6">
+      <PageHeader
+        title="Reservas online"
+        description="Vista de demostración para pedidos pendientes de retiro; no representa operaciones activas."
+        eyebrow="DEMO"
+        actions={<Badge variant="outline" className="bg-muted text-muted-foreground">Datos de muestra</Badge>}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {mockReservations.map((res) => (
           <ReservationCard key={res.id} {...res} />
         ))}
       </div>
-    </div>
+    </PageShell>
   );
 }

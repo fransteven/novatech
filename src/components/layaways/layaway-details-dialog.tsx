@@ -4,13 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { getLayawayDetailsAction } from "@/app/actions/layaway-actions";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -204,15 +198,16 @@ export function LayawayDetailsDialog({
   ) : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-[95vw] p-4 sm:p-6 ${isCredit ? "sm:max-w-[720px]" : "sm:max-w-[500px]"}`}>
-        <DialogHeader>
-          <DialogTitle>
-            {isCredit ? "Detalle del Crédito" : "Detalle del Apartado"}
-          </DialogTitle>
-          <DialogDescription>Cliente: {customerName || "Desconocido"}</DialogDescription>
+    <DetailSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isCredit ? "Detalle del crédito" : "Detalle del apartado"}
+      description={`Cliente: ${customerName || "Desconocido"}`}
+      wide={isCredit}
+      bodyClassName="space-y-4 p-5 sm:p-6"
+    >
           {layawayId && (
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">ID:</span>
               <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded break-all">{layawayId}</code>
               <button
@@ -226,7 +221,6 @@ export function LayawayDetailsDialog({
               </button>
             </div>
           )}
-        </DialogHeader>
 
         {loading ? (
           <div className="py-6 text-center text-muted-foreground">Cargando...</div>
@@ -424,7 +418,6 @@ export function LayawayDetailsDialog({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </DetailSheet>
   );
 }

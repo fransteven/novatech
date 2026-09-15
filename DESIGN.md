@@ -1,110 +1,44 @@
-# NovaTech Design System
+# NovaTech — Archivo Control Deck
 
-> **Current version** — supersedes any prior emerald/no-indigo rule. Accent is now **indigo (OKLCH)**.
+NovaTech is an operations console for a retailer handling physical, serialized stock. The interface is deliberately light-first, dense without becoming cramped, and built around a single operational signal: orange. It should feel like working over a precise paper ledger with aluminum equipment labels, not like a generic SaaS dashboard.
 
-## Tokens
+## Foundation
 
-All design tokens are OKLCH, defined as `--tf-*` CSS custom props in `src/app/globals.css`.
-Shadcn semantic names (`--primary`, `--muted`, `--border`, etc.) are mapped to `--tf-*` — update the design tokens, shadcn components follow automatically.
+All design tokens live in `src/app/globals.css` as `--tf-*` OKLCH custom properties. Shadcn semantic tokens map to them, so UI primitives inherit the system instead of introducing literal colors.
 
-### Colors
+| Token family | Purpose |
+| --- | --- |
+| `--tf-paper`, `--tf-aluminum`, `--tf-ink` | Canvas, opaque working surfaces, and carbon text |
+| `--tf-accent` | Orange signal for a committed action, active row, scan affordance, or trace rail |
+| `--tf-fg*`, `--tf-border*` | Four text levels and quiet structural separation |
+| `--tf-green`, `--tf-amber`, `--tf-red` | Semantic status only; never decoration |
 
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--tf-bg` | `oklch(0.982 0.014 84)` | `oklch(0.185 0.024 258)` | Lienzo marfil de recibo / grafito azulado |
-| `--tf-bg-elev` | `oklch(0.995 0.006 84)` | `oklch(0.225 0.025 258)` | Cards, sidebar, panels |
-| `--tf-bg-muted` | `oklch(0.955 0.018 84)` | `oklch(0.27 0.026 258)` | Hover, table headers, muted zones |
-| `--tf-border` | `oklch(0.885 0.018 84)` | `oklch(0.335 0.024 258)` | Default borders |
-| `--tf-border-strong` | `oklch(0.81 0.022 84)` | `oklch(0.42 0.028 258)` | Input borders, strong dividers |
-| `--tf-fg` | `oklch(0.235 0.026 258)` | `oklch(0.94 0.012 84)` | Primary text |
-| `--tf-fg-muted` | `oklch(0.47 0.028 258)` | `oklch(0.74 0.018 245)` | Secondary text |
-| `--tf-fg-subtle` | `oklch(0.61 0.022 258)` | `oklch(0.59 0.018 245)` | Tertiary text, placeholders |
-| **`--tf-accent`** | `oklch(0.47 0.155 269)` | `oklch(0.72 0.135 269)` | **Primary action — índigo tinta** |
-| `--tf-accent-fg` | `oklch(0.99 0.005 84)` | `oklch(0.19 0.024 258)` | Text on accent bg |
-| `--tf-accent-soft` | `oklch(0.93 0.042 269)` | `oklch(0.31 0.072 269)` | Accent hover surface |
-| `--tf-accent-ring` | `oklch(0.47 0.155 269 / 0.24)` | `oklch(0.72 0.135 269 / 0.3)` | Focus rings |
-| `--tf-green` | `oklch(0.48 0.115 158)` | `oklch(0.75 0.12 158)` | Normal/OK status |
-| `--tf-green-soft` | `oklch(0.93 0.038 158)` | `oklch(0.3 0.06 158)` | Green badge bg |
-| `--tf-amber` | `oklch(0.62 0.13 72)` | `oklch(0.81 0.13 72)` | Warning / low stock |
-| `--tf-amber-soft` | `oklch(0.945 0.052 72)` | `oklch(0.34 0.065 72)` | Amber badge bg |
-| `--tf-red` | `oklch(0.53 0.17 27)` | `oklch(0.72 0.15 27)` | Error / out of stock |
-| `--tf-red-soft` | `oklch(0.94 0.042 27)` | `oklch(0.33 0.075 27)` | Red badge bg |
+Orange is approximately `#FD3706` / `oklch(0.64 0.245 32)`. Text over an orange primary control uses `--tf-accent-ink` (carbon), never small white text. Dark mode retains the same hierarchy with carbon surfaces and clearer borders.
 
-### Typography
+## Typography and data
 
-- **UI**: IBM Plex Sans (loaded via `next/font/google`)
-- **Monospace** (SKU, IMEI, prices): IBM Plex Mono — use `className="mono"` or `font-mono`; importes usan cifras tabulares.
-- Base size: 14px · Line height 1.5 · Letter spacing -0.005em
-- Headings: `text-[28px] font-bold tracking-[-0.025em]`
-- Metadata: `text-[10px]`
-- Actions: `text-sm`
+- UI: Archivo via `next/font/google`.
+- Identifiers, IMEI, money and timestamps: IBM Plex Mono with tabular numerals (`.mono`).
+- Headings are compact and tracked tightly; labels are uppercase mono only where they add scanning value.
+- The spacing unit is 4px. Use 4, 8, 12, 16, 20, 24, 32, 40 and 48px rather than arbitrary gaps.
 
-### Spacing & Radius
+## Materials and depth
 
-| Utility | Value |
-|---|---|
-| `--radius` (base) | 12px (`0.75rem`) |
-| `rounded-sm` | 8px |
-| `rounded` | 12px |
-| `rounded-lg` | 12px |
-| `rounded-xl` | 16px |
+Tables, forms, totals, cards and drawers have opaque surfaces. The app uses borders and restrained color shifts for normal depth; shadows are reserved for floating controls, popovers, dialogs and sheets. Glass is permitted only for chrome or overlay header/footer regions and degrades to opaque surfaces when blur is unsupported or reduced transparency is requested.
 
-### Shadows
+## Signature: trace rail
 
-Use inline `style={{ boxShadow: 'var(--tf-shadow-sm)' }}` or `shadow-*` if Tailwind scale aligns.
+The 1–2px orange trace rail is NovaTech's visual signature. Use it sparingly on the page heading, the primary KPI, an active/selected table row, scanner state and inspection timeline. Pair it with a small mono code or dot when useful. It identifies a record moving through receiving, serialisation, sale and cash control; it is not decoration.
 
-- `--tf-shadow-sm` — subtle card resting state
-- `--tf-shadow-md` — hover lift, dropdowns
-- `--tf-shadow-lg` — sheets, overlays
+## Layout and responsive behavior
 
-### Animations
+- Sidebar: 68px collapsed / 232px expanded. It becomes a Sheet below 768px and disappears below 640px except via the topbar menu.
+- Topbar: 56px, sticky chrome. Every main page exposes a skip link and `main#main-content`.
+- Page shell: `wide`, `standard`, `narrow`, and `workspace` variants share responsive gutters.
+- Tables remain dense on desktop and become labelled record cards under 768px. Detail inspection is a right sheet (480px default; wider only for calendars/workflows) and is fullscreen on phones. Mutating work stays in a Dialog; irreversible work uses AlertDialog.
 
-All transitions: `cubic-bezier(.4,0,.2,1)` — standard Material easing.
+## Motion and accessibility
 
-| Duration | Use |
-|---|---|
-| 120ms | Hover y foco |
-| 180ms | Cambios de estado |
-| 240ms | Sheets, diálogos y overlays |
-
-Keyframes available: `tf-pulse`, `tf-row-in`, `tf-menu-in` (in globals.css).
-
-## Layout
-
-- **Sidebar expanded**: 264px
-- **Sidebar collapsed**: 72px
-- **Topbar height**: 60px (sticky, backdrop-blur glass)
-- **Page max-width**: 1480px, `px-8 py-7`
-
-## Component patterns
-
-### Sidebar
-
-- Brand logo: 36×36 gradient box (`linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))`)
-- Active item: `bg-accent text-accent-foreground font-semibold` + 3px left rail (`.tf-nav-rail`)
-- Collapsed: icons only, 72px wide
-- Footer: user-card with online dot + Cuenta/Salir buttons
-
-### KPI Cards
-
-- `bg-card border border-border rounded-[14px] p-5`, sin elevación al pasar el cursor si el dato es estático.
-- Las variantes `metric`/KPI incluyen una **línea de registro**: riel izquierdo de 1px en `--tf-accent`, con 20px de margen vertical. Es una firma informativa, no un gradiente decorativo.
-- Alert variant (low stock): add `.tf-kpi-alert` + `border-amber`
-
-### Table
-
-- Toolbar: `bg-card border border-border rounded-[10px_10px_0_0]`
-- Table wrap: `bg-card border border-border border-t-0 rounded-[0_0_10px_10px]`
-- Header: `bg-muted text-muted-foreground text-xs uppercase tracking-wide`
-- Row hover: `hover:bg-muted/50`
-- Row stagger: add `.tf-row-enter` + `animationDelay: i * 18ms`
-
-### Status Badges
-
-Three classes: `.tf-badge-normal` / `.tf-badge-low` / `.tf-badge-out`
-Add `.tf-pulse-dot` inside for animated dot on low/out states.
-
-### Dark Mode
-
-Toggle via `document.documentElement.dataset.theme = "dark" | "light"` + also add/remove `.dark` class.
-Persistent via `localStorage["tf-theme"]`.
+- Hover/press: 120–140ms; selection: 160–180ms; popovers/dialogs: 200–220ms; sidebar/sheets: 240–260ms.
+- Use `cubic-bezier(.2,.8,.2,1)`, opacity and transforms only. No bounce.
+- Honor reduced motion and reduced transparency. Keyboard focus, selected state and semantic labels cannot rely on color alone. Coarse targets are at least 44px.

@@ -3,6 +3,7 @@ import { ProfitsKPIs } from "@/components/profits/profits-kpis";
 import { MonthlyProfitsTable } from "@/components/profits/monthly-profits-table";
 import { YearPicker } from "@/components/profits/year-picker";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, PiggyBank } from "lucide-react";
 import { startOfYear, endOfYear } from "date-fns";
@@ -25,7 +26,7 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
 
   if (!profitsResult.success || !profitsResult.data) {
     return (
-      <div className="container mx-auto space-y-8 p-8">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Ganancias</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -34,7 +35,7 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
             Error al cargar el reporte: {profitsResult.error}
           </AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
@@ -42,7 +43,7 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
   const monthlyData = monthlyResult.success ? monthlyResult.data! : [];
 
   return (
-    <div className="container mx-auto space-y-8 p-8">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Ganancias"
         description="Utilidad neta de NovaTech — desglose mensual."
@@ -56,6 +57,6 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
         <h2 className="text-[15px] font-semibold mb-3">Desglose Mensual — {selectedYear}</h2>
         <MonthlyProfitsTable data={monthlyData} year={selectedYear} />
       </div>
-    </div>
+    </PageShell>
   );
 }

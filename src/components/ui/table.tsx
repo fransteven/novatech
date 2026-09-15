@@ -6,20 +6,23 @@ import { cn } from "@/lib/utils"
 
 function Table({
   className,
+  containerClassName,
   mobileCards,
+  density = "default",
   ...props
-}: React.ComponentProps<"table"> & { mobileCards?: boolean }) {
+}: React.ComponentProps<"table"> & { mobileCards?: boolean; containerClassName?: string; density?: "compact" | "default" }) {
   return (
     <div
       data-slot="table-container"
       className={cn(
-        "relative w-full overflow-x-auto rounded-xl border border-border bg-card shadow-[var(--tf-shadow-sm)]",
+        "relative w-full overflow-x-auto rounded-[10px] border border-border bg-card",
         mobileCards && "tf-table-cards",
-        className,
+        containerClassName,
       )}
     >
       <table
         data-slot="table"
+        data-density={density}
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />
@@ -65,7 +68,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/30 data-[state=selected]:bg-muted/50 border-b transition-colors",
+        "hover:bg-muted/55 data-[state=selected]:bg-[var(--tf-accent-soft)] aria-selected:bg-[var(--tf-accent-soft)] border-b transition-colors duration-[160ms]",
         className
       )}
       {...props}
@@ -78,7 +81,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-muted-foreground h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-[0.055em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "text-muted-foreground h-11 px-4 text-left align-middle text-[10px] font-semibold uppercase tracking-[0.09em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}
@@ -91,7 +94,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-4 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "p-4 align-middle whitespace-nowrap [table[data-density=compact]_&]:px-3 [table[data-density=compact]_&]:py-2.5 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}

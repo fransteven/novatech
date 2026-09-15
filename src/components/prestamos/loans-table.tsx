@@ -323,7 +323,7 @@ export function LoansTable({ data, accounts, onRefresh }: LoansTableProps) {
             onClick={() => setActiveChip("al_dia")}
             className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium border whitespace-nowrap transition-colors ${
               activeChip === "al_dia"
-                ? "bg-sky-600 text-white border-sky-600"
+                ? "bg-primary text-primary-foreground border-primary"
                 : "bg-card hover:bg-muted text-muted-foreground border-border"
             }`}
           >
@@ -356,7 +356,7 @@ export function LoansTable({ data, accounts, onRefresh }: LoansTableProps) {
             onClick={() => setActiveChip("completed")}
             className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium border whitespace-nowrap transition-colors ${
               activeChip === "completed"
-                ? "bg-emerald-600 text-white border-emerald-600"
+                ? "tf-badge-normal border-[color:var(--tf-green)]"
                 : "bg-card hover:bg-muted text-muted-foreground border-border"
             }`}
           >
@@ -367,7 +367,7 @@ export function LoansTable({ data, accounts, onRefresh }: LoansTableProps) {
             onClick={() => setActiveChip("defaulted")}
             className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium border whitespace-nowrap transition-colors ${
               activeChip === "defaulted"
-                ? "bg-rose-700 text-white border-rose-700"
+                ? "tf-badge-out border-[color:var(--tf-red)]"
                 : "bg-card hover:bg-muted text-muted-foreground border-border"
             }`}
           >

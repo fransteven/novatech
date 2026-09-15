@@ -12,6 +12,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/ui/page-shell";
 
 interface InventoryPageProps {
   searchParams: Promise<{ query?: string }>;
@@ -32,7 +33,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
     : await getStockSummary();
 
   return (
-    <div className="max-w-[1480px] mx-auto px-4 md:px-8 py-7 pb-20">
+    <PageShell className="space-y-6">
       <PageHeader
         title="Gestión de Bodega"
         description="Control de existencias y entradas de mercancía. Monitorea niveles, registra ingresos y mantén tu inventario actualizado en tiempo real."
@@ -56,12 +57,12 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
 
       <InventoryKPIs stats={stats} />
 
-      <div className="mt-6">
+      <div>
         <StockTable
           stock={stock}
           searchSlot={<InventorySearch />}
         />
       </div>
-    </div>
+    </PageShell>
   );
 }

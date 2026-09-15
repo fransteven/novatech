@@ -6,24 +6,26 @@ interface PageHeaderProps {
   description?: string;
   icon?: LucideIcon;
   actions?: React.ReactNode;
+  eyebrow?: string;
 }
 
-export function PageHeader({ title, description, icon: Icon, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, icon: Icon, actions, eyebrow = "OPERACIÓN" }: PageHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-6">
-      <div>
-        <h1 className="text-[28px] font-bold tracking-[-0.025em] leading-tight flex items-center gap-2 mb-[6px]">
-          {Icon && <Icon className="h-7 w-7 text-primary" />}
+    <div className="mb-6 flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+      <div className="tf-trace-rail pl-4">
+        <p className="mono mb-1 text-[10px] font-semibold tracking-[0.14em] text-[color:var(--tf-fg-subtle)]">{eyebrow}</p>
+        <h1 className="mb-1.5 flex items-center gap-2 text-[28px] font-bold leading-tight tracking-[-0.035em]">
+          {Icon ? <Icon className="h-5 w-5 text-primary" /> : null}
           {title}
         </h1>
         {description && (
-          <p className="text-[14.5px] text-[color:var(--tf-fg-muted)] max-w-[540px]">
+          <p className="max-w-[540px] text-sm text-[color:var(--tf-fg-muted)]">
             {description}
           </p>
         )}
       </div>
       {actions && (
-        <div className="flex flex-wrap items-center gap-[10px] shrink-0">{actions}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
       )}
     </div>
   );

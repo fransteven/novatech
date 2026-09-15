@@ -133,8 +133,8 @@ function StatusFilterDropdown({
 
       {open && (
         <div
-          className="absolute top-[calc(100%+6px)] left-0 min-w-[220px] bg-card border border-border rounded-[10px] p-[6px] z-50"
-          style={{ boxShadow: "var(--tf-shadow-lg)", animation: "tf-menu-in 180ms cubic-bezier(.4,0,.2,1)" }}
+          className="tf-menu-in absolute top-[calc(100%+6px)] left-0 z-50 min-w-[220px] rounded-[10px] border border-border bg-card p-[6px]"
+          style={{ boxShadow: "var(--tf-shadow-lg)" }}
           role="listbox"
         >
           {options.map((opt) => {

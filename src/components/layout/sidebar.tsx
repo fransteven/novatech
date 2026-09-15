@@ -16,7 +16,6 @@ import {
   PiggyBank,
   PackageSearch,
   PanelLeft,
-  User,
   LogOut,
   Wallet,
   ShoppingCart,
@@ -75,8 +74,9 @@ function NavLink({
       href={item.href}
       title={collapsed ? item.title : undefined}
       onClick={onNavClick}
+      aria-current={isActive ? "page" : undefined}
       className={cn(
-        "relative flex items-center gap-3 px-3 rounded-[10px] text-[13.5px] font-medium transition-colors duration-150",
+        "relative flex items-center gap-3 rounded-md px-3 text-[13px] font-medium transition-[color,background-color] duration-[140ms] ease-[cubic-bezier(.2,.8,.2,1)]",
         mobile ? "py-3" : "py-[9px]",
         isActive
           ? "tf-nav-rail bg-accent text-accent-foreground font-semibold"
@@ -151,11 +151,7 @@ function FooterUser({
           <Avatar className="h-9 w-9">
             <AvatarImage src={user?.image ?? ""} alt={user?.name ?? "Usuario"} />
             <AvatarFallback
-              className="text-[13px] font-semibold"
-              style={{
-                background: "linear-gradient(135deg, oklch(0.7 0.14 200), oklch(0.65 0.18 305))",
-                color: "white",
-              }}
+              className="bg-accent text-[13px] font-semibold text-accent-foreground"
             >
               {userInitials}
             </AvatarFallback>
@@ -174,16 +170,9 @@ function FooterUser({
       </div>
       {!collapsed && (
         <div className="flex gap-1 mt-2">
-          <Link
-            href="/profile"
-            className="flex flex-1 items-center justify-center gap-[6px] py-2 px-2 rounded-lg text-[12px] font-medium text-[color:var(--tf-fg-muted)] hover:bg-muted hover:text-foreground transition-colors duration-150"
-          >
-            <User className="h-3.5 w-3.5" />
-            <span>Cuenta</span>
-          </Link>
           <button
             onClick={onSignOut}
-            className="flex flex-1 items-center justify-center gap-[6px] py-2 px-2 rounded-lg text-[12px] font-medium text-[color:var(--tf-fg-muted)] hover:bg-[var(--tf-red-soft)] hover:text-[color:var(--tf-red)] transition-colors duration-150"
+            className="flex w-full items-center justify-center gap-[6px] rounded-md px-2 py-2 text-[12px] font-medium text-[color:var(--tf-fg-muted)] transition-colors duration-[140ms] hover:bg-[var(--tf-red-soft)] hover:text-[color:var(--tf-red)]"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Salir</span>
@@ -199,17 +188,12 @@ function FooterUser({
 function NavBrand({ collapsed, children }: { collapsed?: boolean; children?: React.ReactNode }) {
   return (
     <div
-      className="flex items-center gap-[10px] px-[18px] border-b border-border min-h-16"
-      style={{ paddingTop: 18, paddingBottom: 14 }}
+      className="flex min-h-14 items-center gap-[10px] border-b border-border px-4"
     >
       <div
-        className="w-9 h-9 rounded-[9px] grid place-items-center shrink-0"
-        style={{
-          background: "linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))",
-          boxShadow: "0 4px 14px var(--tf-accent-ring), inset 0 1px 0 rgb(255 255 255 / 0.3)",
-        }}
+        className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground"
       >
-        <Settings2 className="h-4 w-4 text-white" />
+        <Settings2 className="h-4 w-4" />
       </div>
       {!collapsed && (
         <div className="flex-1 min-w-0">
@@ -247,7 +231,7 @@ export function MobileNav({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[264px] p-0 bg-card border-r border-border flex flex-col">
+      <SheetContent side="left" className="sm:w-[232px] sm:max-w-[232px] p-0 bg-card border-r border-border flex flex-col">
         <NavBrand />
         <NavSections mobile onNavClick={close} />
         {user && <FooterUser collapsed={false} onSignOut={handleSignOut} />}
@@ -274,8 +258,8 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex md:flex-col sticky top-0 h-screen bg-card border-r border-border overflow-hidden z-30 transition-[width] duration-[240ms] ease-[cubic-bezier(.4,0,.2,1)]",
-        isCollapsed ? "w-[72px]" : "w-[264px]",
+        "hidden lg:flex lg:flex-col sticky top-0 h-screen bg-card border-r border-border overflow-hidden z-30 transition-[width] duration-[240ms] ease-[cubic-bezier(.2,.8,.2,1)]",
+        isCollapsed ? "w-[68px]" : "w-[232px]",
         className,
       )}
     >
@@ -283,7 +267,7 @@ export function Sidebar({ className }: SidebarProps) {
         {!isCollapsed && (
           <button
             onClick={() => setIsCollapsed(true)}
-            className="ml-auto w-7 h-7 rounded-md grid place-items-center text-[color:var(--tf-fg-muted)] hover:bg-muted hover:text-foreground transition-colors duration-150"
+            className="ml-auto grid size-7 place-items-center rounded-md text-[color:var(--tf-fg-muted)] transition-colors duration-[140ms] hover:bg-muted hover:text-foreground"
             aria-label="Colapsar menú"
           >
             <PanelLeft className="h-4 w-4" />
@@ -298,7 +282,7 @@ export function Sidebar({ className }: SidebarProps) {
       {isCollapsed && (
         <button
           onClick={() => setIsCollapsed(false)}
-          className="absolute top-[18px] right-3 w-7 h-7 rounded-md grid place-items-center text-[color:var(--tf-fg-muted)] hover:bg-muted hover:text-foreground transition-colors duration-150"
+          className="absolute right-3 top-[14px] grid size-7 place-items-center rounded-md text-[color:var(--tf-fg-muted)] transition-colors duration-[140ms] hover:bg-muted hover:text-foreground"
           aria-label="Expandir menú"
         >
           <PanelLeft className="h-4 w-4 rotate-180" />

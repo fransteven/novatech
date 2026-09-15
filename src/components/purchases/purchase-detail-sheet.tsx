@@ -3,13 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPurchaseByIdAction } from "@/app/actions/purchase-actions";
@@ -79,22 +73,20 @@ export function PurchaseDetailSheet({
   };
 
   return (
-    <Sheet open={Boolean(purchaseId)} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col overflow-y-auto w-full sm:max-w-2xl p-0 bg-card border-l border-border">
-        <SheetHeader className="px-6 pt-[22px] pb-[18px] border-b border-border">
-          <SheetTitle className="text-[18px] font-bold tracking-[-0.02em]">
-            Detalle de compra
-          </SheetTitle>
-          <SheetDescription className="text-[13px] text-[color:var(--tf-fg-muted)]">
-            {current
-              ? `${current.provider?.name ?? "Proveedor desconocido"} · ${new Date(
-                  current.purchaseDate,
-                ).toLocaleDateString("es-CO")}`
-              : "Cargando información de la compra..."}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="px-6 py-5 space-y-6">
+    <DetailSheet
+      open={Boolean(purchaseId)}
+      onOpenChange={onOpenChange}
+      title="Detalle de compra"
+      description={
+        current
+          ? `${current.provider?.name ?? "Proveedor desconocido"} · ${new Date(
+              current.purchaseDate,
+            ).toLocaleDateString("es-CO")}`
+          : "Cargando información de la compra..."
+      }
+      wide
+      bodyClassName="space-y-6 p-5 sm:p-6"
+    >
           {loading && (
             <div className="space-y-3">
               <Skeleton className="h-6 w-1/2" />
@@ -263,8 +255,6 @@ export function PurchaseDetailSheet({
               )}
             </>
           )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    </DetailSheet>
   );
 }

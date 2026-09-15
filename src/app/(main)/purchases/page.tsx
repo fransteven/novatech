@@ -13,6 +13,7 @@ import { PurchaseSheet } from "@/components/purchases/purchase-sheet";
 import { PurchaseFilters } from "@/components/purchases/purchase-filters";
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { PageShell } from "@/components/ui/page-shell";
 import { formatCurrency } from "@/lib/formatters";
 
 export const metadata: Metadata = {
@@ -62,7 +63,7 @@ export default async function PurchasesPage({
   const products = productsRes.data ?? [];
 
   return (
-    <div className="max-w-[1480px] mx-auto px-4 md:px-8 py-7 pb-20">
+    <PageShell className="space-y-6">
       <PageHeader
         title="Compras"
         description="Ingreso de mercancía al inventario con su costo real: producto, costos adicionales prorrateados y el pago (o el saldo) al proveedor."
@@ -77,7 +78,7 @@ export default async function PurchasesPage({
       />
 
       {stats && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             icon={Receipt}
             title="Total comprado"
@@ -113,6 +114,6 @@ export default async function PurchasesPage({
       <PurchaseFilters providers={providers} />
 
       <PurchaseList purchases={purchases} cashAccounts={cashAccounts} />
-    </div>
+    </PageShell>
   );
 }

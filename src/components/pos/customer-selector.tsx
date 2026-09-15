@@ -34,7 +34,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 
 export interface Customer {
   id: string;
@@ -136,8 +135,7 @@ export function CustomerSelector({
               {selectedCustomer ? (
                 <>
                   <span
-                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11.5px] font-semibold text-white"
-                    style={{ background: "linear-gradient(135deg, oklch(0.7 0.14 200), oklch(0.65 0.18 305))" }}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-[11.5px] font-semibold text-primary-foreground"
                   >
                     {selectedCustomer.name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
                   </span>
@@ -206,8 +204,7 @@ export function CustomerSelector({
                     className="gap-2.5"
                   >
                     <span
-                      className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-semibold text-white"
-                      style={{ background: "linear-gradient(135deg, oklch(0.7 0.14 200), oklch(0.65 0.18 305))" }}
+                      className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
                     >
                       {customer.name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()}
                     </span>

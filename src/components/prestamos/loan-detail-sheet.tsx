@@ -9,13 +9,7 @@ import {
 } from "@/app/actions/loan-actions";
 import { LoanStatusBadge } from "./loan-status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -143,12 +137,19 @@ export function LoanDetailSheet({
 
   if (!loanData && loading) {
     return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="w-full sm:max-w-3xl sm:rounded-2xl mx-auto p-8 text-center">
+      <DetailSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Detalle del préstamo"
+        description="Cargando información de la operación."
+        wide
+        bodyClassName="grid min-h-48 place-items-center p-8 text-center"
+      >
+        <div>
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
           <p className="text-sm text-muted-foreground mt-3">Cargando información del préstamo...</p>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </DetailSheet>
     );
   }
 
@@ -162,39 +163,33 @@ export function LoanDetailSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className="w-full sm:max-w-3xl sm:h-auto max-h-[92dvh] sm:max-h-[88vh] sm:rounded-2xl mx-auto flex flex-col p-0 overflow-hidden bg-background"
-        >
-          {/* Header */}
-          <div className="p-5 sm:p-6 border-b bg-card shrink-0">
-            <SheetHeader className="text-left">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <SheetTitle className="text-xl font-bold">
-                    Préstamo #{loanData.id.slice(0, 8).toUpperCase()}
-                  </SheetTitle>
-                  <LoanStatusBadge
-                    status={loanData.status}
-                    subStatus={loanData.subStatus}
-                    riskLevel={loanData.riskLevel}
-                    showRisk
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground font-mono">
-                  Desembolso: {new Date(loanData.disbursedAt).toLocaleDateString("es-CO")}
-                </div>
-              </div>
-              <SheetDescription className="text-xs text-muted-foreground flex items-center gap-1.5 pt-0.5">
-                <User className="h-3.5 w-3.5 text-primary" />
-                <strong>{loanData.customerName}</strong>
-                {loanData.customerDocument && ` · C.C. ${loanData.customerDocument}`}
-                {loanData.customerPhone && ` · Tel: ${loanData.customerPhone}`}
-              </SheetDescription>
-            </SheetHeader>
-          </div>
-
+      <DetailSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title={
+          <span className="flex flex-wrap items-center gap-2.5 pr-6">
+            <span>Préstamo #{loanData.id.slice(0, 8).toUpperCase()}</span>
+            <LoanStatusBadge
+              status={loanData.status}
+              subStatus={loanData.subStatus}
+              riskLevel={loanData.riskLevel}
+              showRisk
+            />
+          </span>
+        }
+        description={
+          <span className="flex flex-wrap items-center gap-1.5">
+            <User className="h-3.5 w-3.5 text-primary" />
+            <strong>{loanData.customerName}</strong>
+            {loanData.customerDocument && ` · C.C. ${loanData.customerDocument}`}
+            {loanData.customerPhone && ` · Tel: ${loanData.customerPhone}`}
+            <span className="mono ml-auto text-[10px]">Desembolso: {new Date(loanData.disbursedAt).toLocaleDateString("es-CO")}</span>
+          </span>
+        }
+        wide
+        bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
           {/* Contenido con scroll */}
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
             {/* KPI Cards de resumen financiero */}
@@ -465,7 +460,7 @@ export function LoanDetailSheet({
           </div>
 
           {/* Footer con Acciones */}
-          <div className="p-4 sm:p-5 border-t bg-card shrink-0 flex flex-wrap items-center justify-between gap-2 sticky bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="tf-chrome p-4 sm:p-5 border-t shrink-0 flex flex-wrap items-center justify-between gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-2">
               {canCancel && (
                 <Button
@@ -515,8 +510,8 @@ export function LoanDetailSheet({
               )}
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </DetailSheet>
 
       {/* Confirmación de Cancelación */}
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>

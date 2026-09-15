@@ -4,12 +4,13 @@ import { ProductTable } from "@/components/catalog/product-table";
 import { CreateCategoryDialog } from "@/components/catalog/create-category-dialog";
 import { CatalogKpis } from "@/components/catalog/catalog-kpis";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 
 export default async function CatalogPage() {
   const { data: products } = await getProductsAction();
 
   return (
-    <div className="space-y-5 p-4">
+    <PageShell width="standard" className="space-y-5">
       <PageHeader
         title="Catálogo"
         description="Gestiona los productos y categorías disponibles en la tienda."
@@ -22,6 +23,6 @@ export default async function CatalogPage() {
       />
       <CatalogKpis products={products ?? []} />
       <ProductTable data={products ?? []} />
-    </div>
+    </PageShell>
   );
 }

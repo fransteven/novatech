@@ -9,23 +9,14 @@ interface KpiCardProps {
   icon: React.ReactNode;
   iconBg: string;
   iconFg: string;
-  glow: string;
   alert?: boolean;
 }
 
-function KpiCard({ label, value, sub, icon, iconBg, iconFg, glow, alert }: KpiCardProps) {
+function KpiCard({ label, value, sub, icon, iconBg, iconFg, alert }: KpiCardProps) {
   return (
     <div
       className={`relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]${alert ? " tf-kpi-alert" : ""}`}
-      style={{ boxShadow: "var(--tf-shadow-sm)" }}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(120% 60% at 100% 0%, ${glow}, transparent 50%)`,
-          opacity: 0.4,
-        }}
-      />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground mb-2">
@@ -62,36 +53,32 @@ export function CashKpis({ totalBalance, totalIn, totalOut, netFlow }: CashKpisP
         value={formatCurrency(totalBalance)}
         sub="Suma de todas las cuentas activas"
         icon={<Wallet className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.58 0.19 265 / 0.15)"
-        iconFg="oklch(0.58 0.19 265)"
-        glow="oklch(0.58 0.19 265 / 0.18)"
+        iconBg="var(--tf-accent-soft)"
+        iconFg="var(--tf-accent)"
       />
       <KpiCard
         label="Ingresos del Mes"
         value={formatCurrency(totalIn)}
         sub="Entradas del mes actual"
         icon={<TrendingUp className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.62 0.15 150 / 0.15)"
-        iconFg="oklch(0.62 0.15 150)"
-        glow="oklch(0.62 0.15 150 / 0.16)"
+        iconBg="var(--tf-green-soft)"
+        iconFg="var(--tf-green)"
       />
       <KpiCard
         label="Egresos del Mes"
         value={formatCurrency(totalOut)}
         sub="Salidas del mes actual"
         icon={<TrendingDown className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.6 0.2 25 / 0.12)"
-        iconFg="oklch(0.6 0.2 25)"
-        glow="oklch(0.6 0.2 25 / 0.14)"
+        iconBg="var(--tf-red-soft)"
+        iconFg="var(--tf-red)"
       />
       <KpiCard
         label="Flujo Neto"
         value={formatCurrency(netFlow)}
         sub={netFlow >= 0 ? "Flujo positivo este mes" : "Flujo negativo este mes"}
         icon={<Activity className="h-[18px] w-[18px]" />}
-        iconBg="oklch(0.72 0.15 70 / 0.15)"
-        iconFg="oklch(0.72 0.15 70)"
-        glow="oklch(0.72 0.15 70 / 0.18)"
+        iconBg="var(--tf-amber-soft)"
+        iconFg="var(--tf-amber)"
         alert={netFlow < 0}
       />
     </div>

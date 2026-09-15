@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { PageShell } from "@/components/ui/page-shell";
 import { processSaleAction } from "@/app/actions/pos-action";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -122,13 +123,7 @@ export default function PosPage() {
   const CartContent = () => (
     <>
       {/* Cart header */}
-      <div
-        className="p-4 border-b border-border space-y-3"
-        style={{
-          background:
-            "linear-gradient(180deg, color-mix(in oklch, var(--tf-accent-soft) 35%, var(--tf-bg-elev)), var(--tf-bg-elev))",
-        }}
-      >
+      <div className="bg-card p-4 border-b border-border space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[15px] font-bold tracking-[-0.01em] text-foreground">
             <ShoppingCart className="h-[17px] w-[17px]" />
@@ -291,9 +286,8 @@ export default function PosPage() {
         <span className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-bold">
           Total a cobrar
         </span>
-        <span className="text-[32px] font-extrabold tracking-[-0.03em] text-foreground leading-none tabular-nums">
-          <span className="text-[18px] text-muted-foreground font-semibold align-super mr-0.5">$</span>
-          {total.toFixed(2)}
+        <span className="mono text-[28px] font-extrabold tracking-[-0.03em] text-foreground leading-none tabular-nums">
+          {formatCurrency(total)}
         </span>
       </div>
 
@@ -324,15 +318,9 @@ export default function PosPage() {
         </div>
 
         <Button
-          className="w-full h-[46px] font-bold text-[14.5px] gap-2 cursor-pointer text-primary-foreground border-0"
+          className="w-full h-[46px] font-bold text-[14.5px] gap-2 cursor-pointer"
           disabled={cartItems.length === 0 || processing}
           onClick={handleCheckout}
-          style={{
-            background:
-              "linear-gradient(180deg, var(--tf-accent), oklch(0.52 0.2 270))",
-            boxShadow:
-              "0 1px 0 inset oklch(1 0 0 / 0.25), 0 8px 20px var(--tf-accent-ring)",
-          }}
         >
           {processing ? (
             "Procesando..."
@@ -353,22 +341,18 @@ export default function PosPage() {
   );
 
   return (
-    <>
+    <PageShell width="workspace" className="min-h-full p-0">
       {/* ── Desktop layout: 2-column side-by-side ── */}
-      <div className="hidden lg:flex h-[calc(100vh-(--spacing(16))-1px)] gap-5 -m-4 p-4">
+      <div className="hidden lg:flex min-h-[calc(100dvh-3.5rem)] gap-5 p-4">
         {/* Left Column: products */}
-        <div
-          className="flex-[3] min-w-0 rounded-[14px] p-6 flex flex-col"
-          style={{ boxShadow: "var(--tf-shadow-sm)" }}
-        >
+        <div className="flex-[3] min-w-0 rounded-[14px] border border-border bg-card p-6 flex flex-col">
           <div className="flex items-end justify-between gap-4 mb-5">
             <div>
               <h1 className="flex items-center gap-3 text-[22px] font-bold tracking-[-0.025em] text-foreground m-0">
                 <span
-                  className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-white flex-shrink-0"
+                  className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[color:var(--tf-accent-ink)] flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))",
-                    boxShadow: "0 6px 18px var(--tf-accent-ring)",
+                    background: "var(--tf-accent)",
                   }}
                 >
                   <MonitorCheck className="h-5 w-5" />
@@ -392,7 +376,6 @@ export default function PosPage() {
         {/* Right Column: Cart */}
         <div
           className="flex-[2] min-w-[380px] max-w-[500px] flex flex-col bg-card border border-border rounded-[14px] overflow-hidden"
-          style={{ boxShadow: "var(--tf-shadow-md)" }}
         >
           <CartContent />
         </div>
@@ -404,10 +387,9 @@ export default function PosPage() {
         <div className="flex items-center justify-between gap-3 mb-4">
           <h1 className="flex items-center gap-2.5 text-[18px] font-bold tracking-[-0.025em] text-foreground">
             <span
-              className="w-8 h-8 rounded-[8px] flex items-center justify-center text-white flex-shrink-0"
+              className="w-8 h-8 rounded-[8px] flex items-center justify-center text-[color:var(--tf-accent-ink)] flex-shrink-0"
               style={{
-                background: "linear-gradient(135deg, var(--tf-accent), oklch(0.5 0.2 295))",
-                boxShadow: "0 4px 12px var(--tf-accent-ring)",
+                background: "var(--tf-accent)",
               }}
             >
               <MonitorCheck className="h-4 w-4" />
@@ -426,10 +408,7 @@ export default function PosPage() {
       {/* Mobile floating cart button */}
       <button
         className="lg:hidden fixed bottom-5 right-4 z-40 flex items-center gap-2 h-14 px-5 rounded-full font-bold text-[14px] text-primary-foreground shadow-xl transition-transform active:scale-95"
-        style={{
-          background: "linear-gradient(135deg, var(--tf-accent), oklch(0.52 0.2 270))",
-          boxShadow: "0 8px 24px var(--tf-accent-ring)",
-        }}
+        style={{ background: "var(--tf-accent)", boxShadow: "var(--tf-shadow-floating)" }}
         onClick={() => setMobileCartOpen(true)}
         aria-label="Ver carrito"
       >
@@ -464,6 +443,6 @@ export default function PosPage() {
           <CartContent />
         </SheetContent>
       </Sheet>
-    </>
+    </PageShell>
   );
 }

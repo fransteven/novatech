@@ -172,7 +172,7 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         cell: ({ row }) => {
           const l = row.original;
           return l.type === "credito" ? (
-            <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">
+            <Badge variant="outline" className="text-xs font-medium text-muted-foreground border-border">
               Crédito {l.termMonths ? `${l.termMonths}m` : ""}
             </Badge>
           ) : (

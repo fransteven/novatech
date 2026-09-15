@@ -21,19 +21,19 @@ export function LoanStatusBadge({
 
   if (status === "completed") {
     label = "Completado";
-    colorClass = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800";
+    colorClass = "tf-badge-normal";
   } else if (status === "cancelled") {
     label = "Cancelado";
     colorClass = "bg-muted text-muted-foreground border-border";
   } else if (status === "defaulted") {
     label = "Castigado (Default)";
-    colorClass = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800";
+    colorClass = "tf-badge-out";
   } else if (subStatus === "en_mora") {
     label = "En mora";
-    colorClass = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800";
+    colorClass = "tf-badge-low";
   } else {
     label = "Al día";
-    colorClass = "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800";
+    colorClass = "bg-muted text-muted-foreground border-border";
   }
 
   return (
@@ -49,9 +49,9 @@ export function LoanStatusBadge({
         <span
           className={cn(
             "text-[11px] font-medium px-2 py-0.5 rounded-full border",
-            riskLevel === "rojo" && "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400",
-            riskLevel === "amarillo" && "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-400",
-            riskLevel === "verde" && "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400"
+            riskLevel === "rojo" && "tf-badge-out",
+            riskLevel === "amarillo" && "tf-badge-low",
+            riskLevel === "verde" && "tf-badge-normal"
           )}
         >
           {riskLevel === "rojo" ? "🔴 Alto riesgo" : riskLevel === "amarillo" ? "🟡 Riesgo medio" : "🟢 Bajo"}

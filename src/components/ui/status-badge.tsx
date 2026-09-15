@@ -20,12 +20,12 @@ const STATUS_CONFIG: Record<
     label: "Activo",
     variant: "outline",
     className:
-      "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
+      "tf-badge-low",
   },
   completed: {
     label: "Completado",
     variant: "default",
-    className: "bg-emerald-500 hover:bg-emerald-600 text-white",
+    className: "tf-badge-normal",
   },
   cancelled: { label: "Cancelado", variant: "destructive" },
   overdue: { label: "Vencido", variant: "destructive" },

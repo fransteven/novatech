@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DetailSheet,
+} from "@/components/ui/detail-sheet";
 import {
   Table,
   TableBody,
@@ -58,11 +55,16 @@ export function SaleDetailsModal({
   }, [isOpen, saleId]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Detalles de la Venta</DialogTitle>
-        </DialogHeader>
+    <DetailSheet
+      open={isOpen}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+      title="Detalles de la venta"
+      description="Líneas registradas en la operación seleccionada."
+      wide
+      bodyClassName="p-5 sm:p-6"
+    >
         {isLoading ? (
           <div className="flex h-32 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -103,7 +105,6 @@ export function SaleDetailsModal({
             </Table>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </DetailSheet>
   );
 }

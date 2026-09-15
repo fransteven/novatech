@@ -5,6 +5,7 @@ import { ExpensesTable } from "@/components/expenses/expenses-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Banknote } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -13,14 +14,14 @@ export default async function ExpensesPage() {
 
   if (!success || !data) {
     return (
-      <div className="container mx-auto space-y-8 p-8">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Gastos</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>Error al cargar gastos: {error}</AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
@@ -32,7 +33,7 @@ export default async function ExpensesPage() {
   );
 
   return (
-    <div className="container mx-auto space-y-8 p-8">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Gastos"
         description="Gestiona y visualiza los gastos operativos del negocio."
@@ -54,6 +55,6 @@ export default async function ExpensesPage() {
       </div>
 
       <ExpensesTable data={expenses} />
-    </div>
+    </PageShell>
   );
 }

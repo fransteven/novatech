@@ -11,12 +11,8 @@ import {
 import { formatCurrency } from "@/lib/formatters";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DetailSheet,
+} from "@/components/ui/detail-sheet";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -227,22 +223,28 @@ export function CreditorDetailDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <DetailSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title={
+          <span className="flex items-center gap-2">
               <HandCoins className="h-5 w-5 text-primary" />
               {creditor.name}
-            </DialogTitle>
-            <DialogDescription>
+          </span>
+        }
+        description={
+          <span className="flex items-center gap-2">
               {creditor.contactPhone && (
-                <span className="mr-3">📞 {creditor.contactPhone}</span>
+                <span>{creditor.contactPhone}</span>
               )}
               <Badge variant={creditor.isActive ? "default" : "outline"}>
                 {creditor.isActive ? "Activo" : "Inactivo"}
               </Badge>
-            </DialogDescription>
-          </DialogHeader>
+          </span>
+        }
+        wide
+        bodyClassName="space-y-4 p-5 sm:p-6"
+      >
 
           {/* KPIs del acreedor */}
           <div className="grid grid-cols-3 gap-3 py-2">
@@ -544,8 +546,7 @@ export function CreditorDetailDialog({
               {creditor.isActive ? "Desactivar acreedor" : "Reactivar acreedor"}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DetailSheet>
 
       {/* Sub-dialog: nuevo préstamo */}
       <AddLoanDialog

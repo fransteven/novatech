@@ -1,43 +1,17 @@
+import { PageShell } from "@/components/ui/page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <div className="space-y-6">
-      <Skeleton className="h-9 w-44" />
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border bg-card p-6 space-y-3">
-            <div className="flex justify-between items-center">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-4 w-4 rounded" />
-            </div>
-            <Skeleton className="h-8 w-28" />
-            <Skeleton className="h-3 w-40" />
-          </div>
-        ))}
+    <PageShell className="space-y-5" aria-label="Cargando dashboard" role="status">
+      <div className="space-y-2 pl-4"><Skeleton className="h-3 w-20" /><Skeleton className="h-8 w-48" /><Skeleton className="h-4 w-[26rem] max-w-full" /></div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => <div className="space-y-4 rounded-[10px] border border-border bg-card p-5" key={index}><Skeleton className="h-4 w-28" /><Skeleton className="h-8 w-36" /><Skeleton className="h-3 w-40" /></div>)}
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4 rounded-xl border bg-card p-6 space-y-4">
-          <Skeleton className="h-6 w-36" />
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-[200px] w-full rounded-md" />
-        </div>
-        <div className="col-span-3 rounded-xl border bg-card p-6 space-y-4">
-          <Skeleton className="h-6 w-36" />
-          <Skeleton className="h-4 w-48" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4">
-              <div className="space-y-1 flex-1">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-44" />
-              </div>
-              <Skeleton className="h-4 w-24" />
-            </div>
-          ))}
-        </div>
+      <div className="grid gap-3 xl:grid-cols-5">
+        <div className="space-y-5 rounded-[10px] border border-border bg-card p-5 xl:col-span-3"><Skeleton className="h-5 w-36" /><Skeleton className="h-3 w-56" /><Skeleton className="h-[218px] w-full" /></div>
+        <div className="space-y-4 rounded-[10px] border border-border bg-card p-5 xl:col-span-2">{Array.from({ length: 5 }).map((_, index) => <Skeleton className="h-12 w-full" key={index} />)}</div>
       </div>
-    </div>
+    </PageShell>
   );
 }

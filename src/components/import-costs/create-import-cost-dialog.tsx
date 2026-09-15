@@ -157,7 +157,7 @@ export function CreateImportCostDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+        <Button>
           <Plus className="mr-2 h-4 w-4" />
           Registrar Importación
         </Button>
@@ -204,20 +204,20 @@ export function CreateImportCostDialog({
 
               {/* Especificaciones dinámicas — aparecen cuando el producto tiene template */}
               {categoryTemplate && categoryTemplate.length > 0 && (
-                <div className="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+                <div className="md:col-span-2 space-y-3 rounded-lg border border-border bg-muted p-4">
                   <div className="flex items-center gap-2">
-                    <Cpu className="h-4 w-4 text-indigo-500" />
-                    <h4 className="text-sm font-semibold text-slate-700">
+                    <Cpu className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold text-foreground">
                       Especificaciones de la unidad
                     </h4>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-muted-foreground">
                       (pre-rellenado desde catálogo — ajusta si la unidad difiere)
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {categoryTemplate.map((attr) => (
                       <div key={attr.key} className="space-y-1.5">
-                        <label className="text-sm font-medium text-slate-700">
+                        <label className="text-sm font-medium text-foreground">
                           {attr.label}
                         </label>
                         {attr.type === "select" && attr.options?.length ? (
@@ -227,7 +227,7 @@ export function CreateImportCostDialog({
                               setSpecs((prev) => ({ ...prev, [attr.key]: val }))
                             }
                           >
-                            <SelectTrigger className="bg-white">
+                            <SelectTrigger className="bg-background">
                               <SelectValue
                                 placeholder={`Selecciona ${attr.label.toLowerCase()}`}
                               />
@@ -242,7 +242,7 @@ export function CreateImportCostDialog({
                           </Select>
                         ) : (
                           <Input
-                            className="bg-white"
+                            className="bg-background"
                             placeholder={attr.label}
                             value={specs[attr.key] ?? ""}
                             onChange={(e) =>
@@ -370,7 +370,7 @@ export function CreateImportCostDialog({
 
             {/* Sección: Costo base */}
             <div>
-              <h4 className="text-sm font-medium mb-3 text-slate-500">
+              <h4 className="mb-3 text-sm font-medium text-muted-foreground">
                 Costo del Equipo
               </h4>
               <FormField
@@ -419,7 +419,7 @@ export function CreateImportCostDialog({
               </div>
 
               {watchedValues.useMastercardNu && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-2 border-l-2 border-slate-200">
+                <div className="grid grid-cols-1 gap-4 border-l-2 border-border pl-2 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="mastercardDollarRate"
@@ -447,7 +447,7 @@ export function CreateImportCostDialog({
                   />
                   <div className="flex items-end pb-2">
                     <div className="text-sm">
-                      <p className="text-slate-500">Comisión (0.45%)</p>
+                      <p className="text-muted-foreground">Comisión (0.45%)</p>
                       <p className="font-semibold">
                         {formatCurrency(mastercardPesos)}
                       </p>
@@ -459,7 +459,7 @@ export function CreateImportCostDialog({
 
             {/* Sección: Casillero */}
             <div>
-              <h4 className="text-sm font-medium mb-3 text-slate-500">
+              <h4 className="mb-3 text-sm font-medium text-muted-foreground">
                 Casillero (servicio de envío)
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -507,7 +507,7 @@ export function CreateImportCostDialog({
                 />
                 <div className="flex items-end pb-2">
                   <div className="text-sm">
-                    <p className="text-slate-500">Pesos casillero</p>
+                    <p className="text-muted-foreground">Pesos casillero</p>
                     <p className="font-semibold">{formatCurrency(casilleroPesos)}</p>
                   </div>
                 </div>
@@ -516,7 +516,7 @@ export function CreateImportCostDialog({
 
             {/* Sección: Dólar producto */}
             <div>
-              <h4 className="text-sm font-medium mb-3 text-slate-500">
+              <h4 className="mb-3 text-sm font-medium text-muted-foreground">
                 Dólar del producto
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -543,7 +543,7 @@ export function CreateImportCostDialog({
                 />
                 <div className="flex items-end pb-2">
                   <div className="text-sm">
-                    <p className="text-slate-500">Pesos producto</p>
+                    <p className="text-muted-foreground">Pesos producto</p>
                     <p className="font-semibold">{formatCurrency(productPesos)}</p>
                   </div>
                 </div>
@@ -571,21 +571,21 @@ export function CreateImportCostDialog({
             />
 
             {/* Resumen de costos */}
-            <Card className="bg-slate-50 border-slate-200">
+            <Card className="border-border bg-card">
               <CardContent className="pt-4 space-y-2">
-                <h4 className="text-sm font-semibold text-slate-800">
+                <h4 className="text-sm font-semibold text-foreground">
                   Resumen de Costeo
                 </h4>
 
                 {/* Specs preview */}
                 {Object.keys(specs).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pb-2 border-b border-slate-200">
+                  <div className="flex flex-wrap gap-1.5 border-b border-border pb-2">
                     {Object.entries(specs).map(([key, val]) =>
                       val ? (
                         <Badge
                           key={key}
                           variant="secondary"
-                          className="bg-indigo-50 text-indigo-700 border-indigo-100 text-[11px]"
+                          className="bg-accent text-accent-foreground border-primary/20 text-[11px]"
                         >
                           {val}
                         </Badge>
@@ -595,48 +595,48 @@ export function CreateImportCostDialog({
                 )}
 
                 <div className="grid grid-cols-2 gap-1 text-sm">
-                  <span className="text-slate-500">Comisión Mastercard</span>
+                  <span className="text-muted-foreground">Comisión Mastercard</span>
                   <span className="text-right">{formatCurrency(mastercardPesos)}</span>
 
-                  <span className="text-slate-500">Casillero</span>
+                  <span className="text-muted-foreground">Casillero</span>
                   <span className="text-right">{formatCurrency(casilleroPesos)}</span>
 
-                  <span className="text-slate-500">Equipo (pesos)</span>
+                  <span className="text-muted-foreground">Equipo (pesos)</span>
                   <span className="text-right">{formatCurrency(productPesos)}</span>
 
                   {customsTariff > 0 && (
                     <>
-                      <span className="text-slate-500">Aranceles DIAN</span>
+                      <span className="text-muted-foreground">Aranceles DIAN</span>
                       <span className="text-right">
                         {formatCurrency(customsTariff)}
                       </span>
                     </>
                   )}
 
-                  <span className="font-semibold border-t border-slate-200 pt-1">
+                  <span className="border-t border-border pt-1 font-semibold">
                     Costo Total
                   </span>
-                  <span className="font-semibold border-t border-slate-200 pt-1 text-right">
+                  <span className="border-t border-border pt-1 text-right font-semibold">
                     {formatCurrency(totalCost)}
                   </span>
 
                   {estimatedMargin !== null && catalogPrice > 0 && (
                     <>
-                      <span className="text-slate-500">Precio catálogo</span>
+                      <span className="text-muted-foreground">Precio catálogo</span>
                       <span className="text-right">
                         {formatCurrency(catalogPrice)}
                       </span>
                       <span
                         className={
                           estimatedMargin >= 0
-                            ? "text-green-600 font-medium"
-                            : "text-red-600 font-medium"
+                            ? "font-medium text-[color:var(--tf-green)]"
+                            : "font-medium text-[color:var(--tf-red)]"
                         }
                       >
                         Margen estimado
                       </span>
                       <span
-                        className={`text-right font-medium ${estimatedMargin >= 0 ? "text-green-600" : "text-red-600"}`}
+                        className={`text-right font-medium ${estimatedMargin >= 0 ? "text-[color:var(--tf-green)]" : "text-[color:var(--tf-red)]"}`}
                       >
                         {formatCurrency(estimatedMargin)} (
                         {((estimatedMargin / catalogPrice) * 100).toFixed(1)}%)
@@ -668,7 +668,7 @@ export function CreateImportCostDialog({
 
             <Button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="w-full"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting

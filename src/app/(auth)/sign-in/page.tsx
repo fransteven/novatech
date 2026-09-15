@@ -60,7 +60,7 @@ export default function SignInPage() {
   };
 
   return (
-    <Card className="border-border bg-card/50 backdrop-blur-sm">
+    <Card className="border-border bg-card">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
         <CardDescription>Ingresa tus credenciales para acceder</CardDescription>

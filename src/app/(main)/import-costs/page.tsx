@@ -4,6 +4,7 @@ import { ImportCostsKpis } from "@/components/import-costs/import-costs-kpis";
 import { ImportCostsTable } from "@/components/import-costs/import-costs-table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { AlertCircle, PackageSearch } from "lucide-react";
 
 export default async function ImportCostsPage() {
@@ -11,7 +12,7 @@ export default async function ImportCostsPage() {
 
   if (!success || !data) {
     return (
-      <div className="container mx-auto space-y-8 p-8">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">
           Costeo de Importaciones
         </h1>
@@ -22,7 +23,7 @@ export default async function ImportCostsPage() {
             Error al cargar los costeos: {error}
           </AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
@@ -42,7 +43,7 @@ export default async function ImportCostsPage() {
   }));
 
   return (
-    <div className="container mx-auto space-y-8 p-8">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Costeo de Importaciones"
         description="Registra y analiza el costo real de traer equipos desde Estados Unidos."
@@ -58,6 +59,6 @@ export default async function ImportCostsPage() {
           specs: (r.specs ?? null) as Record<string, string> | null,
         }))}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -17,9 +17,8 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
       value: formatCurrency(stats.totalValue),
       unit: "COP",
       delta: { variant: "up" as const, label: "+", text: "Valor de mercancía" },
-      glow: "oklch(0.65 0.16 150 / 0.16)",
-      iconBg: "oklch(0.95 0.05 150)",
-      iconFg: "oklch(0.45 0.15 150)",
+      iconBg: "var(--tf-green-soft)",
+      iconFg: "var(--tf-green)",
       alert: false,
     },
     {
@@ -28,9 +27,8 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
       value: formatNumberCO(stats.totalUnits),
       unit: "unidades",
       delta: { variant: "up" as const, label: "+", text: "Productos disponibles" },
-      glow: "oklch(0.62 0.18 265 / 0.18)",
-      iconBg: "oklch(0.95 0.04 265)",
-      iconFg: "oklch(0.5 0.18 265)",
+      iconBg: "var(--tf-accent-soft)",
+      iconFg: "var(--tf-accent)",
       alert: false,
     },
     {
@@ -43,9 +41,8 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
         label: stats.lowStockCount > 0 ? "Atención" : "OK",
         text: stats.lowStockCount > 0 ? "Requiere reposición" : "Stock en buen nivel",
       },
-      glow: "oklch(0.72 0.15 70 / 0.18)",
-      iconBg: "oklch(0.96 0.06 70)",
-      iconFg: "oklch(0.55 0.15 70)",
+      iconBg: "var(--tf-amber-soft)",
+      iconFg: "var(--tf-amber)",
       alert: stats.lowStockCount > 0,
     },
   ];
@@ -55,28 +52,15 @@ export function InventoryKPIs({ stats }: InventoryKPIsProps) {
       {cards.map((card, i) => (
         <div
           key={i}
-          className="relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]"
+          className={`relative overflow-hidden bg-card border border-border rounded-[14px] p-5 before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]${card.alert ? " tf-kpi-alert" : ""}`}
           style={
             {
-              "--kpi-glow": card.glow,
               borderColor: card.alert
                 ? "color-mix(in oklch, var(--tf-amber) 40%, var(--tf-border))"
                 : undefined,
             } as React.CSSProperties
           }
         >
-          {/* Alert stripe */}
-          {card.alert && <span className="tf-kpi-alert" />}
-
-          {/* Glow overlay */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{
-              background: `radial-gradient(120% 60% at 100% 0%, ${card.glow}, transparent 50%)`,
-            }}
-          />
-
           {/* Head */}
           <div className="relative flex items-center justify-between mb-[14px]">
             <span className="text-[13px] font-medium text-[color:var(--tf-fg-muted)]">

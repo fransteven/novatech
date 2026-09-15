@@ -28,9 +28,9 @@ interface Notification {
 }
 
 const SEVERITY_STYLES: Record<string, string> = {
-  info: "text-blue-500",
-  warning: "text-yellow-500",
-  danger: "text-red-500",
+  info: "text-primary",
+  warning: "text-[color:var(--tf-amber)]",
+  danger: "text-destructive",
 };
 
 const TYPE_ICONS: Record<string, React.ElementType> = {

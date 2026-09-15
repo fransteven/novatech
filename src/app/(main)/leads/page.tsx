@@ -1,6 +1,7 @@
 import { getLeadsAction } from "@/app/actions/lead-actions";
 import { LeadsTable } from "@/components/leads/leads-table";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Target, TrendingUp, DollarSign, Trophy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,7 +15,7 @@ export default async function LeadsPage() {
 
   if (!response.success) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell width="standard" className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -23,7 +24,7 @@ export default async function LeadsPage() {
             {response.error || "No se pudieron cargar los leads."}
           </AlertDescription>
         </Alert>
-      </div>
+      </PageShell>
     );
   }
 
@@ -46,7 +47,7 @@ export default async function LeadsPage() {
   const totalMargin = active.reduce((s, l) => s + l.margin, 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Leads"
         description="Pipeline de ventas a crédito. Registra prospectos, genera estrategias con IA y conviértelos en créditos."
@@ -84,6 +85,6 @@ export default async function LeadsPage() {
       </div>
 
       <LeadsTable data={leads} />
-    </div>
+    </PageShell>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { InventoryMovement } from "@/lib/validators/inventory-validator";
+import { formatCurrency } from "@/lib/formatters";
 
 interface InventoryMovementsTableProps {
   movements: InventoryMovement[];
@@ -64,7 +65,7 @@ export function InventoryMovementsTable({
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {movement.unitCost
-                    ? `$${parseFloat(movement.unitCost).toFixed(2)}`
+                    ? formatCurrency(movement.unitCost)
                     : "—"}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">

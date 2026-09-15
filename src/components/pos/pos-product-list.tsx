@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { searchProductAction } from "@/app/actions/pos-action";
 import type { ProductSearchResult } from "@/lib/validators/pos-validator";
 import { ScanButton } from "@/components/scanner/scan-button";
+import { formatCurrency } from "@/lib/formatters";
 
 interface PosProductListProps {
   onAddToCart: (item: {
@@ -112,18 +113,7 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
 
   return (
     <div className="flex flex-col h-full gap-4">
-      {/* Scanner card */}
       <div className="relative bg-card border border-border rounded-[14px] p-5 overflow-hidden">
-        {/* Radial accent glow overlay */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-50"
-          style={{
-            background:
-              "radial-gradient(50% 30% at 50% 0%, var(--tf-accent-soft), transparent 60%)",
-          }}
-        />
-
         <form onSubmit={handleSearch} className="relative flex gap-2.5 items-stretch">
           {/* Input */}
           <div
@@ -173,12 +163,7 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
           <Button
             type="submit"
             disabled={loading || !barcode.trim()}
-            className="h-14 px-6 rounded-[12px] bg-primary text-primary-foreground font-semibold text-[14.5px] gap-2 flex-shrink-0 cursor-pointer"
-            style={{
-              background: "linear-gradient(180deg, var(--tf-accent), oklch(0.52 0.2 270))",
-              boxShadow:
-                "0 1px 0 inset oklch(1 0 0 / 0.2), 0 6px 18px var(--tf-accent-ring)",
-            }}
+            className="h-14 shrink-0 cursor-pointer gap-2 rounded-[10px] px-6 text-[14.5px] font-semibold"
           >
             <ScanBarcode className="h-4 w-4" />
             {loading ? "Buscando..." : "Agregar"}
@@ -234,10 +219,10 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right font-medium font-mono text-foreground">
-                  ${Number(result.suggestedPrice).toFixed(2)}
+                  {formatCurrency(result.suggestedPrice)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-muted-foreground">
-                  ${result.avgUnitCost.toFixed(2)}
+                  {formatCurrency(result.avgUnitCost)}
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">

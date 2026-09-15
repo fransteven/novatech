@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SearchShortcutProvider } from "@/providers/search-shortcut-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
-const plexSans = IBM_Plex_Sans({
-  variable: "--font-plex-sans",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -23,13 +24,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-CO" suppressHydrationWarning>
-      <body className={`${plexSans.variable} ${plexMono.variable} antialiased`}>
-        <SearchShortcutProvider>
-          <div className="flex min-h-screen w-full bg-background text-foreground transition-colors duration-200">
-            {children}
-          </div>
-          <Toaster />
-        </SearchShortcutProvider>
+      <body className={`${archivo.variable} ${plexMono.variable} antialiased`}>
+        <ThemeProvider>
+          <SearchShortcutProvider>
+            <div className="flex min-h-screen w-full bg-background text-foreground">
+              {children}
+            </div>
+            <Toaster />
+          </SearchShortcutProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

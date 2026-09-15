@@ -2,11 +2,8 @@
 
 import { useState, useEffect, useTransition } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DetailSheet,
+} from "@/components/ui/detail-sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -164,15 +161,19 @@ export function LeadDetailsDialog({
   const isActive = ["nuevo", "contactado", "negociando"].includes(lead.stage);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <DetailSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex items-center gap-2">
             <span>{lead.prospectName}</span>
             <StageBadge stage={lead.stage} />
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">{lead.productDescription}</p>
-        </DialogHeader>
+        </span>
+      }
+      description={lead.productDescription}
+      wide
+      bodyClassName="space-y-4 p-5 sm:p-6"
+    >
 
         <Tabs defaultValue="resumen" onValueChange={(v) => v === "amortizacion" && loadSchedule()}>
           <TabsList>
@@ -357,8 +358,7 @@ export function LeadDetailsDialog({
             </div>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </DetailSheet>
   );
 }
 

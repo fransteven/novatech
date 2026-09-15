@@ -2,13 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import { WarrantyResultCard } from "@/components/garantias/warranty-result-card";
 import { getWarrantyDetailAction } from "@/app/actions/warranty-actions";
 import type { WarrantyAnchor } from "@/lib/validators/warranty-validator";
@@ -70,17 +64,13 @@ export function WarrantyDetailSheet({
   };
 
   return (
-    <Sheet open={anchor !== null} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Detalle de garantía</SheetTitle>
-          <SheetDescription>
-            Estado de cobertura, historial de reclamos y acciones sobre esta
-            entrega.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="px-4 pb-6">
+    <DetailSheet
+      open={anchor !== null}
+      onOpenChange={onOpenChange}
+      title="Detalle de garantía"
+      description="Estado de cobertura, historial de reclamos y acciones sobre esta entrega."
+      bodyClassName="p-5 sm:p-6"
+    >
           {!current && (
             <div className="flex items-center gap-2 text-[13px] text-muted-foreground py-8">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -97,8 +87,6 @@ export function WarrantyDetailSheet({
               onChanged={handleChanged}
             />
           )}
-        </div>
-      </SheetContent>
-    </Sheet>
+    </DetailSheet>
   );
 }

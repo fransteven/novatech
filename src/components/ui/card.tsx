@@ -9,9 +9,9 @@ function Card({ className, variant = "surface", ...props }: React.ComponentProps
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border border-border py-6 shadow-[var(--tf-shadow-sm)]",
-        variant === "interactive" && "cursor-pointer transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[var(--tf-shadow-md)]",
-        variant === "metric" && "relative overflow-hidden border-[color:var(--tf-border)] before:absolute before:inset-y-5 before:left-0 before:w-px before:bg-[var(--tf-accent)]",
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-[10px] border border-border py-5",
+        variant === "interactive" && "cursor-pointer transition-[transform,border-color,background-color] duration-[140ms] ease-[cubic-bezier(.2,.8,.2,1)] hover:border-[var(--tf-border-strong)] hover:bg-[var(--tf-bg-elev)] active:scale-[.99]",
+        variant === "metric" && "relative overflow-hidden border-[color:var(--tf-border)] before:absolute before:inset-y-4 before:left-0 before:w-px before:bg-[var(--tf-accent)]",
         variant === "flat" && "border-transparent bg-transparent shadow-none",
         className,
       )}

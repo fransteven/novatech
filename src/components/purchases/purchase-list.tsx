@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/formatters";
+import { Button } from "@/components/ui/button";
 import { PurchaseStatusBadge } from "./purchase-status-badge";
 import { PurchaseDetailSheet } from "./purchase-detail-sheet";
 
@@ -46,7 +47,7 @@ export function PurchaseList({ purchases, cashAccounts }: PurchaseListProps) {
 
   if (purchases.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center bg-card border border-border rounded-lg shadow-sm">
+      <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-8 text-center">
         <ShoppingCart className="h-10 w-10 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium">No hay compras registradas</h3>
         <p className="text-sm text-muted-foreground mt-1">
@@ -58,7 +59,7 @@ export function PurchaseList({ purchases, cashAccounts }: PurchaseListProps) {
 
   return (
     <>
-      <div className="bg-card border border-border rounded-lg shadow-sm overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -70,15 +71,14 @@ export function PurchaseList({ purchases, cashAccounts }: PurchaseListProps) {
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead className="text-right">Saldo</TableHead>
+              <TableHead className="text-right">
+                <span className="sr-only">Acciones</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {purchases.map((purchase) => (
-              <TableRow
-                key={purchase.id}
-                className="cursor-pointer"
-                onClick={() => setSelectedId(purchase.id)}
-              >
+              <TableRow key={purchase.id}>
                 <TableCell className="font-medium">
                   {new Date(purchase.purchaseDate).toLocaleDateString("es-CO")}
                 </TableCell>
@@ -105,6 +105,16 @@ export function PurchaseList({ purchases, cashAccounts }: PurchaseListProps) {
                   }`}
                 >
                   {formatCurrency(purchase.pendingAmount)}
+                </TableCell>
+                <TableCell className="text-right" data-label="Acciones">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedId(purchase.id)}
+                  >
+                    Ver detalle
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
