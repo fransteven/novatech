@@ -25,17 +25,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/components/ui/empty-state";
 
+import { ProviderPicker } from "./provider-picker";
 import { ProviderDialog } from "./provider-dialog";
 import { type PickerProduct } from "./product-picker";
 import { PurchaseLineRow } from "./purchase-line-row";
@@ -50,6 +44,7 @@ interface PurchaseFormProps {
   providers: { id: string; name: string }[];
   cashAccounts: { id: string; name: string; balance?: string | number }[];
   products: PickerProduct[];
+  onProviderCreated?: (provider: { id: string; name: string }) => void;
   onSuccess: () => void;
   onCancel?: () => void;
   onDirtyChange?: (isDirty: boolean) => void;
@@ -109,6 +104,7 @@ export function PurchaseForm({
   providers: initialProviders,
   cashAccounts,
   products: initialProducts,
+  onProviderCreated,
   onSuccess,
   onCancel,
   onDirtyChange,
@@ -117,6 +113,7 @@ export function PurchaseForm({
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState(initialProviders);
   const [products, setProducts] = useState(initialProducts);
+  const [createProviderOpen, setCreateProviderOpen] = useState(false);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("paid");
   const [autoFocusLineIndex, setAutoFocusLineIndex] = useState<number | null>(
     null,
@@ -124,6 +121,10 @@ export function PurchaseForm({
   const [idempotencyKey, setIdempotencyKey] = useState(() =>
     crypto.randomUUID(),
   );
+
+  useEffect(() => {
+    setProviders(initialProviders);
+  }, [initialProviders]);
 
   const form = useForm<CreatePurchaseSchema>({
     resolver: zodResolver(
@@ -356,51 +357,53 @@ export function PurchaseForm({
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
       className={cn("flex flex-1 flex-col min-h-0", className)}
     >
-      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-5 space-y-6">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 py-4 sm:py-5 space-y-6">
         {/* ---------- Cabecera de compra ---------- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="provider-select" className="text-xs">
-              Proveedor *
-            </Label>
-            <div className="flex items-center gap-2">
-              <Select
-                value={watchedProviderId}
-                onValueChange={(val) =>
-                  form.setValue("providerId", val, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-1 space-y-1.5 min-w-0">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="provider-picker" className="text-xs">
+                Proveedor *
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1.5 text-xs text-[color:var(--tf-accent)] hover:text-[color:var(--tf-accent)] hover:bg-[color:var(--tf-accent-soft)]"
+                onClick={() => setCreateProviderOpen(true)}
               >
-                <SelectTrigger id="provider-select" className="flex-1 h-9">
-                  <SelectValue placeholder="Seleccionar proveedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {providers.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>
-                      {provider.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <ProviderDialog
-                onCreated={(provider) => {
-                  setProviders((prev) => [...prev, provider]);
-                  form.setValue("providerId", provider.id, {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  });
-                }}
-              />
+                <Plus className="h-3 w-3 mr-1" />
+                Nuevo
+              </Button>
             </div>
+            <ProviderPicker
+              providers={providers}
+              value={watchedProviderId}
+              onSelect={(provider) =>
+                form.setValue("providerId", provider.id, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                })
+              }
+              onProviderCreated={(provider) => {
+                setProviders((prev) => {
+                  if (prev.some((p) => p.id === provider.id)) return prev;
+                  return [...prev, provider];
+                });
+                form.setValue("providerId", provider.id, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                onProviderCreated?.(provider);
+              }}
+            />
             <FieldError
               id="provider-select-error"
               message={form.formState.errors.providerId?.message}
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="col-span-1 space-y-1.5 min-w-0">
             <Label htmlFor="purchase-date-input" className="text-xs">
               Fecha de compra
             </Label>
@@ -408,7 +411,7 @@ export function PurchaseForm({
               id="purchase-date-input"
               type="date"
               value={dateInputValue}
-              className="h-9 text-[13px]"
+              className="h-9 text-[13px] w-full min-w-0"
               onChange={(event) =>
                 form.setValue(
                   "purchaseDate",
@@ -421,18 +424,34 @@ export function PurchaseForm({
             />
           </div>
 
-          <div className="space-y-1.5">
+          <div className="col-span-1 space-y-1.5 min-w-0">
             <Label htmlFor="invoice-number-input" className="text-xs">
               Factura / Comprobante
             </Label>
             <Input
               id="invoice-number-input"
               placeholder="Ej. FAC-001"
-              className="h-9 text-[13px]"
+              className="h-9 text-[13px] w-full min-w-0"
               {...form.register("invoiceNumber")}
             />
           </div>
         </div>
+
+        <ProviderDialog
+          open={createProviderOpen}
+          onOpenChange={setCreateProviderOpen}
+          onCreated={(provider) => {
+            setProviders((prev) => {
+              if (prev.some((p) => p.id === provider.id)) return prev;
+              return [...prev, provider];
+            });
+            form.setValue("providerId", provider.id, {
+              shouldValidate: true,
+              shouldDirty: true,
+            });
+            onProviderCreated?.(provider);
+          }}
+        />
 
         <Separator />
 

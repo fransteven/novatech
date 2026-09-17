@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,13 +33,27 @@ interface PurchaseSheetProps {
 }
 
 export function PurchaseSheet({
-  providers,
+  providers: initialProviders,
   cashAccounts,
   products,
 }: PurchaseSheetProps) {
+  const router = useRouter();
+  const [providers, setProviders] = useState(initialProviders);
   const [open, setOpen] = useState(false);
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    setProviders(initialProviders);
+  }, [initialProviders]);
+
+  const handleProviderCreated = (newProvider: { id: string; name: string }) => {
+    setProviders((prev) => {
+      if (prev.some((p) => p.id === newProvider.id)) return prev;
+      return [...prev, newProvider];
+    });
+    router.refresh();
+  };
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isDirty) {
@@ -64,10 +79,10 @@ export function PurchaseSheet({
           </Button>
         </SheetTrigger>
         <SheetContent
-          className="flex flex-col overflow-hidden w-full sm:max-w-4xl p-0 bg-card border-l border-border gap-0"
+          className="flex flex-col overflow-hidden w-full sm:w-[92vw] md:w-[88vw] lg:w-[58rem] xl:w-[66rem] sm:max-w-5xl xl:max-w-6xl p-0 bg-card border-l border-border gap-0"
           style={{ boxShadow: "var(--tf-shadow-lg)" }}
         >
-          <SheetHeader className="px-6 pt-[22px] pb-[18px] border-b border-border shrink-0">
+          <SheetHeader className="px-4 sm:px-6 pt-4 sm:pt-[22px] pb-3.5 sm:pb-[18px] border-b border-border shrink-0">
             <SheetTitle className="text-[18px] font-bold tracking-[-0.02em]">
               Registrar compra
             </SheetTitle>
@@ -81,6 +96,7 @@ export function PurchaseSheet({
             providers={providers}
             cashAccounts={cashAccounts}
             products={products}
+            onProviderCreated={handleProviderCreated}
             onSuccess={() => {
               setIsDirty(false);
               setOpen(false);

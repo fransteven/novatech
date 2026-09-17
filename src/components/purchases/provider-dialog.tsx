@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -30,18 +30,38 @@ export interface CreatedProvider {
 }
 
 interface ProviderDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
+  initialName?: string;
   /** Devuelve el proveedor creado para seleccionarlo de inmediato en la compra. */
   onCreated?: (provider: CreatedProvider) => void;
 }
 
-export function ProviderDialog({ onCreated }: ProviderDialogProps = {}) {
-  const [open, setOpen] = useState(false);
+export function ProviderDialog({
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  trigger,
+  initialName = "",
+  onCreated,
+}: ProviderDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (nextOpen: boolean) => {
+    if (isControlled) {
+      setControlledOpen?.(nextOpen);
+    } else {
+      setInternalOpen(nextOpen);
+    }
+  };
 
   const form = useForm<CreateProviderSchema>({
     resolver: zodResolver(createProviderSchema),
     defaultValues: {
-      name: "",
+      name: initialName,
       phone: "",
       country: "",
       city: "",
@@ -49,6 +69,22 @@ export function ProviderDialog({ onCreated }: ProviderDialogProps = {}) {
       notes: "",
     },
   });
+
+  // Sincronizar nombre inicial si cambia al abrir el diálogo
+  useEffect(() => {
+    if (open && initialName) {
+      form.setValue("name", initialName);
+    }
+  }, [open, initialName, form]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      form.reset();
+    } else if (initialName) {
+      form.setValue("name", initialName);
+    }
+    setOpen(nextOpen);
+  };
 
   const onSubmit = async (data: CreateProviderSchema) => {
     setLoading(true);
@@ -70,13 +106,17 @@ export function ProviderDialog({ onCreated }: ProviderDialogProps = {}) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="icon" type="button" title="Nuevo proveedor">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="icon" type="button" title="Nuevo proveedor">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+      ) : null}
+      <DialogContent className="z-[60] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nuevo Proveedor</DialogTitle>
           <DialogDescription>

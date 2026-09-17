@@ -48,70 +48,72 @@ export function PurchaseSummaryBar({
   const isBlocked = Boolean(blockReason);
 
   return (
-    <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between gap-4">
+    <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       {/* Resumen numérico */}
-      <div className="space-y-0.5">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-            Total
-          </span>
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors underline decoration-dotted underline-offset-2"
-              >
-                Ver desglose <ChevronDown className="h-3 w-3" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 p-3 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal productos</span>
-                <span className="font-mono">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Costos adicionales</span>
-                <span className="font-mono">+ {formatCurrency(extraCostsAmount)}</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between font-semibold">
-                <span>Total compra</span>
-                <span className="font-mono text-[color:var(--tf-green)]">
-                  {formatCurrency(total)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Pagado ahora</span>
-                <span className="font-mono">{formatCurrency(amountPaid)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Saldo al proveedor</span>
-                <span
-                  className={`font-mono ${pending > 0 ? "text-[color:var(--tf-amber)] font-medium" : ""}`}
+      <div className="space-y-0.5 flex items-center justify-between sm:block">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+              Total
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors underline decoration-dotted underline-offset-2"
                 >
-                  {formatCurrency(pending)}
-                </span>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+                  Ver desglose <ChevronDown className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72 p-3 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal productos</span>
+                  <span className="font-mono">{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Costos adicionales</span>
+                  <span className="font-mono">+ {formatCurrency(extraCostsAmount)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-semibold">
+                  <span>Total compra</span>
+                  <span className="font-mono text-[color:var(--tf-green)]">
+                    {formatCurrency(total)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Pagado ahora</span>
+                  <span className="font-mono">{formatCurrency(amountPaid)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Saldo al proveedor</span>
+                  <span
+                    className={`font-mono ${pending > 0 ? "text-[color:var(--tf-amber)] font-medium" : ""}`}
+                  >
+                    {formatCurrency(pending)}
+                  </span>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
 
-        <div
-          className="font-mono text-[22px] font-bold text-[color:var(--tf-green)] leading-tight"
-          aria-live="polite"
-        >
-          {formatCurrency(total)}
+          <div
+            className="font-mono text-[20px] sm:text-[22px] font-bold text-[color:var(--tf-green)] leading-tight"
+            aria-live="polite"
+          >
+            {formatCurrency(total)}
+          </div>
         </div>
 
         {pending > 0 && (
-          <div className="text-[11px] font-mono text-[color:var(--tf-amber)] font-medium">
-            Saldo al proveedor: {formatCurrency(pending)}
+          <div className="text-[11px] font-mono text-[color:var(--tf-amber)] font-medium text-right sm:text-left">
+            Saldo: {formatCurrency(pending)}
           </div>
         )}
       </div>
 
       {/* Acciones y bloqueo */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
         {isBlocked && (
           <span className="text-[11px] text-[color:var(--tf-red)] font-medium max-w-[180px] text-right leading-tight hidden sm:inline-block">
             {blockReason}
@@ -121,7 +123,7 @@ export function PurchaseSummaryBar({
         <Button
           type="button"
           variant="ghost"
-          className="text-[color:var(--tf-fg-muted)] hover:text-foreground"
+          className="text-[color:var(--tf-fg-muted)] hover:text-foreground flex-1 sm:flex-initial"
           onClick={onCancel}
         >
           Cancelar
@@ -129,11 +131,11 @@ export function PurchaseSummaryBar({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <span tabIndex={isBlocked ? 0 : undefined} className="inline-flex">
+            <span tabIndex={isBlocked ? 0 : undefined} className="inline-flex flex-1 sm:flex-initial">
               <Button
                 type="submit"
                 disabled={loading || isBlocked}
-                className="min-w-[160px] font-semibold"
+                className="w-full sm:w-auto sm:min-w-[160px] font-semibold"
               >
                 {loading ? (
                   <>

@@ -176,19 +176,19 @@ export function PurchaseLineRow({
           </div>
 
           {/* Cantidad */}
-          <div className="col-span-4 sm:col-span-2 space-y-1">
+          <div className="col-span-3 sm:col-span-2 space-y-1">
             <Label
               htmlFor={`detail-${index}-quantity`}
               className="text-[11.5px] text-muted-foreground sm:sr-only"
             >
-              Cantidad
+              Cant.
             </Label>
             <Input
               id={`detail-${index}-quantity`}
               type="number"
               min="1"
               step="1"
-              className="h-9 text-[13px] font-mono text-center"
+              className="h-9 text-[13px] font-mono text-center px-1"
               {...register(`details.${index}.quantity`, {
                 ...numberField,
                 onChange: (event) => {
@@ -205,7 +205,7 @@ export function PurchaseLineRow({
           </div>
 
           {/* Costo Unitario */}
-          <div className="col-span-5 sm:col-span-3 space-y-1">
+          <div className="col-span-4 sm:col-span-3 space-y-1">
             <Label
               htmlFor={`detail-${index}-unitCost`}
               className="text-[11.5px] text-muted-foreground sm:sr-only"
@@ -224,7 +224,8 @@ export function PurchaseLineRow({
           </div>
 
           {/* Subtotal de línea */}
-          <div className="col-span-2 sm:col-span-1 text-right">
+          <div className="col-span-4 sm:col-span-1 text-right">
+            <span className="text-[10px] text-muted-foreground block sm:hidden">Total</span>
             <span className="font-mono text-[13px] font-semibold text-foreground truncate block">
               {formatCurrency(lineAllocation?.lineTotal ?? 0)}
             </span>
