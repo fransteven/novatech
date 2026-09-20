@@ -28,6 +28,8 @@ export interface PickerProduct {
   isSerialized: boolean;
   price: string | number;
   attributes: unknown;
+  /** Decide qué métricas de condición pedir al recibir la unidad. */
+  categoryName?: string | null;
   stock?: number;
 }
 
@@ -204,6 +206,7 @@ export function ProductPicker({
             isSerialized: product.isSerialized,
             price: product.price,
             attributes: product.attributes,
+            categoryName: product.categoryName ?? null,
             stock: 0,
           };
           onProductCreated(created);

@@ -11,6 +11,7 @@ import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 import type { CreatePurchaseSchema } from "@/lib/validators/purchase-validator";
 import { formatCurrency } from "@/lib/formatters";
+import { getConditionAttributes } from "@/lib/condition-attributes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,6 +88,9 @@ export function PurchaseLineRow({
 
   const product = detail?.productId ? productById.get(detail.productId) : undefined;
   const isSerialized = product?.isSerialized ?? false;
+  // Solo las métricas que significan algo para la categoría del producto:
+  // una consola no tiene salud de batería.
+  const conditionAttributes = getConditionAttributes(product?.categoryName);
   const quantity = Math.max(1, Math.trunc(toNumber(detail?.quantity)));
   const serialNumbers = (detail?.serialNumbers ?? []) as string[];
   const filledSerialsCount = serialNumbers.filter((s) => Boolean(s?.trim())).length;
@@ -151,6 +155,12 @@ export function PurchaseLineRow({
               value={detail?.productId}
               onSelect={(selected) => {
                 setValue(`details.${index}.productId`, selected.id, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                // Las métricas de condición dependen de la categoría: al
+                // cambiar de producto no puede sobrevivir lo de la anterior.
+                setValue(`details.${index}.conditionDetails`, null, {
                   shouldValidate: true,
                   shouldDirty: true,
                 });
@@ -301,6 +311,7 @@ export function PurchaseLineRow({
                 getValues={getValues}
                 condition={detail.condition ?? "new"}
                 warrantyMonths={detail.warrantyMonths ?? null}
+                conditionAttributes={conditionAttributes}
                 isOpen={serialsOpen}
                 optionalNumberField={optionalNumberField}
               />

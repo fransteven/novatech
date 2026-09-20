@@ -25,6 +25,7 @@ import {
   WARRANTY_MONTH_PRESETS,
   type ItemCondition,
 } from "@/lib/validators/inventory-validator";
+import type { ConditionAttributeDef } from "@/lib/condition-attributes";
 import { ScanButton } from "@/components/scanner/scan-button";
 import { processBatchSerial } from "@/lib/camera/batch-serial-helper";
 
@@ -36,6 +37,8 @@ interface PurchaseSerialsPanelProps {
   condition: ItemCondition;
   /** Meses de garantía pactados para mercancía no nueva. */
   warrantyMonths: number | null;
+  /** Métricas de condición propias de la categoría del producto. */
+  conditionAttributes: ConditionAttributeDef[];
   duplicateSerials: Set<string>;
   register: UseFormRegister<CreatePurchaseSchema>;
   errors: FieldErrors<CreatePurchaseSchema>;
@@ -54,6 +57,7 @@ export function PurchaseSerialsPanel({
   serialNumbers,
   condition,
   warrantyMonths,
+  conditionAttributes,
   duplicateSerials,
   register,
   errors,
@@ -63,7 +67,8 @@ export function PurchaseSerialsPanel({
   optionalNumberField,
 }: PurchaseSerialsPanelProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const batteryRef = useRef<HTMLInputElement | null>(null);
+  // Primer atributo de condición: destino del Enter tras el último serial.
+  const firstAttributeRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -119,7 +124,7 @@ export function PurchaseSerialsPanel({
       if (serialIndex + 1 < quantity) {
         inputRefs.current[serialIndex + 1]?.focus();
       } else {
-        batteryRef.current?.focus();
+        firstAttributeRef.current?.focus();
       }
     }
   };
@@ -142,7 +147,7 @@ export function PurchaseSerialsPanel({
       if (result.filledIndex + 1 < quantity) {
         inputRefs.current[result.filledIndex + 1]?.focus();
       } else {
-        batteryRef.current?.focus();
+        firstAttributeRef.current?.focus();
       }
     }
     return result.decision;
@@ -167,7 +172,7 @@ export function PurchaseSerialsPanel({
       if (serialIndex + 1 < quantity) {
         inputRefs.current[serialIndex + 1]?.focus();
       } else {
-        batteryRef.current?.focus();
+        firstAttributeRef.current?.focus();
       }
     }
     return result.decision;
@@ -318,40 +323,42 @@ export function PurchaseSerialsPanel({
           </div>
         )}
 
-        <div className="space-y-1">
-          <Label
-            htmlFor={`detail-${lineIndex}-battery`}
-            className="text-[11.5px] text-muted-foreground"
-          >
-            Salud de batería (%)
-          </Label>
-          <Input
-            id={`detail-${lineIndex}-battery`}
-            type="number"
-            min="1"
-            max="100"
-            placeholder="Ej. 95"
-            className="h-8 text-[13px] font-mono"
-            {...register(
-              `details.${lineIndex}.conditionDetails.batteryHealth`,
-              optionalNumberField,
-            )}
-            ref={(element) => {
-              const r = register(
-                `details.${lineIndex}.conditionDetails.batteryHealth`,
-                optionalNumberField,
-              );
-              r.ref(element);
-              batteryRef.current = element;
-            }}
-          />
-          <FieldError
-            message={
-              errors.details?.[lineIndex]?.conditionDetails?.batteryHealth
-                ?.message
-            }
-          />
-        </div>
+        {conditionAttributes.map((attribute, attributeIndex) => {
+          const registration = register(
+            `details.${lineIndex}.conditionDetails.${attribute.key}`,
+            optionalNumberField,
+          );
+
+          return (
+            <div key={attribute.key} className="space-y-1">
+              <Label
+                htmlFor={`detail-${lineIndex}-${attribute.key}`}
+                className="text-[11.5px] text-muted-foreground"
+              >
+                {attribute.label}
+              </Label>
+              <Input
+                id={`detail-${lineIndex}-${attribute.key}`}
+                type="number"
+                min={attribute.min}
+                max={attribute.max}
+                placeholder={attribute.placeholder}
+                className="h-8 text-[13px] font-mono"
+                {...registration}
+                ref={(element) => {
+                  registration.ref(element);
+                  if (attributeIndex === 0) firstAttributeRef.current = element;
+                }}
+              />
+              <FieldError
+                message={
+                  errors.details?.[lineIndex]?.conditionDetails?.[attribute.key]
+                    ?.message
+                }
+              />
+            </div>
+          );
+        })}
 
         <div className="space-y-1">
           <Label

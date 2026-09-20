@@ -50,6 +50,8 @@ export interface CreatedProduct {
   isSerialized: boolean;
   price: string;
   attributes: unknown;
+  /** Nombre de la categoría elegida; el row de products solo trae el id. */
+  categoryName?: string | null;
 }
 
 interface CategoryAttribute {
@@ -153,7 +155,11 @@ export function CreateProductDialog({
         setOpen(false);
         form.reset();
         if (result.data) {
-          onCreated?.(result.data as CreatedProduct);
+          onCreated?.({
+            ...(result.data as CreatedProduct),
+            categoryName:
+              categories.find((c) => c.id === values.categoryId)?.name ?? null,
+          });
         }
       } else {
         toast.error(result.error || "Error al crear el producto");

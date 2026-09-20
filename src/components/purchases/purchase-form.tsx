@@ -19,6 +19,7 @@ import {
 import { createPurchaseAction } from "@/app/actions/purchase-actions";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
 import { findDuplicateSerials, normalizeSerial } from "@/lib/serials";
+import { pickConditionDetails } from "@/lib/condition-attributes";
 import { formatCurrency } from "@/lib/formatters";
 import type { ItemCondition } from "@/lib/validators/inventory-validator";
 import { cn } from "@/lib/utils";
@@ -312,6 +313,11 @@ export function PurchaseForm({
               product?.isSerialized && detail.condition !== "new"
                 ? (detail.warrantyMonths ?? null)
                 : null,
+            // Descarta métricas que no aplican a la categoría (o que quedaron
+            // de un producto elegido antes en esta misma línea).
+            conditionDetails: product?.isSerialized
+              ? pickConditionDetails(detail.conditionDetails, product.categoryName)
+              : null,
           };
         }),
         extraCosts: (values.extraCosts ?? []).filter(
