@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { WarrantyStatusBadge } from "@/components/garantias/warranty-status-badge";
+import { ConditionBadge } from "@/components/inventory/condition-badge";
 import { Button } from "@/components/ui/button";
 import { formatWarrantyDate, formatDocumentNumber } from "@/lib/warranty/format";
 import type { WarrantySearchRow } from "@/services/warranty-service";
@@ -43,7 +44,13 @@ export function WarrantyResultsTable({
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.key}>
-              <TableCell className="font-medium">{row.productName}</TableCell>
+              <TableCell className="font-medium">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {row.productName}
+                  {/* Una cobertura corta se explica con la condición de la unidad. */}
+                  <ConditionBadge condition={row.itemCondition} hideNew />
+                </div>
+              </TableCell>
               <TableCell className="font-mono text-[12.5px]">
                 {row.serialNumber ?? (
                   <span className="text-muted-foreground italic font-sans">

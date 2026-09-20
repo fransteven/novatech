@@ -97,6 +97,11 @@ export const purchaseDetails = pgTable(
     landedUnitCost: decimal("landed_unit_cost", { precision: 14, scale: 2 }),
     lineTotal: decimal("line_total", { precision: 14, scale: 2 }).notNull(),
     serialNumber: text("serial_number"), // Only for serialized
+    // Condición con la que entró la mercancía (new | used | refurbished) y los
+    // meses de garantía pactados para una unidad no nueva. Se copian a
+    // product_items; aquí quedan para que la compra sea auto-contenida.
+    condition: text("condition").default("new").notNull(),
+    warrantyMonths: integer("warranty_months"),
     conditionDetails: jsonb("condition_details"), // Only for serialized
     notes: text("notes"),
   },

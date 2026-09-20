@@ -17,6 +17,7 @@ import {
   resolveItemCost,
 } from "@/services/inventory-service";
 import { formatCurrency } from "@/lib/formatters";
+import type { ItemCondition } from "@/lib/validators/inventory-validator";
 
 /**
  * Search for a product by barcode (SKU or serial number)
@@ -73,6 +74,8 @@ export const searchProduct = async (
       availableQty: productItem.status === "available" ? 1 : 0,
       avgUnitCost: itemCost,
       isSerialized: true,
+      condition: productItem.condition as ItemCondition,
+      itemWarrantyMonths: productItem.warrantyMonths,
       sku: product.sku, // El SKU de la tabla padre
     };
   }

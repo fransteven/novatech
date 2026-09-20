@@ -36,6 +36,37 @@ describe("resolveWarrantyRow — precedencia de meses de cobertura", () => {
     );
   });
 
+  it("la cobertura pactada en la unidad pisa la política del producto", () => {
+    const result = resolveWarrantyRow(
+      { ...base, itemWarrantyMonths: 1, productWarrantyMonths: 12 },
+      now,
+    );
+    expect(result.warrantyMonths).toBe(1);
+  });
+
+  it("una unidad sin override cae en la política del producto", () => {
+    const result = resolveWarrantyRow(
+      { ...base, itemWarrantyMonths: null, productWarrantyMonths: 12 },
+      now,
+    );
+    expect(result.warrantyMonths).toBe(12);
+  });
+
+  it("el snapshot materializado pisa la cobertura de la unidad", () => {
+    const result = resolveWarrantyRow(
+      {
+        ...base,
+        itemWarrantyMonths: 1,
+        productWarrantyMonths: 12,
+        warrantyId: "w1",
+        warrantyMonths: 6,
+        warrantyStatus: "active",
+      },
+      now,
+    );
+    expect(result.warrantyMonths).toBe(6);
+  });
+
   it("el snapshot materializado pisa la política del producto", () => {
     const result = resolveWarrantyRow(
       {

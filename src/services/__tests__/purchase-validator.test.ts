@@ -61,6 +61,68 @@ describe("createPurchaseSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("sin condición explícita, la mercancía entra como nueva", () => {
+    const result = createPurchaseSchema.safeParse(basePayload);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.details[0].condition).toBe("new");
+      expect(result.data.details[0].warrantyMonths).toBeUndefined();
+    }
+  });
+
+  it("acepta condición de segunda con garantía pactada", () => {
+    const result = createPurchaseSchema.safeParse({
+      ...basePayload,
+      details: [
+        {
+          ...basePayload.details[0],
+          condition: "used",
+          warrantyMonths: 1,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.details[0].condition).toBe("used");
+      expect(result.data.details[0].warrantyMonths).toBe(1);
+    }
+  });
+
+  it("rechaza meses de garantía fuera de los presets de la casa", () => {
+    const result = createPurchaseSchema.safeParse({
+      ...basePayload,
+      details: [
+        {
+          ...basePayload.details[0],
+          condition: "used",
+          warrantyMonths: 2,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("una garantía vacía en el formulario es 'sin dato'", () => {
+    const result = createPurchaseSchema.safeParse({
+      ...basePayload,
+      details: [
+        {
+          ...basePayload.details[0],
+          condition: "refurbished",
+          warrantyMonths: "",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.details[0].warrantyMonths).toBeUndefined();
+    }
+  });
+
   it("un monto pagado vacío es una compra a crédito, no un error", () => {
     const result = createPurchaseSchema.safeParse({
       ...basePayload,

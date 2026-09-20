@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ItemCondition } from "@/lib/validators/inventory-validator";
 
 // Schema for searching products by barcode/SKU
 export const searchProductSchema = z.object({
@@ -62,4 +63,8 @@ export type ProductSearchResult = {
   avgUnitCost: number;
   isSerialized: boolean;
   sku: string | null;
+  /** Solo en unidades serializadas: condición de la unidad escaneada. */
+  condition?: ItemCondition;
+  /** Garantía propia de la unidad (unidades no nuevas). */
+  itemWarrantyMonths?: number | null;
 };

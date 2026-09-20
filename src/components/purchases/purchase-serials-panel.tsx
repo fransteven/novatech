@@ -11,6 +11,20 @@ import type { CreatePurchaseSchema } from "@/lib/validators/purchase-validator";
 import { normalizeSerial } from "@/lib/serials";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DEFAULT_CONDITION_WARRANTY,
+  ITEM_CONDITIONS,
+  ITEM_CONDITION_LABELS,
+  WARRANTY_MONTH_PRESETS,
+  type ItemCondition,
+} from "@/lib/validators/inventory-validator";
 import { ScanButton } from "@/components/scanner/scan-button";
 import { processBatchSerial } from "@/lib/camera/batch-serial-helper";
 
@@ -18,6 +32,10 @@ interface PurchaseSerialsPanelProps {
   lineIndex: number;
   quantity: number;
   serialNumbers: string[];
+  /** Condición con la que entra la mercancía de esta línea. */
+  condition: ItemCondition;
+  /** Meses de garantía pactados para mercancía no nueva. */
+  warrantyMonths: number | null;
   duplicateSerials: Set<string>;
   register: UseFormRegister<CreatePurchaseSchema>;
   errors: FieldErrors<CreatePurchaseSchema>;
@@ -34,6 +52,8 @@ export function PurchaseSerialsPanel({
   lineIndex,
   quantity,
   serialNumbers,
+  condition,
+  warrantyMonths,
   duplicateSerials,
   register,
   errors,
@@ -234,6 +254,70 @@ export function PurchaseSerialsPanel({
 
       {/* Metadatos de condición física */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+        <div className="space-y-1">
+          <Label className="text-[11.5px] text-muted-foreground">
+            Condición
+          </Label>
+          <Select
+            value={condition}
+            onValueChange={(value) => {
+              setValue(`details.${lineIndex}.condition`, value as ItemCondition, {
+                shouldDirty: true,
+              });
+              // Preselecciona la cobertura de la casa para esa condición.
+              setValue(
+                `details.${lineIndex}.warrantyMonths`,
+                DEFAULT_CONDITION_WARRANTY[value as ItemCondition] as
+                  | 1
+                  | 3
+                  | 6
+                  | null,
+                { shouldDirty: true },
+              );
+            }}
+          >
+            <SelectTrigger className="h-8 text-[13px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ITEM_CONDITIONS.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {ITEM_CONDITION_LABELS[value]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {condition !== "new" && (
+          <div className="space-y-1">
+            <Label className="text-[11.5px] text-muted-foreground">
+              Garantía de la unidad
+            </Label>
+            <Select
+              value={warrantyMonths ? String(warrantyMonths) : ""}
+              onValueChange={(value) =>
+                setValue(
+                  `details.${lineIndex}.warrantyMonths`,
+                  Number(value) as 1 | 3 | 6,
+                  { shouldDirty: true },
+                )
+              }
+            >
+              <SelectTrigger className="h-8 text-[13px]">
+                <SelectValue placeholder="Meses" />
+              </SelectTrigger>
+              <SelectContent>
+                {WARRANTY_MONTH_PRESETS.map((months) => (
+                  <SelectItem key={months} value={String(months)}>
+                    {months} {months === 1 ? "mes" : "meses"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="space-y-1">
           <Label
             htmlFor={`detail-${lineIndex}-battery`}

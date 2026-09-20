@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  itemConditionSchema,
+  itemWarrantyMonthsSchema,
+} from "@/lib/validators/inventory-validator";
 
 /**
  * Los inputs `type="number"` mandan `""` cuando el usuario los deja o los deja
@@ -45,6 +49,10 @@ const purchaseDetailSchema = z.object({
     .min(1, "Cantidad debe ser mayor a 0"),
   unitCost: amountNumber(z.coerce.number().min(0, "Costo debe ser 0 o mayor")),
   serialNumbers: z.array(z.string()).optional(),
+  // Condición con la que entra la mercancía y, si no es nueva, los meses de
+  // garantía pactados. Se copian a product_items.
+  condition: itemConditionSchema.default("new"),
+  warrantyMonths: z.preprocess(blankAsUndefined, itemWarrantyMonthsSchema),
   conditionDetails: conditionDetailsSchema,
   notes: z.string().optional(),
 });

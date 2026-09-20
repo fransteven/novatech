@@ -67,6 +67,8 @@ export type WarrantySearchRow = {
   sku: string | null;
   productItemId: string | null;
   serialNumber: string | null;
+  /** Condición de la unidad entregada: explica una cobertura más corta. */
+  itemCondition: string | null;
   customerId: string | null;
   customerName: string | null;
   customerDocument: string | null;
@@ -90,6 +92,8 @@ type DeliveryRaw = {
   productSku: string | null;
   itemSku: string | null;
   serialNumber: string | null;
+  itemCondition: string | null;
+  itemWarrantyMonths: number | null;
   productWarrantyMonths: number | null;
   customerId: string | null;
   customerName: string | null;
@@ -168,6 +172,8 @@ const searchSaleDeliveries = async (
       productSku: products.sku,
       itemSku: productItems.sku,
       serialNumber: productItems.serialNumber,
+      itemCondition: productItems.condition,
+      itemWarrantyMonths: productItems.warrantyMonths,
       productWarrantyMonths: products.warrantyMonths,
       customerId: sales.customerId,
       customerName: customers.name,
@@ -219,6 +225,8 @@ const searchLayawayDeliveries = async (
       productSku: products.sku,
       itemSku: productItems.sku,
       serialNumber: productItems.serialNumber,
+      itemCondition: productItems.condition,
+      itemWarrantyMonths: productItems.warrantyMonths,
       productWarrantyMonths: products.warrantyMonths,
       customerId: layaways.customerId,
       customerName: customers.name,
@@ -270,6 +278,7 @@ const toSearchRow = (
     sku: raw.itemSku ?? raw.productSku,
     productItemId: raw.productItemId,
     serialNumber: raw.serialNumber,
+    itemCondition: raw.itemCondition,
     customerId: raw.customerId,
     customerName: raw.customerName,
     customerDocument: raw.customerDocument,
@@ -405,6 +414,8 @@ const saleDeliveryQuery = (extra: SQL) =>
       productSku: products.sku,
       itemSku: productItems.sku,
       serialNumber: productItems.serialNumber,
+      itemCondition: productItems.condition,
+      itemWarrantyMonths: productItems.warrantyMonths,
       productWarrantyMonths: products.warrantyMonths,
       customerId: sales.customerId,
       customerName: customers.name,
@@ -444,6 +455,8 @@ const layawayDeliveryQuery = (extra: SQL) =>
       productSku: products.sku,
       itemSku: productItems.sku,
       serialNumber: productItems.serialNumber,
+      itemCondition: productItems.condition,
+      itemWarrantyMonths: productItems.warrantyMonths,
       productWarrantyMonths: products.warrantyMonths,
       customerId: layaways.customerId,
       customerName: customers.name,

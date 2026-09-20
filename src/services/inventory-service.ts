@@ -8,6 +8,7 @@ import {
 } from "@/db/schema";
 import { eq, desc, sql, or, ilike, inArray, and } from "drizzle-orm";
 import {
+  ItemCondition,
   ReceiveStockInput,
   UpdateSerialItemInput,
 } from "@/lib/validators/inventory-validator";
@@ -28,6 +29,10 @@ export interface ReceiveStockLine {
    */
   unitCosts?: number[];
   serials?: string[];
+  /** Condición de las unidades de esta línea. Por defecto, nuevas. */
+  condition?: ItemCondition;
+  /** Meses de garantía pactados para unidades no nuevas (1, 3 o 6). */
+  warrantyMonths?: number | null;
   conditionDetails?: Record<string, unknown> | null;
   notes?: string | null;
   /** Texto que queda en inventory_movements.reason (ej. "Compra #a1b2c3d4"). */
@@ -158,6 +163,8 @@ export const receiveStockLines = async (
         serialNumber: serial,
         status: "available" as const,
         unitCost: (line.unitCosts?.[unitIndex] ?? line.unitCost).toString(),
+        condition: line.condition ?? "new",
+        warrantyMonths: line.warrantyMonths ?? null,
         conditionDetails: line.conditionDetails ?? null,
         notes: line.notes ?? null,
       },
@@ -233,6 +240,8 @@ export const receiveStock = async ({
   quantity,
   unitCost,
   serials,
+  condition,
+  warrantyMonths,
   batteryHealth,
   notes,
 }: ReceiveStockInput & {
@@ -246,6 +255,8 @@ export const receiveStock = async ({
         quantity,
         unitCost,
         serials,
+        condition,
+        warrantyMonths,
         conditionDetails: batteryHealth ? { batteryHealth } : null,
         notes: notes || null,
         reason: "Stock Received",
@@ -461,6 +472,8 @@ export const getProductSerials = async (productId: string) => {
       sku: productItems.sku,
       status: productItems.status,
       createdAt: productItems.createdAt,
+      condition: productItems.condition,
+      warrantyMonths: productItems.warrantyMonths,
       conditionDetails: productItems.conditionDetails,
       notes: productItems.notes,
       unitCost:
@@ -518,6 +531,8 @@ export const updateSerialItem = async (input: UpdateSerialItemInput) => {
         sku: input.sku,
         status: input.status,
         unitCost: input.unitCost.toString(),
+        condition: input.condition,
+        warrantyMonths: input.warrantyMonths ?? null,
         notes: input.notes ?? null,
         conditionDetails: newConditionDetails,
       })
@@ -546,6 +561,8 @@ export const updateSerialItem = async (input: UpdateSerialItemInput) => {
     compare("sku", current.sku, input.sku);
     compare("status", current.status, input.status);
     compare("unitCost", Number(current.unitCost), input.unitCost);
+    compare("condition", current.condition, input.condition);
+    compare("warrantyMonths", current.warrantyMonths, input.warrantyMonths ?? null);
     compare("notes", current.notes, input.notes ?? null);
     compare("conditionDetails", currentConditionDetails, newConditionDetails);
 

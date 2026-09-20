@@ -299,6 +299,8 @@ export function PurchaseLineRow({
                 errors={errors}
                 setValue={setValue}
                 getValues={getValues}
+                condition={detail.condition ?? "new"}
+                warrantyMonths={detail.warrantyMonths ?? null}
                 isOpen={serialsOpen}
                 optionalNumberField={optionalNumberField}
               />

@@ -26,6 +26,13 @@ import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
 import { normalizeSerial } from "@/lib/serials";
 import { ScanButton } from "@/components/scanner/scan-button";
+import {
+  DEFAULT_CONDITION_WARRANTY,
+  ITEM_CONDITIONS,
+  ITEM_CONDITION_LABELS,
+  WARRANTY_MONTH_PRESETS,
+  type ItemCondition,
+} from "@/lib/validators/inventory-validator";
 
 interface SerialToEdit {
   id: string;
@@ -33,6 +40,8 @@ interface SerialToEdit {
   sku: string | null;
   status: string;
   unitCost?: string | number | null;
+  condition?: string | null;
+  warrantyMonths?: number | null;
   notes?: string | null;
   conditionDetails?: { batteryHealth?: number } | null;
 }
@@ -58,6 +67,8 @@ const toFormState = (item: SerialToEdit) => ({
   unitCost: item.unitCost !== null && item.unitCost !== undefined
     ? String(item.unitCost)
     : "",
+  condition: (item.condition ?? "new") as ItemCondition,
+  warrantyMonths: item.warrantyMonths ? String(item.warrantyMonths) : "",
   batteryHealth: item.conditionDetails?.batteryHealth
     ? String(item.conditionDetails.batteryHealth)
     : "",
@@ -113,6 +124,10 @@ export function EditSerialDialog({
         sku: form.sku.trim() || null,
         status: form.status,
         unitCost: parseFloat(form.unitCost),
+        condition: form.condition,
+        warrantyMonths: form.warrantyMonths
+          ? Number(form.warrantyMonths)
+          : null,
         batteryHealth: form.batteryHealth
           ? parseFloat(form.batteryHealth)
           : undefined,
@@ -246,6 +261,61 @@ export function EditSerialDialog({
               </div>
 
               <div className="space-y-1">
+                <Label>Condición</Label>
+                <Select
+                  value={form.condition}
+                  onValueChange={(v) =>
+                    setForm((f) => {
+                      const preset = DEFAULT_CONDITION_WARRANTY[v as ItemCondition];
+                      return {
+                        ...f,
+                        condition: v as ItemCondition,
+                        // Nuevo vuelve a heredar la garantía del modelo.
+                        warrantyMonths: preset ? String(preset) : "",
+                      };
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_CONDITIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {ITEM_CONDITION_LABELS[value]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {form.condition !== "new" && (
+                <div className="space-y-1">
+                  <Label>Garantía de la unidad</Label>
+                  <Select
+                    value={form.warrantyMonths}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, warrantyMonths: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Meses de cobertura" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WARRANTY_MONTH_PRESETS.map((months) => (
+                        <SelectItem key={months} value={String(months)}>
+                          {months} {months === 1 ? "mes" : "meses"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Pisa la garantía del modelo solo para esta unidad
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-1">
                 <Label htmlFor="batteryHealth">Salud de batería (%)</Label>
                 <Input
                   id="batteryHealth"
@@ -305,6 +375,13 @@ export function EditSerialDialog({
               <p>
                 <span className="text-muted-foreground">Costo:</span>{" "}
                 {form.unitCost}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Condición:</span>{" "}
+                {ITEM_CONDITION_LABELS[form.condition]}
+                {form.condition !== "new" && form.warrantyMonths
+                  ? ` · ${form.warrantyMonths} mes(es) de garantía`
+                  : ""}
               </p>
             </div>
 

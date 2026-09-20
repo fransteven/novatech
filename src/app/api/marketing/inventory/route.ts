@@ -25,6 +25,7 @@ export async function GET(request: Request) {
     const rawInventory = await db
       .select({
         itemId: productItems.id,
+        condition: productItems.condition,
         conditionDetails: productItems.conditionDetails,
         productName: products.name,
         productPrice: products.price,
@@ -59,7 +60,10 @@ export async function GET(request: Request) {
       if (curr.isSerialized) {
         acc[key].availableUnits.push({
           unitId: curr.itemId, // ID interno (UUID), no expone IMEI/Serial real por seguridad
-          condition: curr.conditionDetails,
+          // `condition` es la columna (new | used | refurbished);
+          // `conditionDetails` son las métricas físicas (batería, etc.).
+          condition: curr.condition,
+          conditionDetails: curr.conditionDetails,
         });
       }
 

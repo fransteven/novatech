@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { ClaimDialog } from "@/components/garantias/claim-dialog";
 import { AdjustWarrantyDialog } from "@/components/garantias/adjust-warranty-dialog";
 import { WarrantyStatusBadge } from "@/components/garantias/warranty-status-badge";
+import { ConditionBadge } from "@/components/inventory/condition-badge";
 import { formatWarrantyDate, formatDocumentNumber } from "@/lib/warranty/format";
 import type { WarrantyDetail } from "@/services/warranty-service";
 
@@ -54,6 +55,7 @@ export function WarrantyResultCard({
           />
           <div>
             <p className="font-semibold text-[15px]">{detail.productName}</p>
+            <ConditionBadge condition={detail.itemCondition} hideNew className="mt-1" />
             <p className="text-[12.5px] text-muted-foreground font-mono mt-0.5">
               {detail.serialNumber ?? detail.sku ?? "Sin serial"}
             </p>

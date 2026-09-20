@@ -17,6 +17,7 @@ import {
   type ReceiveStockLine,
 } from "@/services/inventory-service";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
+import type { ItemCondition } from "@/lib/validators/inventory-validator";
 import { formatCurrency } from "@/lib/formatters";
 
 export interface PurchaseDetailInput {
@@ -25,6 +26,10 @@ export interface PurchaseDetailInput {
   unitCost: number;
   /** Sólo para productos serializados; el servidor decide si aplican. */
   serialNumbers?: string[];
+  /** Condición con la que entra la mercancía. Por defecto, nueva. */
+  condition?: ItemCondition;
+  /** Meses de garantía pactados para mercancía no nueva (1, 3 o 6). */
+  warrantyMonths?: number | null;
   conditionDetails?: { batteryHealth?: number } | null;
   notes?: string;
 }
@@ -273,6 +278,8 @@ export const PurchaseService = {
           unitCost: allocation.lines[index].landedUnitCost,
           unitCosts: allocation.lines[index].landedUnitCosts,
           serials: detail.serialNumbers,
+          condition: detail.condition,
+          warrantyMonths: detail.warrantyMonths,
           conditionDetails: detail.conditionDetails ?? null,
           notes: detail.notes ?? null,
           reason,
@@ -299,6 +306,8 @@ export const PurchaseService = {
               ).toString(),
               lineTotal: detail.unitCost.toString(),
               serialNumber: item.serialNumber,
+              condition: detail.condition ?? "new",
+              warrantyMonths: detail.warrantyMonths ?? null,
               conditionDetails: detail.conditionDetails ?? null,
               notes: detail.notes,
             }));
@@ -314,6 +323,9 @@ export const PurchaseService = {
               landedUnitCost: line.landedUnitCost.toString(),
               lineTotal: line.lineTotal.toString(),
               serialNumber: null,
+              // Las líneas genéricas (accesorios) no tienen unidad física: nuevas.
+              condition: "new",
+              warrantyMonths: null,
               conditionDetails: null,
               notes: detail.notes,
             },

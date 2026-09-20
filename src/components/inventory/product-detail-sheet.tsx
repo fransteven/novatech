@@ -17,6 +17,7 @@ import { Copy, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { EditSerialDialog } from "./edit-serial-dialog";
+import { ConditionBadge } from "./condition-badge";
 import { formatCurrency } from "@/lib/formatters";
 
 interface ProductDetailSheetProps {
@@ -36,6 +37,8 @@ interface Serial {
   serialNumber: string | null;
   sku: string | null;
   status: string;
+  condition?: string | null;
+  warrantyMonths?: number | null;
   conditionDetails?: any;
   notes?: string | null;
   unitCost?: string | number | null;
@@ -176,6 +179,11 @@ export function ProductDetailSheet({
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
+                            <ConditionBadge
+                              condition={serial.condition}
+                              warrantyMonths={serial.warrantyMonths}
+                              className="w-fit text-[10px] px-1 h-5"
+                            />
                             {serial.conditionDetails?.batteryHealth && (
                               <Badge variant="outline" className="w-fit text-[10px] px-1 h-5">
                                 🔋 {serial.conditionDetails.batteryHealth}%
@@ -185,9 +193,6 @@ export function ProductDetailSheet({
                               <span className="text-[10px] text-muted-foreground line-clamp-1 max-w-[120px]" title={serial.notes}>
                                 📝 {serial.notes}
                               </span>
-                            )}
-                            {!serial.conditionDetails?.batteryHealth && !serial.notes && (
-                              <span className="text-muted-foreground">—</span>
                             )}
                           </div>
                         </TableCell>

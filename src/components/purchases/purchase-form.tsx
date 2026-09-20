@@ -20,6 +20,7 @@ import { createPurchaseAction } from "@/app/actions/purchase-actions";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
 import { findDuplicateSerials, normalizeSerial } from "@/lib/serials";
 import { formatCurrency } from "@/lib/formatters";
+import type { ItemCondition } from "@/lib/validators/inventory-validator";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,8 @@ const emptyLine = {
   quantity: 1,
   unitCost: 0,
   serialNumbers: [] as string[],
+  condition: "new" as ItemCondition,
+  warrantyMonths: null,
   conditionDetails: null,
   notes: "",
 };
@@ -303,6 +306,12 @@ export function PurchaseForm({
                   .map(normalizeSerial)
                   .filter(Boolean)
               : undefined,
+            // Los no serializados no generan unidad física: entran como nuevos.
+            condition: product?.isSerialized ? detail.condition : "new",
+            warrantyMonths:
+              product?.isSerialized && detail.condition !== "new"
+                ? (detail.warrantyMonths ?? null)
+                : null,
           };
         }),
         extraCosts: (values.extraCosts ?? []).filter(
@@ -507,6 +516,7 @@ export function PurchaseForm({
                       productId: "",
                       quantity: 1,
                       unitCost: 0,
+                      condition: "new",
                     }
                   }
                   lineAllocation={allocation.lines[index]}

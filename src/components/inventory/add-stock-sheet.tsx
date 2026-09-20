@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -48,6 +48,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DEFAULT_CONDITION_WARRANTY,
+  ITEM_CONDITIONS,
+  ITEM_CONDITION_LABELS,
+  WARRANTY_MONTH_PRESETS,
+  type ItemCondition,
+} from "@/lib/validators/inventory-validator";
 
 interface AddStockSheetProps {
   products: ProductWithStock[];
@@ -64,6 +78,10 @@ const createFormSchema = (isSerialized: boolean) =>
     serials: isSerialized
       ? z.array(z.string().min(1, "El IMEI no puede estar vacío"))
       : z.array(z.string()).optional(),
+    condition: z.enum(ITEM_CONDITIONS),
+    warrantyMonths: z
+      .union([z.literal("1"), z.literal("3"), z.literal("6"), z.literal("")])
+      .optional(),
     batteryHealth: z.coerce.number().min(1).max(100).optional(),
     notes: z.string().optional(),
   });
@@ -90,10 +108,15 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
       quantity: "",
       unitCost: "",
       serials: [],
+      condition: "new",
+      warrantyMonths: "",
       batteryHealth: "",
       notes: "",
     },
   });
+
+  // La garantía por unidad solo aplica a equipos no nuevos.
+  const condition = useWatch({ control: form.control, name: "condition" });
 
   const handleContinuousScan = (scannedValue: string) => {
     const current = (form.getValues("serials") as string[]) || [];
@@ -148,6 +171,13 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
       quantity: values.quantity,
       unitCost: values.unitCost,
       serials: selectedProduct?.isSerialized ? values.serials : undefined,
+      // La condición y la garantía son de la unidad física: los no
+      // serializados no tienen fila en product_items y entran como nuevos.
+      condition: selectedProduct?.isSerialized ? values.condition : "new",
+      warrantyMonths:
+        selectedProduct?.isSerialized && values.warrantyMonths
+          ? Number(values.warrantyMonths)
+          : null,
       batteryHealth: selectedProduct?.isSerialized ? values.batteryHealth : undefined,
       notes: selectedProduct?.isSerialized ? values.notes : undefined,
     });
@@ -371,6 +401,81 @@ export function AddStockSheet({ products }: AddStockSheetProps) {
                     <div className="space-y-4 border border-border rounded-[10px] p-3 bg-muted/30">
                       <h4 className="font-medium text-sm border-b border-border pb-2">Condición de la Instancia</h4>
                       <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="condition"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Condición</FormLabel>
+                              <Select
+                                value={field.value}
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // Preselecciona la cobertura de la casa para
+                                  // esa condición; el usuario puede cambiarla.
+                                  const preset =
+                                    DEFAULT_CONDITION_WARRANTY[
+                                      value as ItemCondition
+                                    ];
+                                  form.setValue(
+                                    "warrantyMonths",
+                                    preset ? String(preset) : "",
+                                  );
+                                }}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar condición" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {ITEM_CONDITIONS.map((value) => (
+                                    <SelectItem key={value} value={value}>
+                                      {ITEM_CONDITION_LABELS[value]}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {condition !== "new" && (
+                          <FormField
+                            control={form.control}
+                            name="warrantyMonths"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Garantía de la unidad</FormLabel>
+                                <Select
+                                  value={field.value || ""}
+                                  onValueChange={field.onChange}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Meses de cobertura" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {WARRANTY_MONTH_PRESETS.map((months) => (
+                                      <SelectItem
+                                        key={months}
+                                        value={String(months)}
+                                      >
+                                        {months} {months === 1 ? "mes" : "meses"}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                  Pisa la garantía del modelo solo para estas
+                                  unidades
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
                         <FormField
                           control={form.control}
                           name="batteryHealth"

@@ -61,6 +61,14 @@ export const productItems = pgTable(
       .default("0"),
 
     // --- CONDICIÓN DE LA INSTANCIA FÍSICA ---
+    // new | used | refurbished. Es de la unidad física, no del catálogo: el
+    // mismo modelo convive nuevo y de segunda con costo, precio y garantía
+    // distintos. Los productos no serializados no tienen fila aquí: se asumen
+    // nuevos.
+    condition: text("condition").default("new").notNull(),
+    // Override de cobertura para unidades no nuevas (1, 3 o 6 meses).
+    // Null = política del modelo (products.warranty_months) o de la casa.
+    warrantyMonths: integer("warranty_months"),
     conditionDetails: jsonb("condition_details"), // Almacena métricas variables ej: { batteryHealth: 85, grade: 'B' }
     notes: text("notes"), // Descripciones cualitativas ej: "Rasguño en display"
 
@@ -73,6 +81,7 @@ export const productItems = pgTable(
       .on(table.serialNumber)
       .where(sql`${table.serialNumber} IS NOT NULL`),
     index("product_items_product_id_idx").on(table.productId),
+    index("product_items_condition_idx").on(table.condition),
   ],
 );
 

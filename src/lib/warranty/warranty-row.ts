@@ -14,6 +14,8 @@ export type WarrantyStatus = "vigente" | "vencida" | "sin_cobertura";
  */
 export type RawWarrantyRow = {
   deliveredAt: Date | string;
+  /** Override de la unidad física (equipos de segunda / reacondicionados). */
+  itemWarrantyMonths?: number | null;
   productWarrantyMonths: number | null;
   warrantyId: string | null;
   warrantyStartDate: Date | string | null;
@@ -39,6 +41,8 @@ const toDate = (value: Date | string): Date =>
  *
  * Precedencia de los meses de garantía:
  *   `warranties.warranty_months` (snapshot al materializar)
+ *   → `product_items.warranty_months` (cobertura pactada para esa unidad:
+ *      los equipos de segunda salen con menos meses que un nuevo)
  *   → `products.warranty_months` (política del modelo)
  *   → `DEFAULT_WARRANTY_MONTHS` (política de la casa).
  *
@@ -55,7 +59,10 @@ export const resolveWarrantyRow = (
     : toDate(row.deliveredAt);
 
   const warrantyMonths =
-    row.warrantyMonths ?? row.productWarrantyMonths ?? DEFAULT_WARRANTY_MONTHS;
+    row.warrantyMonths ??
+    row.itemWarrantyMonths ??
+    row.productWarrantyMonths ??
+    DEFAULT_WARRANTY_MONTHS;
 
   const { expiryDate, status, daysRemaining } = computeWarrantyExpiry(
     startDate,

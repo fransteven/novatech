@@ -50,6 +50,8 @@ export async function receiveStockAction(
       quantity: validationResult.data.quantity,
       unitCost: validationResult.data.unitCost,
       serials: validationResult.data.serials,
+      condition: validationResult.data.condition,
+      warrantyMonths: validationResult.data.warrantyMonths,
       batteryHealth: validationResult.data.batteryHealth,
       notes: validationResult.data.notes,
     });

@@ -19,6 +19,7 @@ import { searchProductAction } from "@/app/actions/pos-action";
 import type { ProductSearchResult } from "@/lib/validators/pos-validator";
 import { ScanButton } from "@/components/scanner/scan-button";
 import { formatCurrency } from "@/lib/formatters";
+import { ConditionBadge } from "@/components/inventory/condition-badge";
 
 interface PosProductListProps {
   onAddToCart: (item: {
@@ -197,6 +198,14 @@ export function PosProductList({ onAddToCart }: PosProductListProps) {
                       >
                         {result.isSerialized ? "Serializado" : "No Serializado"}
                       </Badge>
+                      {/* La condición manda sobre el precio sugerido: un
+                          equipo de segunda no se cobra como nuevo. */}
+                      <ConditionBadge
+                        condition={result.condition}
+                        warrantyMonths={result.itemWarrantyMonths}
+                        hideNew
+                        className="text-[10px]"
+                      />
                       {result.sku && (
                         <span className="font-mono text-[11px] text-muted-foreground opacity-70">
                           SKU: {result.sku}
