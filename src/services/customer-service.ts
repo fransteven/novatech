@@ -41,3 +41,21 @@ export const getCustomerById = async (id: string) => {
     
   return result[0] || null;
 };
+
+export const updateCustomer = async (
+  id: string,
+  data: Partial<CustomerInput>,
+) => {
+  const [updated] = await db
+    .update(customers)
+    .set({
+      ...(data.documentId !== undefined && { documentId: data.documentId }),
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.phone !== undefined && { phone: data.phone || null }),
+      ...(data.email !== undefined && { email: data.email || null }),
+    })
+    .where(eq(customers.id, id))
+    .returning();
+
+  return updated || null;
+};

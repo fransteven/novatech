@@ -1,6 +1,11 @@
 "use server";
 
-import { createCustomer, searchCustomers, getCustomerById } from "@/services/customer-service";
+import {
+  createCustomer,
+  searchCustomers,
+  getCustomerById,
+  updateCustomer,
+} from "@/services/customer-service";
 import { customerSchema } from "@/lib/validators/customer-validator";
 
 export async function createCustomerAction(data: unknown) {
@@ -43,5 +48,32 @@ export async function getCustomerAction(id: string) {
   } catch (error) {
     console.error("Error getting customer:", error);
     return { success: false, error: "Error al obtener cliente." };
+  }
+}
+
+export async function updateCustomerAction(id: string, data: unknown) {
+  const partialSchema = customerSchema.partial();
+  const validation = partialSchema.safeParse(data);
+
+  if (!validation.success) {
+    return { success: false, error: validation.error.issues[0].message };
+  }
+
+  try {
+    const customer = await updateCustomer(id, validation.data);
+    if (!customer) {
+      return { success: false, error: "Cliente no encontrado." };
+    }
+    return { success: true, data: customer };
+  } catch (error) {
+    const dbError = error as { code?: string };
+    if (dbError.code === "23505") {
+      return {
+        success: false,
+        error: "Ya existe un cliente con ese documento.",
+      };
+    }
+    console.error("Error updating customer:", error);
+    return { success: false, error: "Error al actualizar el cliente." };
   }
 }
