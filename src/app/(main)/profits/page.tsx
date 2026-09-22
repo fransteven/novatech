@@ -51,10 +51,12 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
         actions={<YearPicker year={year} />}
       />
 
-      <ProfitsKPIs kpis={kpis} />
+      <ProfitsKPIs kpis={kpis} periodLabel={`Año ${selectedYear}`} />
 
       <div>
-        <h2 className="text-[15px] font-semibold mb-3">Desglose Mensual — {selectedYear}</h2>
+        <h2 className="mb-3 text-[15px] font-semibold">
+          Desglose Mensual — {selectedYear}
+        </h2>
         <MonthlyProfitsTable data={monthlyData} year={selectedYear} />
       </div>
     </PageShell>
