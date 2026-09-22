@@ -246,12 +246,15 @@ async function completeLayaway(
     // liquidado se reportaba al 100% (profits-service resta sale_details.unit_cost).
     const unitCost = await resolveLayawayItemCost(item, tx);
 
+    // `agreedPrice` y `unitCost` son unitarios: sin `quantity` una línea de N
+    // unidades reportaría el ingreso y el costo de una sola.
     await tx.insert(saleDetails).values({
       saleId: sale.id,
       productId: item.productId,
       productItemId: item.productItemId,
       price: item.agreedPrice,
       unitCost: toDbString(unitCost),
+      quantity: item.productItemId ? 1 : item.quantity,
     });
 
     if (item.productItemId) {
@@ -972,24 +975,33 @@ export const cancelLayaway = async (
       saleId = sale.id;
     }
 
-    // Con varios ítems, lo retenido se reparte a prorrata del precio pactado;
-    // el último absorbe el residuo del redondeo para que sume exacto.
+    // Con varios ítems, lo retenido se reparte a prorrata del valor de línea
+    // (precio pactado x unidades); el último absorbe el residuo del redondeo.
     const agreedTotal = details.reduce(
-      (acc, d) => acc + Number(d.agreedPrice),
+      (acc, d) => acc + Number(d.agreedPrice) * d.quantity,
       0
     );
     let allocated = 0;
 
     for (const [index, item] of details.entries()) {
       const isLastItem = index === details.length - 1;
+      const lineUnits = item.productItemId ? 1 : item.quantity;
       const itemRevenue = isLastItem
         ? roundCOP(sub(retainedCapital, allocated)).toNumber()
         : roundCOP(
             money(retainedCapital)
-              .times(Number(item.agreedPrice))
+              .times(Number(item.agreedPrice) * item.quantity)
               .dividedBy(agreedTotal || 1)
           ).toNumber();
-      allocated = roundCOP(money(allocated).plus(itemRevenue)).toNumber();
+      // sale_details.price es unitario. Al repartir entre las unidades de la
+      // línea el redondeo puede dejar hasta (unidades - 1) pesos de residuo,
+      // que se acumulan en `allocated` para que el último ítem los absorba.
+      const unitRevenue = roundCOP(
+        money(itemRevenue).dividedBy(lineUnits)
+      ).toNumber();
+      allocated = roundCOP(
+        money(allocated).plus(unitRevenue * lineUnits)
+      ).toNumber();
 
       const unitCost = await resolveLayawayItemCost(item, tx);
 
@@ -1019,9 +1031,10 @@ export const cancelLayaway = async (
           productId: item.productId,
           productItemId: item.productItemId,
           // El precio pactado nunca se cobró completo; el ingreso real es lo
-          // que quedó en caja.
-          price: toDbString(itemRevenue),
+          // que quedó en caja, repartido entre las unidades de la línea.
+          price: toDbString(unitRevenue),
           unitCost: toDbString(unitCost),
+          quantity: lineUnits,
         });
       }
 

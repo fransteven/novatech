@@ -69,7 +69,15 @@ export const createPurchaseSchema = z
   .object({
     idempotencyKey: z.string().uuid(),
     providerId: z.string().uuid("Proveedor requerido"),
-    purchaseDate: z.coerce.date().optional(),
+    // Una compra no puede registrarse con fecha futura: ensucia los reportes de
+    // compras y el costo aterrizado de un período que todavía no ocurrió. Se
+    // tolera el resto del día en curso para cubrir desfases de zona horaria.
+    purchaseDate: z.coerce
+      .date()
+      .refine((date) => date.getTime() <= Date.now() + 24 * 60 * 60 * 1000, {
+        message: "La fecha de compra no puede ser futura",
+      })
+      .optional(),
     invoiceNumber: z.string().optional(),
     notes: z.string().optional(),
     details: z

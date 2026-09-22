@@ -12,8 +12,14 @@ import {
   loans,
   loanPayments,
 } from "@/db/schema";
-import { sql, and, gte, lte, eq, gt, desc } from "drizzle-orm";
-import { startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { sql, and, gte, lt, ne, or, isNull, eq, desc } from "drizzle-orm";
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  addMilliseconds,
+} from "date-fns";
 
 type DateRange = { from: Date; to: Date };
 
@@ -22,14 +28,77 @@ export function getDefaultDateRange(): DateRange {
   return { from: startOfMonth(now), to: endOfMonth(now) };
 }
 
+/**
+ * `to` llega como fin de período inclusivo (23:59:59.999), pero las columnas
+ * son timestamps con precisión de microsegundos: una fila en .9995 caía fuera
+ * del `lte`. Todos los filtros usan `>= from AND < toExclusive`.
+ */
+const toExclusiveBound = (to: Date) => addMilliseconds(to, 1);
+
+/** Ingreso y costo de una línea: `price`/`unit_cost` son unitarios. */
+const lineRevenueSql = sql`CAST(${saleDetails.price} AS DECIMAL) * ${saleDetails.quantity}`;
+const lineCostSql = sql`CAST(${saleDetails.unitCost} AS DECIMAL) * ${saleDetails.quantity}`;
+
+/**
+ * Capital insoluto de préstamos al cierre del período, no "a hoy".
+ *
+ * Antes la tarjeta sumaba `loans.outstanding_principal` de los préstamos activos
+ * ignorando el rango de fechas, así que un reporte de un mes cerrado mostraba la
+ * cartera del día de consulta. Aquí se reconstruye a la fecha de corte:
+ * capital desembolsado menos el capital abonado hasta ese momento.
+ *
+ * `asOfExclusive` es el límite superior exclusivo del período.
+ */
+const getLoanPortfolioAsOf = async (asOfExclusive: Date): Promise<number> => {
+  const loanRows = await db
+    .select({
+      id: loans.id,
+      principal: loans.principalAmount,
+    })
+    .from(loans)
+    .where(
+      and(
+        lt(loans.disbursedAt, asOfExclusive),
+        ne(loans.status, "cancelled"),
+        // Un préstamo castigado deja de ser cartera desde que se castiga, pero
+        // seguía siéndolo en los períodos anteriores al castigo.
+        or(
+          isNull(loans.writtenOffAt),
+          gte(loans.writtenOffAt, asOfExclusive),
+        ),
+      ),
+    );
+
+  if (loanRows.length === 0) return 0;
+
+  const paidRows = await db
+    .select({
+      loanId: loanPayments.loanId,
+      principalPaid: sql<number>`COALESCE(SUM(CAST(${loanPayments.principalPortion} AS DECIMAL)), 0)`,
+    })
+    .from(loanPayments)
+    .where(lt(loanPayments.createdAt, asOfExclusive))
+    .groupBy(loanPayments.loanId);
+
+  const paidByLoan = new Map(
+    paidRows.map((r) => [r.loanId, Number(r.principalPaid)]),
+  );
+
+  return loanRows.reduce((acc, loan) => {
+    const outstanding = Number(loan.principal) - (paidByLoan.get(loan.id) ?? 0);
+    return acc + Math.max(outstanding, 0);
+  }, 0);
+};
+
 export const getProfitsKPIs = async (range?: DateRange) => {
   const { from, to } = range ?? getDefaultDateRange();
+  const toExclusive = toExclusiveBound(to);
 
   const revenueResult = await db
     .select({
-      totalRevenue: sql<number>`COALESCE(SUM(CAST(${saleDetails.price} AS DECIMAL)), 0)`,
-      totalCost: sql<number>`COALESCE(SUM(CAST(${saleDetails.unitCost} AS DECIMAL)), 0)`,
-      totalSold: sql<number>`COUNT(${saleDetails.id})`,
+      totalRevenue: sql<number>`COALESCE(SUM(${lineRevenueSql}), 0)`,
+      totalCost: sql<number>`COALESCE(SUM(${lineCostSql}), 0)`,
+      totalSold: sql<number>`COALESCE(SUM(${saleDetails.quantity}), 0)`,
     })
     .from(saleDetails)
     .innerJoin(sales, eq(saleDetails.saleId, sales.id))
@@ -37,7 +106,7 @@ export const getProfitsKPIs = async (range?: DateRange) => {
       and(
         eq(sales.status, "completed"),
         gte(sales.createdAt, from),
-        lte(sales.createdAt, to),
+        lt(sales.createdAt, toExclusive),
       ),
     );
 
@@ -46,7 +115,7 @@ export const getProfitsKPIs = async (range?: DateRange) => {
       total: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`,
     })
     .from(expenses)
-    .where(and(gte(expenses.date, from), lte(expenses.date, to)));
+    .where(and(gte(expenses.date, from), lt(expenses.date, toExclusive)));
 
   const interestResult = await db
     .select({
@@ -55,7 +124,7 @@ export const getProfitsKPIs = async (range?: DateRange) => {
     .from(layawayPayments)
     .where(and(
       gte(layawayPayments.createdAt, from),
-      lte(layawayPayments.createdAt, to),
+      lt(layawayPayments.createdAt, toExclusive),
     ));
 
   const loanInterestResult = await db
@@ -65,22 +134,17 @@ export const getProfitsKPIs = async (range?: DateRange) => {
     .from(loanPayments)
     .where(and(
       gte(loanPayments.createdAt, from),
-      lte(loanPayments.createdAt, to),
+      lt(loanPayments.createdAt, toExclusive),
     ));
 
-  const activeLoansResult = await db
-    .select({
-      total: sql<number>`COALESCE(SUM(CAST(${loans.outstandingPrincipal} AS DECIMAL)), 0)`,
-    })
-    .from(loans)
-    .where(eq(loans.status, "active"));
+  const activeLoanPortfolio = await getLoanPortfolioAsOf(toExclusive);
 
   const otherIncomeResult = await db
     .select({
       total: sql<number>`COALESCE(SUM(CAST(${otherIncome.amount} AS DECIMAL)), 0)`,
     })
     .from(otherIncome)
-    .where(and(gte(otherIncome.date, from), lte(otherIncome.date, to)));
+    .where(and(gte(otherIncome.date, from), lt(otherIncome.date, toExclusive)));
 
   const salesRevenue = Number(revenueResult[0]?.totalRevenue ?? 0);
   const totalCost = Number(revenueResult[0]?.totalCost ?? 0);
@@ -90,7 +154,6 @@ export const getProfitsKPIs = async (range?: DateRange) => {
     Number(interestResult[0]?.total ?? 0) +
     Number(loanInterestResult[0]?.total ?? 0);
   const otherIncomeTotal = Number(otherIncomeResult[0]?.total ?? 0);
-  const activeLoanPortfolio = Number(activeLoansResult[0]?.total ?? 0);
 
   // El interés de créditos y préstamos es ingreso operativo, no un extra: entra al
   // ingreso total y al margen bruto. Sin costo asociado, así que suma completo a la utilidad.
@@ -120,13 +183,13 @@ export const getProfitsKPIs = async (range?: DateRange) => {
 
 export const getMonthlyProfits = async (year: number) => {
   const from = startOfYear(new Date(year, 0, 1));
-  const to = endOfYear(new Date(year, 0, 1));
+  const toExclusive = toExclusiveBound(endOfYear(new Date(year, 0, 1)));
 
   const revenueRows = await db
     .select({
       month: sql<number>`EXTRACT(MONTH FROM ${sales.createdAt})`,
-      totalRevenue: sql<number>`COALESCE(SUM(CAST(${saleDetails.price} AS DECIMAL)), 0)`,
-      totalCost: sql<number>`COALESCE(SUM(CAST(${saleDetails.unitCost} AS DECIMAL)), 0)`,
+      totalRevenue: sql<number>`COALESCE(SUM(${lineRevenueSql}), 0)`,
+      totalCost: sql<number>`COALESCE(SUM(${lineCostSql}), 0)`,
     })
     .from(saleDetails)
     .innerJoin(sales, eq(saleDetails.saleId, sales.id))
@@ -134,7 +197,7 @@ export const getMonthlyProfits = async (year: number) => {
       and(
         eq(sales.status, "completed"),
         gte(sales.createdAt, from),
-        lte(sales.createdAt, to),
+        lt(sales.createdAt, toExclusive),
       ),
     )
     .groupBy(sql`EXTRACT(MONTH FROM ${sales.createdAt})`);
@@ -145,7 +208,7 @@ export const getMonthlyProfits = async (year: number) => {
       totalExpenses: sql<number>`COALESCE(SUM(CAST(${expenses.amount} AS DECIMAL)), 0)`,
     })
     .from(expenses)
-    .where(and(gte(expenses.date, from), lte(expenses.date, to)))
+    .where(and(gte(expenses.date, from), lt(expenses.date, toExclusive)))
     .groupBy(sql`EXTRACT(MONTH FROM ${expenses.date})`);
 
   const interestRows = await db
@@ -154,7 +217,7 @@ export const getMonthlyProfits = async (year: number) => {
       totalInterest: sql<number>`COALESCE(SUM(CAST(${layawayPayments.interestPortion} AS DECIMAL)), 0)`,
     })
     .from(layawayPayments)
-    .where(and(gte(layawayPayments.createdAt, from), lte(layawayPayments.createdAt, to)))
+    .where(and(gte(layawayPayments.createdAt, from), lt(layawayPayments.createdAt, toExclusive)))
     .groupBy(sql`EXTRACT(MONTH FROM ${layawayPayments.createdAt})`);
 
   const loanInterestRows = await db
@@ -163,7 +226,7 @@ export const getMonthlyProfits = async (year: number) => {
       totalInterest: sql<number>`COALESCE(SUM(CAST(${loanPayments.interestPortion} AS DECIMAL)), 0)`,
     })
     .from(loanPayments)
-    .where(and(gte(loanPayments.createdAt, from), lte(loanPayments.createdAt, to)))
+    .where(and(gte(loanPayments.createdAt, from), lt(loanPayments.createdAt, toExclusive)))
     .groupBy(sql`EXTRACT(MONTH FROM ${loanPayments.createdAt})`);
 
   const otherIncomeRows = await db
@@ -172,7 +235,7 @@ export const getMonthlyProfits = async (year: number) => {
       total: sql<number>`COALESCE(SUM(CAST(${otherIncome.amount} AS DECIMAL)), 0)`,
     })
     .from(otherIncome)
-    .where(and(gte(otherIncome.date, from), lte(otherIncome.date, to)))
+    .where(and(gte(otherIncome.date, from), lt(otherIncome.date, toExclusive)))
     .groupBy(sql`EXTRACT(MONTH FROM ${otherIncome.date})`);
 
   const expensesByMonth = new Map(
@@ -229,7 +292,7 @@ export const getMonthlyProfits = async (year: number) => {
  */
 export const getMonthlyProfitBreakdown = async (year: number, month: number) => {
   const from = startOfMonth(new Date(year, month - 1, 1));
-  const to = endOfMonth(new Date(year, month - 1, 1));
+  const toExclusive = toExclusiveBound(endOfMonth(new Date(year, month - 1, 1)));
 
   const saleRows = await db
     .select({
@@ -240,6 +303,7 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
       customerName: customers.name,
       price: saleDetails.price,
       unitCost: saleDetails.unitCost,
+      quantity: saleDetails.quantity,
     })
     .from(saleDetails)
     .innerJoin(sales, eq(saleDetails.saleId, sales.id))
@@ -249,7 +313,7 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
       and(
         eq(sales.status, "completed"),
         gte(sales.createdAt, from),
-        lte(sales.createdAt, to),
+        lt(sales.createdAt, toExclusive),
       ),
     )
     .orderBy(desc(sales.createdAt));
@@ -264,9 +328,13 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
     })
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(gte(expenses.date, from), lte(expenses.date, to)))
+    .where(and(gte(expenses.date, from), lt(expenses.date, toExclusive)))
     .orderBy(desc(expenses.date));
 
+  // Sin filtrar por interés > 0: el desglose es la pista de auditoría del mes,
+  // y esconder los abonos a capital hacía imposible cuadrarlo contra la caja
+  // (16 pagos cobrados, 7 listados). El total de la sección sigue siendo la
+  // suma de `interestPortion`, que es lo que entra a la fila mensual.
   const interestRows = await db
     .select({
       id: layawayPayments.id,
@@ -282,8 +350,7 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
     .where(
       and(
         gte(layawayPayments.createdAt, from),
-        lte(layawayPayments.createdAt, to),
-        gt(sql`CAST(${layawayPayments.interestPortion} AS DECIMAL)`, 0),
+        lt(layawayPayments.createdAt, toExclusive),
       ),
     )
     .orderBy(desc(layawayPayments.createdAt));
@@ -303,8 +370,7 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
     .where(
       and(
         gte(loanPayments.createdAt, from),
-        lte(loanPayments.createdAt, to),
-        gt(sql`CAST(${loanPayments.interestPortion} AS DECIMAL)`, 0),
+        lt(loanPayments.createdAt, toExclusive),
       ),
     )
     .orderBy(desc(loanPayments.createdAt));
@@ -337,22 +403,28 @@ export const getMonthlyProfitBreakdown = async (year: number, month: number) => 
       amount: otherIncome.amount,
     })
     .from(otherIncome)
-    .where(and(gte(otherIncome.date, from), lte(otherIncome.date, to)))
+    .where(and(gte(otherIncome.date, from), lt(otherIncome.date, toExclusive)))
     .orderBy(desc(otherIncome.date));
 
   return {
     sales: saleRows.map((r) => {
-      const price = Number(r.price);
+      const unitPrice = Number(r.price);
       const unitCost = Number(r.unitCost);
+      const quantity = r.quantity;
+      // `price` y `unitCost` son unitarios; lo que cuadra contra la fila
+      // mensual es el valor de línea.
       return {
         id: r.id,
         saleId: r.saleId,
         createdAt: r.createdAt,
         productName: r.productName,
         customerName: r.customerName,
-        price,
+        quantity,
+        unitPrice,
         unitCost,
-        profit: price - unitCost,
+        price: unitPrice * quantity,
+        cost: unitCost * quantity,
+        profit: (unitPrice - unitCost) * quantity,
       };
     }),
     expenses: expenseRows.map((r) => ({

@@ -192,6 +192,14 @@ export const processSale = async ({
         );
       }
 
+      // Una unidad serializada es una unidad física: con cantidad > 1 el
+      // movimiento de inventario sacaría stock que no existe.
+      if (item.isSerialized && item.quantity !== 1) {
+        throw new Error(
+          `Un producto serializado sólo puede venderse de a una unidad (recibido: ${item.quantity}).`,
+        );
+      }
+
       let itemCost = 0;
       let avgUnitCost = 0;
 
@@ -265,6 +273,9 @@ export const processSale = async ({
       }
 
       // Insert sale detail
+      // `price` y `unitCost` son unitarios; las unidades van en `quantity`, o el
+      // reporte de ganancias sólo contaría una unidad por línea. Las líneas
+      // serializadas son siempre 1 (una fila por unidad física).
       await tx.insert(saleDetails).values({
         saleId: sale.id,
         productId: item.productId,
@@ -273,6 +284,7 @@ export const processSale = async ({
           ? itemCost!.toString()
           : avgUnitCost!.toString(),
         price: item.price.toString(),
+        quantity: item.isSerialized ? 1 : item.quantity,
       });
 
       // If product is serialized, update the product item status to 'sold'
@@ -288,7 +300,7 @@ export const processSale = async ({
         productItemId: item.productItemId || null,
         productId: item.productId,
         type: "OUT",
-        quantity: item.quantity,
+        quantity: item.isSerialized ? 1 : item.quantity,
         unitCost: item.isSerialized
           ? itemCost!.toString()
           : avgUnitCost!.toString(), // Using actual cost instead of sale price

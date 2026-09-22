@@ -19,7 +19,9 @@ import { formatCurrency } from "@/lib/formatters";
 interface SaleDetail {
   id: string;
   productName: string;
+  /** Precio unitario: el total de la línea es price * quantity. */
   price: string;
+  quantity: number;
   sku: string | null;
   serialNumber: string | null;
 }
@@ -76,7 +78,9 @@ export function SaleDetailsModal({
                 <TableRow>
                   <TableHead>Producto</TableHead>
                   <TableHead>SKU/Serial</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead className="text-right">Cant.</TableHead>
+                  <TableHead className="text-right">Precio unit.</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -89,14 +93,20 @@ export function SaleDetailsModal({
                       <TableCell>
                         {detail.sku || detail.serialNumber || "-"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right tabular-nums">
+                        {detail.quantity}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
                         {formatCurrency(detail.price)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">
+                        {formatCurrency(Number(detail.price) * detail.quantity)}
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No se encontraron detalles para esta venta.
                     </TableCell>
                   </TableRow>
