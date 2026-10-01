@@ -10,6 +10,7 @@ import {
   addLayawayPayment,
   registerCreditPayment,
   cancelLayaway,
+  getDailyCreditBoard,
 } from "@/services/layaway-service";
 import {
   createLayawaySchema,
@@ -27,6 +28,16 @@ export async function getLayawaysAction() {
   } catch (error) {
     console.error("Error fetching layaways:", error);
     return { success: false, error: "Error al cargar los apartados" };
+  }
+}
+
+export async function getDailyCreditBoardAction() {
+  try {
+    const data = await getDailyCreditBoard();
+    return { success: true as const, data };
+  } catch (error) {
+    console.error("Error fetching daily credit board:", error);
+    return { success: false as const, error: "Error al cargar los créditos del día" };
   }
 }
 

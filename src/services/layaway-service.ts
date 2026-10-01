@@ -22,7 +22,7 @@ import {
   saleDetails,
   otherIncome,
 } from "@/db/schema";
-import { eq, desc, sql, and, asc } from "drizzle-orm";
+import { eq, desc, sql, and, asc, inArray, lt, gte } from "drizzle-orm";
 import type {
   CreateLayawayInput,
   AddLayawayPaymentInput,
@@ -34,6 +34,12 @@ import { computeRiskScore } from "@/lib/credit/risk";
 import { DEFAULT_RISK_CONFIG } from "@/lib/credit/risk-config";
 import { computeDpd } from "@/lib/credit/dpd";
 import { assertTransition } from "@/lib/credit/state-machine";
+import {
+  buildCreditBoard,
+  bogotaDateKey,
+  UPCOMING_DAYS,
+  type BoardCreditEntry,
+} from "@/lib/credit/daily-board";
 import type { LayawayStatus } from "@/lib/credit/state-machine";
 import { money, roundCOP, toDbString, sub } from "@/lib/money";
 import { createNotification, detectUpcomingDue } from "./notification-service";
@@ -1072,4 +1078,139 @@ export const cancelLayaway = async (
 
     return { success: true, retainedCapital, deviceRecovered };
   });
+};
+
+// ---------------------------------------------------------------------------
+// getDailyCreditBoard — tablero de cobro del día
+// ---------------------------------------------------------------------------
+
+export type DailyCreditBoardEntry = BoardCreditEntry & {
+  customerName: string;
+  customerPhone: string | null;
+  customerDocument: string | null;
+  devices: string;
+  riskLevel: string | null;
+  outstandingPrincipal: number;
+  installmentAmount: number;
+};
+
+export type DailyCreditPayment = {
+  id: string;
+  layawayId: string;
+  customerName: string;
+  type: string;
+  amount: number;
+  scheduleNumber: number | null;
+  createdAt: Date;
+};
+
+export type DailyCreditBoard = {
+  dateKey: string;
+  overdue: DailyCreditBoardEntry[];
+  dueToday: DailyCreditBoardEntry[];
+  upcoming: DailyCreditBoardEntry[];
+  paidToday: DailyCreditPayment[];
+};
+
+export const getDailyCreditBoard = async (now: Date = new Date()): Promise<DailyCreditBoard> => {
+  const dateKey = bogotaDateKey(now);
+  // Colombia no tiene horario de verano: el día empieza siempre a las 05:00 UTC.
+  const startOfDay = new Date(`${dateKey}T00:00:00-05:00`);
+  // Margen de un día extra: el corte fino por calendario lo hace buildCreditBoard.
+  const horizon = new Date(startOfDay.getTime() + (UPCOMING_DAYS + 2) * 86_400_000);
+
+  const [openInstallments, paidToday] = await Promise.all([
+    db
+      .select({
+        layawayId: layawaySchedule.layawayId,
+        number: layawaySchedule.number,
+        dueDate: layawaySchedule.dueDate,
+        totalAmount: layawaySchedule.totalAmount,
+        paidAmount: layawaySchedule.paidAmount,
+      })
+      .from(layawaySchedule)
+      .innerJoin(layaways, eq(layawaySchedule.layawayId, layaways.id))
+      .where(
+        and(
+          eq(layaways.type, "credito"),
+          eq(layaways.status, "active"),
+          inArray(layawaySchedule.status, ["pendiente", "vencida"]),
+          lt(layawaySchedule.dueDate, horizon),
+        ),
+      ),
+    db
+      .select({
+        id: layawayPayments.id,
+        layawayId: layawayPayments.layawayId,
+        customerName: customers.name,
+        type: layawayPayments.type,
+        amount: layawayPayments.amount,
+        scheduleNumber: layawayPayments.scheduleNumber,
+        createdAt: layawayPayments.createdAt,
+      })
+      .from(layawayPayments)
+      .innerJoin(layaways, eq(layawayPayments.layawayId, layaways.id))
+      .innerJoin(customers, eq(layaways.customerId, customers.id))
+      .where(and(eq(layaways.type, "credito"), gte(layawayPayments.createdAt, startOfDay)))
+      .orderBy(desc(layawayPayments.createdAt)),
+  ]);
+
+  const entries = buildCreditBoard(
+    openInstallments.map((i) => ({
+      ...i,
+      totalAmount: Number(i.totalAmount),
+      paidAmount: Number(i.paidAmount),
+    })),
+    now,
+  );
+
+  const ids = entries.map((e) => e.layawayId);
+  const meta = ids.length
+    ? await db
+        .select({
+          id: layaways.id,
+          riskLevel: layaways.riskLevel,
+          outstandingPrincipal: layaways.outstandingPrincipal,
+          installmentAmount: layaways.installmentAmount,
+          customerName: customers.name,
+          customerPhone: customers.phone,
+          customerDocument: customers.documentId,
+          devices: sql<string>`COALESCE((
+            SELECT string_agg(DISTINCT CONCAT_WS(' ',
+              ${products.name},
+              COALESCE(${productItems.serialNumber}, ${productItems.sku}, ${products.sku})
+            ), ' | ')
+            FROM ${layawayDetails}
+            LEFT JOIN ${products} ON ${products.id} = ${layawayDetails.productId}
+            LEFT JOIN ${productItems} ON ${productItems.id} = ${layawayDetails.productItemId}
+            WHERE ${layawayDetails.layawayId} = ${layaways.id}
+          ), '')`,
+        })
+        .from(layaways)
+        .innerJoin(customers, eq(layaways.customerId, customers.id))
+        .where(inArray(layaways.id, ids))
+    : [];
+  const metaById = new Map(meta.map((m) => [m.id, m]));
+
+  const board: DailyCreditBoard = { dateKey, overdue: [], dueToday: [], upcoming: [], paidToday: [] };
+  for (const entry of entries) {
+    const m = metaById.get(entry.layawayId);
+    if (!m) continue;
+    const row: DailyCreditBoardEntry = {
+      ...entry,
+      customerName: m.customerName,
+      customerPhone: m.customerPhone,
+      customerDocument: m.customerDocument,
+      devices: m.devices,
+      riskLevel: m.riskLevel,
+      outstandingPrincipal: Number(m.outstandingPrincipal ?? 0),
+      installmentAmount: Number(m.installmentAmount ?? 0),
+    };
+    if (entry.bucket === "mora") board.overdue.push(row);
+    else if (entry.bucket === "hoy") board.dueToday.push(row);
+    else board.upcoming.push(row);
+  }
+
+  board.paidToday = paidToday.map((p) => ({ ...p, amount: Number(p.amount) }));
+  return board;
 };

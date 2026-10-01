@@ -178,6 +178,9 @@ npx drizzle-kit studio   # Open Drizzle Studio to inspect the DB
 
 ## 📖 Historic Development Log (Changelog)
 
+### Octubre 2026
+- **Tablero "Créditos del día"** (`/layaways`): botón en el encabezado con contador (cuotas de hoy + mora, punto rojo si hay mora) que abre un Sheet con pestañas Hoy / Mora / Próximos (3 días) / Cobrados. La unidad es el **crédito**, no la cuota: `buildCreditBoard` (`src/lib/credit/daily-board.ts`) agrupa lo exigible (vencido + hoy) descontando `paid_amount`. Los días se cuentan en calendario **America/Bogota** (el digest de correo sigue en UTC). Cada renglón trae WhatsApp con mensaje sugerido, llamar y "Registrar pago" (reusa `CreditPaymentDialog`). Servicio: `getDailyCreditBoard`.
+
 ### Septiembre 2026
 - **`sale_details.quantity`**: `price` y `unit_cost` siempre fueron unitarios pero la tabla no guardaba las unidades, así que una línea no serializada de N unidades reportaba el ingreso y el costo de UNA sola en Ganancias y en los KPIs de Ventas. Nueva columna (`DEFAULT 1`, migración `0009`) con CHECK que impide cantidad > 1 en líneas serializadas; todos los agregados multiplican por ella. Corregido en `pos-service.processSale`, `layaway-service.completeLayaway` y el prorrateo de `cancelLayaway`.
 - **Cartera prestada por período**: la tarjeta sumaba `loans.outstanding_principal` de los préstamos activos ignorando el rango de fechas, así que un mes cerrado mostraba la cartera del día de consulta. `getLoanPortfolioAsOf` la reconstruye a la fecha de corte (desembolsado − capital abonado, excluyendo castigos posteriores).
