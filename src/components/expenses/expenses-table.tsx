@@ -17,12 +17,14 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchField } from "@/components/ui/search-field";
+import { DetailSheet } from "@/components/ui/detail-sheet";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { Fragment, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   Banknote,
   CreditCard,
+  ChevronRight,
   ReceiptText,
   type LucideIcon,
 } from "lucide-react";
@@ -119,6 +121,7 @@ const columns: ColumnDef<Expense>[] = [
 export function ExpensesTable({ data }: ExpensesTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // Categorías ordenadas por peso en el gasto: las que más pesan van primero.
@@ -250,14 +253,21 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
         <>
           {/* Escritorio: libro por día con el subtotal bajo la columna Monto. */}
           <div className="hidden md:block">
-            <Table density="compact">
+            <Table density="compact" className="min-w-[760px] table-fixed">
+              <colgroup>
+                <col className="w-[38%] lg:w-[34%]" />
+                <col className="w-[20%] lg:w-[18%]" />
+                <col className="w-[21%] lg:w-[17%]" />
+                <col className="hidden lg:table-column lg:w-[16%]" />
+                <col className="w-[21%] lg:w-[15%]" />
+              </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Descripción</TableHead>
-                  <TableHead className="w-[180px]">Categoría</TableHead>
-                  <TableHead className="w-[150px]">Método</TableHead>
-                  <TableHead className="hidden w-[160px] lg:table-cell">Registró</TableHead>
-                  <TableHead className="w-[140px] text-right">Monto</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Método</TableHead>
+                  <TableHead className="hidden lg:table-cell">Registró</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -273,27 +283,35 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
                         <TableCell colSpan={4} className="hidden py-2 lg:table-cell">
                           <DayHeading date={group.date} count={day?.count ?? 0} />
                         </TableCell>
-                        <TableCell className="mono py-2 text-right text-[12px] font-semibold tabular-nums">
+                        <TableCell className="mono py-2 text-right text-[12px] font-semibold tabular-nums text-[color:var(--tf-red)]">
                           {formatCurrency(day?.total ?? 0)}
                         </TableCell>
                       </TableRow>
                       {group.items.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell className="max-w-[420px] whitespace-normal">
-                            <span className="line-clamp-2 leading-snug">
-                              {expense.description}
-                            </span>
+                        <TableRow key={expense.id} data-state={selectedExpense?.id === expense.id ? "selected" : undefined}>
+                          <TableCell className={cn("min-w-0 whitespace-normal", selectedExpense?.id === expense.id && "tf-trace-rail")}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedExpense(expense)}
+                              aria-label={`Ver descripción completa del gasto: ${expense.description}`}
+                              className="group flex w-full min-w-0 items-center gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <span className="line-clamp-2 min-w-0 flex-1 font-medium leading-snug group-hover:text-[color:var(--tf-accent)]">
+                                {expense.description}
+                              </span>
+                              <ChevronRight className="size-4 shrink-0 text-[color:var(--tf-fg-subtle)] group-hover:text-[color:var(--tf-accent)]" aria-hidden />
+                            </button>
                           </TableCell>
-                          <TableCell className="max-w-[180px]">
+                          <TableCell className="min-w-0">
                             <CategoryTag name={expense.categoryName} />
                           </TableCell>
                           <TableCell className="text-[13px] text-muted-foreground">
                             <PaymentMethod method={expense.paymentMethod} />
                           </TableCell>
-                          <TableCell className="hidden max-w-[160px] truncate text-[13px] text-muted-foreground lg:table-cell">
-                            {expense.userName ?? "Desconocido"}
+                          <TableCell className="hidden text-[13px] text-muted-foreground lg:table-cell">
+                            <span className="block truncate">{expense.userName ?? "Desconocido"}</span>
                           </TableCell>
-                          <TableCell className="mono text-right text-[14px] font-semibold tabular-nums">
+                          <TableCell className="mono text-right text-[14px] font-semibold tabular-nums text-[color:var(--tf-red)]">
                             {formatCurrency(expense.amount)}
                           </TableCell>
                         </TableRow>
@@ -335,15 +353,18 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
                   </header>
                   <ul className="space-y-2">
                     {group.items.map((expense) => (
-                      <li
-                        key={expense.id}
-                        className="rounded-[10px] border border-border bg-card px-4 py-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
+                      <li key={expense.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedExpense(expense)}
+                          aria-label={`Ver detalle del gasto: ${expense.description}`}
+                          className={cn("w-full rounded-[10px] border border-border bg-card px-4 py-3 text-left transition-colors duration-[140ms] active:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", selectedExpense?.id === expense.id && "tf-trace-rail border-[var(--tf-border-strong)]")}
+                        >
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                           <p className="line-clamp-2 min-w-0 text-[14px] font-medium leading-snug">
                             {expense.description}
                           </p>
-                          <p className="mono shrink-0 text-[15px] font-semibold tabular-nums leading-snug">
+                          <p className="mono shrink-0 text-[15px] font-semibold tabular-nums leading-snug text-[color:var(--tf-red)]">
                             {formatCurrency(expense.amount)}
                           </p>
                         </div>
@@ -359,6 +380,7 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
                         <p className="mono mt-2 truncate text-[10px] uppercase tracking-[0.06em] text-[color:var(--tf-fg-subtle)]">
                           Registró {expense.userName ?? "Desconocido"}
                         </p>
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -370,6 +392,47 @@ export function ExpensesTable({ data }: ExpensesTableProps) {
       )}
 
       <TablePagination table={table} onPageChange={scrollToList} />
+
+      <DetailSheet
+        open={selectedExpense !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedExpense(null);
+        }}
+        title="Detalle del gasto"
+        description="Descripción completa y datos del movimiento."
+        bodyClassName="space-y-6 p-5"
+      >
+        {selectedExpense ? (
+          <>
+            <div className="rounded-[8px] border border-border bg-[color:var(--tf-red-soft)] p-4">
+              <p className="mono text-[10px] font-semibold uppercase tracking-[0.08em] text-[color:var(--tf-red)]">Monto registrado</p>
+              <p className="mono mt-1 text-2xl font-semibold tabular-nums text-[color:var(--tf-red)]">{formatCurrency(selectedExpense.amount)}</p>
+            </div>
+            <section>
+              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Descripción</h3>
+              <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">{selectedExpense.description}</p>
+            </section>
+            <dl className="grid gap-4 border-t border-border pt-5 text-[13px]">
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-muted-foreground">Fecha</dt>
+                  <dd className="text-right font-medium">{dayLabel(selectedExpense.date).date}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-muted-foreground">Categoría</dt>
+                  <dd><CategoryTag name={selectedExpense.categoryName} /></dd>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-muted-foreground">Método</dt>
+                  <dd><PaymentMethod method={selectedExpense.paymentMethod} /></dd>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <dt className="text-muted-foreground">Registró</dt>
+                  <dd className="text-right font-medium">{selectedExpense.userName ?? "Desconocido"}</dd>
+                </div>
+            </dl>
+          </>
+        ) : null}
+      </DetailSheet>
     </div>
   );
 }

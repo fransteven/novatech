@@ -59,7 +59,7 @@ const STATUS_LABELS: Record<string, { label: string; className?: string }> = {
 };
 
 const SaleStatus = ({ status }: { status: string }) => {
-  if (status === "completed") return null;
+  if (status === "completed") return <Badge variant="outline" className="tf-badge-normal h-5 px-1.5 text-[10px]">Completada</Badge>;
   const config = STATUS_LABELS[status] ?? { label: status };
   return (
     <Badge variant="outline" className={cn("h-5 px-1.5 text-[10px]", config.className)}>
@@ -231,16 +231,25 @@ export function SalesTable({ data }: SalesTableProps) {
         <>
           {/* Escritorio: libro por día; los subtotales caen bajo su columna. */}
           <div className="hidden md:block">
-            <Table density="compact">
+            <Table density="compact" className="min-w-[900px] table-fixed">
+              <colgroup>
+                <col className="w-[9%]" />
+                <col className="w-[27%] lg:w-[25%]" />
+                <col className="w-[19%] lg:w-[17%]" />
+                <col className="hidden lg:table-column lg:w-[15%]" />
+                <col className="w-[16%] lg:w-[14%]" />
+                <col className="w-[23%] lg:w-[16%]" />
+                <col className="w-[6%] lg:w-[4%]" />
+              </colgroup>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[104px]">Hora</TableHead>
+                  <TableHead>Hora</TableHead>
                   <TableHead>Venta</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead className="hidden lg:table-cell">Vendedor</TableHead>
                   <TableHead className="text-right">Utilidad</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="w-12">
+                  <TableHead>
                     <span className="sr-only">Detalle</span>
                   </TableHead>
                 </TableRow>
@@ -267,7 +276,7 @@ export function SalesTable({ data }: SalesTableProps) {
                         >
                           {formatCurrency(dayProfit)}
                         </TableCell>
-                        <TableCell className="mono py-2 text-right text-[12px] font-semibold tabular-nums">
+                        <TableCell className="mono py-2 text-right text-[12px] font-semibold tabular-nums text-[color:var(--tf-green)]">
                           {formatCurrency(day?.total ?? 0)}
                         </TableCell>
                         <TableCell className="py-2" />
@@ -291,10 +300,10 @@ export function SalesTable({ data }: SalesTableProps) {
                             >
                               {timeLabel(sale.date)}
                             </TableCell>
-                            <TableCell className="max-w-[340px]">
-                              <div className="flex min-w-0 items-center gap-1.5">
+                            <TableCell className="min-w-0 whitespace-normal">
+                              <div className="flex min-w-0 items-start gap-1.5">
                                 <span
-                                  className="truncate font-medium"
+                                  className="line-clamp-2 min-w-0 font-medium leading-snug"
                                   title={sale.productNames ?? undefined}
                                 >
                                   {sale.leadProductName ?? "Venta sin detalle"}
@@ -307,13 +316,13 @@ export function SalesTable({ data }: SalesTableProps) {
                                 {sale.unitCount > 1 ? ` · ${sale.unitCount} uds` : ""}
                               </p>
                             </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {sale.customerName ?? (
+                            <TableCell className="min-w-0">
+                              {sale.customerName ? <span className="block truncate">{sale.customerName}</span> : (
                                 <span className="text-muted-foreground">Sin cliente</span>
                               )}
                             </TableCell>
                             <TableCell className="hidden text-muted-foreground lg:table-cell">
-                              {sale.userName ?? "Sistema"}
+                              <span className="block truncate">{sale.userName ?? "Sistema"}</span>
                             </TableCell>
                             <TableCell className="text-right">
                               {profit ? (
@@ -334,7 +343,7 @@ export function SalesTable({ data }: SalesTableProps) {
                                 <span className="text-[color:var(--tf-fg-subtle)]">—</span>
                               )}
                             </TableCell>
-                            <TableCell className="mono text-right text-[14px] font-semibold tabular-nums">
+                            <TableCell className={cn("mono text-right text-[14px] font-semibold tabular-nums", sale.status === "completed" ? "text-[color:var(--tf-green)]" : sale.status === "cancelled" ? "text-[color:var(--tf-red)]" : "text-[color:var(--tf-amber)]")}>
                               {formatCurrency(sale.totalAmount)}
                             </TableCell>
                             <TableCell className="pr-2 text-right">
@@ -396,7 +405,7 @@ export function SalesTable({ data }: SalesTableProps) {
                                 </span>
                                 <ExtraLines count={sale.lineCount - 1} />
                               </span>
-                              <span className="mono shrink-0 text-[15px] font-semibold tabular-nums leading-snug">
+                              <span className={cn("mono shrink-0 text-[15px] font-semibold tabular-nums leading-snug", sale.status === "completed" ? "text-[color:var(--tf-green)]" : sale.status === "cancelled" ? "text-[color:var(--tf-red)]" : "text-[color:var(--tf-amber)]")}>
                                 {formatCurrency(sale.totalAmount)}
                               </span>
                             </span>
