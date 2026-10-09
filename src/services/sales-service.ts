@@ -2,28 +2,53 @@ import { db } from "@/db";
 import {
   sales,
   saleDetails,
-  inventoryMovements,
   expenses,
   user,
   products,
   productItems,
+  customers,
 } from "@/db/schema";
 import { sql, desc, and, gte, lt, eq } from "drizzle-orm";
 import { startOfMonth, endOfMonth, addMilliseconds } from "date-fns";
 
 export const getSales = async () => {
-  return await db
+  const rows = await db
     .select({
       id: sales.id,
       totalAmount: sales.totalAmount,
       status: sales.status,
       date: sales.createdAt,
       userName: user.name,
+      customerName: customers.name,
+      // Producto de mayor precio como titular de la venta; el resto se resume
+      // con el conteo de líneas.
+      leadProductName: sql<
+        string | null
+      >`(array_agg(${products.name} ORDER BY ${saleDetails.price} DESC))[1]`,
+      productNames: sql<
+        string | null
+      >`string_agg(${products.name}, ' · ' ORDER BY ${saleDetails.price} DESC)`,
+      lineCount: sql<number>`COUNT(${saleDetails.id})::int`,
+      unitCount: sql<number>`COALESCE(SUM(${saleDetails.quantity}), 0)::int`,
+      // unitCost es unitario: se multiplica por las unidades de la línea.
+      totalCost: sql<string>`COALESCE(SUM(CAST(${saleDetails.unitCost} AS DECIMAL) * ${saleDetails.quantity}), 0)`,
     })
     .from(sales)
     .leftJoin(user, eq(sales.userId, user.id))
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .leftJoin(saleDetails, eq(saleDetails.saleId, sales.id))
+    .leftJoin(products, eq(saleDetails.productId, products.id))
+    .groupBy(sales.id, user.name, customers.name)
     .orderBy(desc(sales.createdAt));
+
+  return rows.map((row) => ({
+    ...row,
+    lineCount: Number(row.lineCount),
+    unitCount: Number(row.unitCount),
+  }));
 };
+
+export type SaleListItem = Awaited<ReturnType<typeof getSales>>[number];
 
 export const getSalesKPIs = async () => {
   const now = new Date();
