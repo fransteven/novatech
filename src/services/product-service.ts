@@ -4,6 +4,7 @@ import {
   productItems,
   inventoryMovements,
   categories,
+  productBarcodes,
 } from "@/db/schema";
 import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { ProductInput } from "@/lib/validators/product-validator";
@@ -51,6 +52,12 @@ export const getProducts = async () => {
       categoryName: categories.name,
       categoryTemplate: categories.template,
       attributes: products.attributes,
+      // Seriales de caja / UPC: los buscadores del cliente filtran también por ellos.
+      barcodes: sql<string[]>`COALESCE((
+        SELECT array_agg(${productBarcodes.code})
+        FROM ${productBarcodes}
+        WHERE ${productBarcodes.productId} = ${products.id}
+      ), '{}')`,
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))

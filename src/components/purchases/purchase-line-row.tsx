@@ -7,7 +7,7 @@ import type {
   UseFormRegister,
   UseFormSetValue,
 } from "react-hook-form";
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Barcode, ChevronDown, ChevronUp, Trash2, X } from "lucide-react";
 
 import type { CreatePurchaseSchema } from "@/lib/validators/purchase-validator";
 import { formatCurrency } from "@/lib/formatters";
@@ -34,6 +34,7 @@ import {
 import { MoneyInput } from "@/components/ui/money-input";
 import { ProductPicker, type PickerProduct } from "./product-picker";
 import { PurchaseSerialsPanel } from "./purchase-serials-panel";
+import { BarcodeScanInput } from "@/components/inventory/barcode-scan-input";
 
 interface PurchaseLineRowProps {
   index: number;
@@ -98,6 +99,15 @@ export function PurchaseLineRow({
 
   // Abierto por defecto si faltan seriales por ingresar
   const [serialsOpen, setSerialsOpen] = useState(!isSerialsComplete);
+
+  // Seriales de caja / UPC de líneas no serializadas (opcionales)
+  const barcodes = (detail?.barcodes ?? []) as string[];
+  const [barcodesOpen, setBarcodesOpen] = useState(false);
+  const setBarcodes = (next: string[]) =>
+    setValue(`details.${index}.barcodes`, next, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
   // Autofocus en el combobox si la fila acaba de ser añadida
   useEffect(() => {
@@ -179,6 +189,7 @@ export function PurchaseLineRow({
                   });
                   setSerialsOpen(false);
                 }
+                setBarcodes([]);
               }}
               onProductCreated={onProductCreated}
             />
@@ -315,6 +326,63 @@ export function PurchaseLineRow({
                 isOpen={serialsOpen}
                 optionalNumberField={optionalNumberField}
               />
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Códigos de barras de la caja (solo no serializados) */}
+        {product && !isSerialized && (
+          <Collapsible open={barcodesOpen} onOpenChange={setBarcodesOpen}>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5"
+              >
+                <Barcode className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-medium">
+                  Códigos de barras (serial/UPC)
+                  {barcodes.length > 0 ? ` · ${barcodes.length}` : ""}
+                </span>
+                {barcodesOpen ? (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 pt-2">
+              <p className="text-[11px] text-[color:var(--tf-fg-subtle)]">
+                Opcional. Permiten encontrar el producto con el lector en POS e
+                inventario. Los códigos repetidos entre cajas se guardan una vez.
+              </p>
+              <BarcodeScanInput
+                onAdd={(code) => {
+                  if (!barcodes.includes(code)) setBarcodes([...barcodes, code]);
+                }}
+              />
+              {barcodes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {barcodes.map((code) => (
+                    <Badge
+                      key={code}
+                      variant="outline"
+                      className="font-mono text-[11px] gap-1 pr-1"
+                    >
+                      {code}
+                      <button
+                        type="button"
+                        aria-label={`Quitar ${code}`}
+                        className="rounded hover:bg-muted p-0.5"
+                        onClick={() =>
+                          setBarcodes(barcodes.filter((c) => c !== code))
+                        }
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
         )}

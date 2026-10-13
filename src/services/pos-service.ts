@@ -17,6 +17,7 @@ import {
   resolveItemCost,
 } from "@/services/inventory-service";
 import { formatCurrency } from "@/lib/formatters";
+import { findProductByBarcode } from "@/services/product-barcode-service";
 import type { ItemCondition } from "@/lib/validators/inventory-validator";
 
 /**
@@ -80,7 +81,15 @@ export const searchProduct = async (
     };
   }
 
-  // 2. INTENTO NO SERIALIZADO / BÚSQUEDA GENERAL (Precisión Alta -> Precisión Baja)
+  // 2. CÓDIGO DE BARRAS ALTERNATIVO (serial de caja / UPC)
+  // Los no serializados no tienen product_items: el escáner lee el serial o el
+  // UPC de la caja, que se asocia al producto en product_barcodes.
+  const barcodeProduct = await findProductByBarcode(cleanQuery);
+  if (barcodeProduct) {
+    return await buildProductResult(barcodeProduct);
+  }
+
+  // 3. INTENTO NO SERIALIZADO / BÚSQUEDA GENERAL (Precisión Alta -> Precisión Baja)
   // Buscamos coincidencia exacta de Código de Barras (SKU) o búsqueda manual por Nombre
   const productResult = await db
     .select()
@@ -94,7 +103,16 @@ export const searchProduct = async (
     return null; // El producto no existe
   }
 
-  const product = productResult[0];
+  return await buildProductResult(productResult[0]);
+};
+
+/**
+ * Resultado de búsqueda a nivel de producto (sin unidad específica): stock
+ * disponible y costo de referencia según sea serializado o no.
+ */
+const buildProductResult = async (
+  product: typeof products.$inferSelect,
+): Promise<ProductSearchResult> => {
   let availableQty = 0;
   let avgUnitCost = 0;
 

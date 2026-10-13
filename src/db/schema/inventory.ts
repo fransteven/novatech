@@ -85,6 +85,29 @@ export const productItems = pgTable(
   ],
 );
 
+// Códigos de barras alternativos de un producto (seriales de caja, UPC/EAN).
+// Pensado para los NO serializados, que no tienen fila en product_items: el
+// lector del POS/inventario escanea el serial o el UPC de la caja y debe
+// resolver al producto. Varias cajas pueden repetir serial, por eso el código
+// es del producto y no de una unidad.
+export const productBarcodes = pgTable(
+  "product_barcodes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .references(() => products.id, { onDelete: "cascade" })
+      .notNull(),
+    code: text("code").notNull(), // normalizado: sin espacios y en mayúsculas
+    kind: text("kind").default("serial").notNull(), // serial | upc
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    // Un código resuelve a un único producto.
+    uniqueIndex("product_barcodes_code_unique").on(table.code),
+    index("product_barcodes_product_id_idx").on(table.productId),
+  ],
+);
+
 export const inventoryMovements = pgTable(
   "inventory_movements",
   {

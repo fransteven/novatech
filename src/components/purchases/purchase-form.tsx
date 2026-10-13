@@ -19,6 +19,7 @@ import {
 import { createPurchaseAction } from "@/app/actions/purchase-actions";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
 import { findDuplicateSerials, normalizeSerial } from "@/lib/serials";
+import { uniqueBarcodes } from "@/lib/barcodes";
 import { pickConditionDetails } from "@/lib/condition-attributes";
 import { formatCurrency } from "@/lib/formatters";
 import type { ItemCondition } from "@/lib/validators/inventory-validator";
@@ -58,6 +59,7 @@ const emptyLine = {
   quantity: 1,
   unitCost: 0,
   serialNumbers: [] as string[],
+  barcodes: [] as string[],
   condition: "new" as ItemCondition,
   warrantyMonths: null,
   conditionDetails: null,
@@ -307,6 +309,9 @@ export function PurchaseForm({
                   .map(normalizeSerial)
                   .filter(Boolean)
               : undefined,
+            barcodes: product?.isSerialized
+              ? undefined
+              : uniqueBarcodes(detail.barcodes ?? []),
             // Los no serializados no generan unidad física: entran como nuevos.
             condition: product?.isSerialized ? detail.condition : "new",
             warrantyMonths:

@@ -99,3 +99,13 @@ export type InventoryMovement = {
   serialNumber: string | null;
   productItemId: string | null;
 };
+
+/** Código de barras alternativo (serial de caja / UPC) de un producto. */
+export const addProductBarcodeSchema = z.object({
+  productId: z.string().uuid(),
+  code: z.string().trim().min(3, "Código muy corto").max(64, "Código muy largo"),
+});
+
+export const removeProductBarcodeSchema = z.object({
+  id: z.string().uuid(),
+});

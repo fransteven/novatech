@@ -10,6 +10,7 @@ import {
   categories,
   products,
   productItems,
+  productBarcodes,
   inventoryMovements,
   reservations,
 } from "./inventory";
@@ -53,12 +54,23 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [categories.id],
   }),
   productItems: many(productItems),
+  barcodes: many(productBarcodes),
   saleDetails: many(saleDetails),
   inventoryMovements: many(inventoryMovements),
   layawayDetails: many(layawayDetails),
   importCosts: many(importCosts),
   purchaseDetails: many(purchaseDetails),
 }));
+
+export const productBarcodesRelations = relations(
+  productBarcodes,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [productBarcodes.productId],
+      references: [products.id],
+    }),
+  }),
+);
 
 export const productItemsRelations = relations(
   productItems,

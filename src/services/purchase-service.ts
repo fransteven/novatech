@@ -16,6 +16,7 @@ import {
   type DbExecutor,
   type ReceiveStockLine,
 } from "@/services/inventory-service";
+import { addProductBarcodes } from "@/services/product-barcode-service";
 import { allocateExtraCosts, derivePaymentStatus } from "@/lib/purchase-costs";
 import type { ItemCondition } from "@/lib/validators/inventory-validator";
 import { formatCurrency } from "@/lib/formatters";
@@ -26,6 +27,8 @@ export interface PurchaseDetailInput {
   unitCost: number;
   /** Sólo para productos serializados; el servidor decide si aplican. */
   serialNumbers?: string[];
+  /** Seriales de caja / UPC para líneas NO serializadas (búsqueda por escáner). */
+  barcodes?: string[];
   /** Condición con la que entra la mercancía. Por defecto, nueva. */
   condition?: ItemCondition;
   /** Meses de garantía pactados para mercancía no nueva (1, 3 o 6). */
@@ -333,6 +336,13 @@ export const PurchaseService = {
         });
 
       await tx.insert(purchaseDetails).values(detailRows);
+
+      // 5b. Códigos de barras de las líneas no serializadas: el lector del POS
+      // e inventario resuelve el producto por el serial/UPC de la caja.
+      for (const [index, detail] of input.details.entries()) {
+        if (received[index].isSerialized || !detail.barcodes?.length) continue;
+        await addProductBarcodes(tx, detail.productId, detail.barcodes);
+      }
 
       // 6. Pago: sólo si efectivamente se abonó algo
       if (amountPaid > 0 && input.accountId) {

@@ -10,10 +10,18 @@ import {
   updateSerialItem,
 } from "@/services/inventory-service";
 import {
+  addProductBarcodeSchema,
   receiveStockSchema,
+  removeProductBarcodeSchema,
   updateSerialItemSchema,
 } from "@/lib/validators/inventory-validator";
-import { requireAdmin } from "@/lib/auth-guard";
+import {
+  addProductBarcodes,
+  listProductBarcodes,
+  removeProductBarcode,
+} from "@/services/product-barcode-service";
+import { db } from "@/db";
+import { getSessionUser, requireAdmin } from "@/lib/auth-guard";
 import { recordAudit } from "@/services/audit-service";
 
 type ReceiveStockResult =
@@ -154,5 +162,78 @@ export async function searchInventoryAction(query: string) {
   } catch (error) {
     console.error("Error searching inventory:", error);
     return { success: false, error: "Failed to search inventory" };
+  }
+}
+
+const revalidateBarcodeSurfaces = () => {
+  revalidatePath("/inventory");
+  revalidatePath("/catalog");
+  revalidatePath("/purchases");
+};
+
+export async function getProductBarcodesAction(productId: string) {
+  try {
+    if (!(await getSessionUser())) throw new Error("No autorizado");
+    const data = await listProductBarcodes(productId);
+    return { success: true as const, data };
+  } catch (error) {
+    console.error("Error fetching product barcodes:", error);
+    return { success: false as const, error: "No se pudieron cargar los códigos" };
+  }
+}
+
+export async function addProductBarcodeAction(data: unknown) {
+  try {
+    if (!(await getSessionUser())) throw new Error("No autorizado");
+
+    const parsed = addProductBarcodeSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false as const, error: parsed.error.issues[0].message };
+    }
+
+    const inserted = await addProductBarcodes(db, parsed.data.productId, [
+      parsed.data.code,
+    ]);
+    revalidateBarcodeSurfaces();
+
+    return { success: true as const, added: inserted.length > 0 };
+  } catch (error) {
+    console.error("Error adding product barcode:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "No se pudo agregar el código",
+    };
+  }
+}
+
+export async function removeProductBarcodeAction(data: unknown) {
+  try {
+    const admin = await requireAdmin();
+
+    const parsed = removeProductBarcodeSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false as const, error: parsed.error.issues[0].message };
+    }
+
+    const removed = await removeProductBarcode(parsed.data.id);
+    await recordAudit({
+      userId: admin.id,
+      userName: admin.name,
+      action: "product_barcode.delete",
+      entityType: "product",
+      entityId: removed.productId,
+      changes: { code: { old: removed.code, new: null } },
+    });
+    revalidateBarcodeSurfaces();
+
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error removing product barcode:", error);
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : "No se pudo quitar el código",
+    };
   }
 }

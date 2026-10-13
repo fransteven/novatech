@@ -30,6 +30,28 @@ const basePayload = {
 };
 
 describe("createPurchaseSchema", () => {
+  it("acepta códigos de barras en líneas no serializadas", () => {
+    const result = createPurchaseSchema.safeParse({
+      ...basePayload,
+      details: [
+        {
+          ...basePayload.details[0],
+          serialNumbers: undefined,
+          quantity: 10,
+          barcodes: [" F1641522J33PMG9DW ", "942521569409"],
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.details[0].barcodes).toEqual([
+        "F1641522J33PMG9DW",
+        "942521569409",
+      ]);
+    }
+  });
+
   it("acepta la salud de batería vacía como 'sin dato'", () => {
     const result = createPurchaseSchema.safeParse({
       ...basePayload,

@@ -49,6 +49,9 @@ const purchaseDetailSchema = z.object({
     .min(1, "Cantidad debe ser mayor a 0"),
   unitCost: amountNumber(z.coerce.number().min(0, "Costo debe ser 0 o mayor")),
   serialNumbers: z.array(z.string()).optional(),
+  // Seriales de caja / UPC de líneas NO serializadas: se asocian al producto
+  // para que el lector de código de barras lo encuentre.
+  barcodes: z.array(z.string().trim().max(64)).max(200).optional(),
   // Condición con la que entra la mercancía y, si no es nueva, los meses de
   // garantía pactados. Se copian a product_items.
   condition: itemConditionSchema.default("new"),

@@ -9,6 +9,7 @@ import {
   customers,
   warranties,
   warrantyClaims,
+  productBarcodes,
 } from "@/db/schema";
 import { eq, and, or, ilike, desc, sql, inArray, type SQL } from "drizzle-orm";
 import {
@@ -122,6 +123,10 @@ const buildTextConditions = (rawQuery: string, sourceIdColumn: SQL) => {
   conditions.push(ilike(products.name, like));
   conditions.push(ilike(products.sku, like));
   conditions.push(ilike(productItems.sku, like));
+  // Serial de caja / UPC de productos no serializados.
+  conditions.push(
+    sql`EXISTS (SELECT 1 FROM ${productBarcodes} WHERE ${productBarcodes.productId} = ${products.id} AND ${productBarcodes.code} ILIKE ${like})`,
+  );
   conditions.push(ilike(customers.name, like));
   conditions.push(ilike(customers.documentId, like));
 

@@ -31,6 +31,8 @@ export interface PickerProduct {
   /** Decide qué métricas de condición pedir al recibir la unidad. */
   categoryName?: string | null;
   stock?: number;
+  /** Seriales de caja / UPC asociados: también se buscan por ellos. */
+  barcodes?: string[];
 }
 
 /** Los atributos dinámicos se muestran como "256GB · Negro", nunca como JSON. */
@@ -138,7 +140,12 @@ export function ProductPicker({
               <CommandGroup>
                 {products.map((product) => {
                   const attrs = describeAttributes(product.attributes);
-                  const searchValue = [product.name, product.sku, attrs]
+                  const searchValue = [
+                    product.name,
+                    product.sku,
+                    attrs,
+                    ...(product.barcodes ?? []),
+                  ]
                     .filter(Boolean)
                     .join(" ");
 

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import {
   products,
   productItems,
+  productBarcodes,
   inventoryMovements,
   sales,
   saleDetails,
@@ -410,16 +411,19 @@ export const getStockSummary = async () => {
 export const searchInventoryStock = async (query: string) => {
   const cleanQuery = query.trim();
 
-  // Find products matching by name, SKU or having a related serialNumber matching the query
+  // Find products matching by name, SKU, a related serialNumber or one of its
+  // alternative barcodes (box serial / UPC of non-serialized products)
   const matchingProductIdsQuery = await db
     .select({ id: products.id })
     .from(products)
     .leftJoin(productItems, eq(products.id, productItems.productId))
+    .leftJoin(productBarcodes, eq(products.id, productBarcodes.productId))
     .where(
       or(
         ilike(products.name, `%${cleanQuery}%`),
         ilike(products.sku, `%${cleanQuery}%`),
         ilike(productItems.serialNumber, `%${cleanQuery}%`),
+        ilike(productBarcodes.code, `%${cleanQuery}%`),
       ),
     )
     .groupBy(products.id);

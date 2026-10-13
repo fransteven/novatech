@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { EditSerialDialog } from "./edit-serial-dialog";
 import { ConditionBadge } from "./condition-badge";
+import { ProductBarcodesPanel } from "./product-barcodes-panel";
 import { formatCurrency } from "@/lib/formatters";
 
 interface ProductDetailSheetProps {
@@ -126,9 +127,10 @@ export function ProductDetailSheet({
               <p className="text-muted-foreground">Cargando...</p>
             </div>
           ) : !product?.isSerialized ? (
+            <div className="space-y-4">
             <div className="flex flex-col items-center justify-center p-8 border rounded-md">
               <p className="mb-4 text-center text-muted-foreground">
-                Este producto no es serializado. Puedes agregarlo al carrito buscándolo por su SKU.
+                Este producto no es serializado. Puedes agregarlo al carrito buscándolo por su SKU o por uno de sus códigos de barras.
               </p>
               <div className="flex items-center gap-4 p-4 border rounded-md bg-muted/50">
                 <span className="font-mono text-xl font-bold">{product.sku || "Sin SKU"}</span>
@@ -142,6 +144,8 @@ export function ProductDetailSheet({
                   </Badge>
                 )}
               </div>
+            </div>
+            <ProductBarcodesPanel productId={product.productId} isAdmin={isAdmin} />
             </div>
           ) : serials.length > 0 ? (
             <div className="rounded-md border overflow-hidden">

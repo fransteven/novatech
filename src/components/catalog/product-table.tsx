@@ -422,7 +422,14 @@ export function ProductTable({ data }: ProductTableProps) {
       if (!search) return true;
       const name = String(row.original.name || "").toLowerCase();
       const sku = String(row.original.sku || "").toLowerCase();
-      return name.includes(search) || sku.includes(search);
+      const barcodes = (row.original.barcodes ?? []).map((code) =>
+        code.toLowerCase(),
+      );
+      return (
+        name.includes(search) ||
+        sku.includes(search) ||
+        barcodes.some((code) => code.includes(search))
+      );
     },
     state: {
       sorting,
