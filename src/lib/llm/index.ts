@@ -14,7 +14,7 @@
 
 import type { LLMProvider } from "./provider";
 
-export type { LLMProvider, LLMGenerateOptions } from "./provider";
+export type { LLMProvider, LLMGenerateOptions, LLMImage } from "./provider";
 
 export function getLLMProvider(): LLMProvider {
   const provider =

@@ -43,6 +43,7 @@ import { leads, leadActivities } from "./leads";
 import { creditors, creditorMovements } from "./creditors";
 import { warranties, warrantyClaims } from "./warranties";
 import { loans, loanSchedule, loanPayments } from "./loans";
+import { stockCounts, stockCountLines } from "./stock-counts";
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -525,3 +526,25 @@ export const loanPaymentsRelations = relations(loanPayments, ({ one }) => ({
 }));
 
 
+
+export const stockCountsRelations = relations(stockCounts, ({ one, many }) => ({
+  lines: many(stockCountLines),
+  createdByUser: one(user, {
+    fields: [stockCounts.createdBy],
+    references: [user.id],
+  }),
+}));
+
+export const stockCountLinesRelations = relations(
+  stockCountLines,
+  ({ one }) => ({
+    count: one(stockCounts, {
+      fields: [stockCountLines.countId],
+      references: [stockCounts.id],
+    }),
+    product: one(products, {
+      fields: [stockCountLines.productId],
+      references: [products.id],
+    }),
+  }),
+);

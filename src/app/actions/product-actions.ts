@@ -40,18 +40,11 @@ export async function createProductAction(data: unknown) {
         currentSKU = result.data.sku!.trim();
       } else {
         // Generar SKU interno si no se proporcionó código de barras
-        const { generateBaseSKU } = await import("@/lib/utils");
-        const baseSKU = generateBaseSKU(
+        currentSKU = productService.generateProductSku(
           categoryName,
           result.data.name,
           result.data.attributes,
         );
-        // Generamos un sufijo más fuerte (8 caracteres alfanuméricos)
-        const suffix = (
-          Math.random().toString(36).substring(2, 10).toUpperCase() +
-          Math.random().toString(36).substring(2, 4).toUpperCase()
-        ).substring(0, 8);
-        currentSKU = `${baseSKU}-${suffix}`;
       }
 
       try {

@@ -49,7 +49,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
     this.model = process.env.LLM_MODEL;
   }
 
-  async generate({ system, prompt, maxTokens = 1024 }: LLMGenerateOptions): Promise<string> {
+  async generate({ system, prompt, maxTokens = 1024, images, json }: LLMGenerateOptions): Promise<string> {
     const systemMessage = system ??
       "Eres un asistente de ventas experto en estrategias de marketing y negociación para comercio de tecnología en Colombia.";
 
@@ -64,8 +64,20 @@ export class OpenAICompatibleProvider implements LLMProvider {
         max_tokens: maxTokens,
         messages: [
           { role: "system", content: systemMessage },
-          { role: "user", content: prompt },
+          {
+            role: "user",
+            content: images?.length
+              ? [
+                  ...images.map((image) => ({
+                    type: "image_url",
+                    image_url: { url: `data:${image.mimeType};base64,${image.data}` },
+                  })),
+                  { type: "text", text: prompt },
+                ]
+              : prompt,
+          },
         ],
+        ...(json ? { response_format: { type: "json_object" } } : {}),
       }),
     });
 

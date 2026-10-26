@@ -21,3 +21,15 @@ export const categorySchema = z.object({
 
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type CategoryAttribute = z.infer<typeof categoryAttributeSchema>;
+
+/** Type guard para `categories.template` (jsonb). */
+export const isCategoryTemplate = (value: unknown): value is CategoryAttribute[] =>
+  Array.isArray(value) &&
+  value.every(
+    (attribute) =>
+      typeof attribute === "object" &&
+      attribute !== null &&
+      typeof attribute.key === "string" &&
+      typeof attribute.label === "string" &&
+      typeof attribute.type === "string",
+  );

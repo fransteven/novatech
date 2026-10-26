@@ -68,6 +68,7 @@ Schemas are split by domain in `src/db/schema/` and re-exported from the index. 
 | [`imports.ts`](file:///Users/fransteven/Desktop/novatech/src/db/schema/imports.ts) | `import_costs` | Track landing cost components (shipping, customs, duties) to calculate WAC. |
 | [`shareholders.ts`](file:///Users/fransteven/Desktop/novatech/src/db/schema/shareholders.ts) | `shareholders`, `shareholder_distributions`, `shareholder_distribution_items` | Partners equity tracker and dividend distributions. |
 | [`leads.ts`](file:///Users/fransteven/Desktop/novatech/src/db/schema/leads.ts) | `leads`, `lead_activities` | Funnel tracker for prospective sales and customer follow-ups. |
+| [`stock-counts.ts`](file:///Users/fransteven/Desktop/novatech/src/db/schema/stock-counts.ts) | `stock_counts`, `stock_count_lines` | Toma de inventario por escaneo (borradores por zona que al aplicarse entran al stock). |
 
 ### Important Logic & Architectural Notes:
 - **Nuevo vs. segunda mano**: `product_items.condition` (`new` | `used` | `refurbished`) es un dato de la **unidad física**, no del catálogo: el mismo modelo convive nuevo y usado con costo, precio y garantía distintos. Los productos no serializados no tienen fila en `product_items` y se asumen nuevos. El vocabulario (labels, presets de garantía) vive en `src/lib/validators/inventory-validator.ts`.
@@ -196,6 +197,8 @@ npx drizzle-kit studio   # Open Drizzle Studio to inspect the DB
 ## 📖 Historic Development Log (Changelog)
 
 ### Octubre 2026
+- **Toma de inventario por escaneo** (`/inventory/count`): conteos en borrador por zona (`stock_counts`, `stock_count_lines` con `UNIQUE(count, product, condition)`). Escanear con pistola USB (input enfocado + Enter) o cámara: código conocido → +1 (serializados piden serial); desconocido → `QuickProductSheet`, que precarga datos de UPCitemdb (`src/lib/upc-lookup.ts`, trial ~100/día, falla en silencio) y sugiere la ficha con IA desde fotos (`product-ai-service.suggestProductFromImages`; `LLMGenerateOptions.images/json` en los 3 proveedores). La mercancía sin código recibe `INT-XXXXXX` (`product_barcodes.kind = 'internal'`, consecutivo con advisory lock) y se exporta a Excel NIIMBOT. `applyCount` es idempotente (UPDATE condicionado a `draft`), exige costo en toda línea (`findCountProblems`) y entra al stock por `receiveStockLines` con `reason "Conteo: <nombre>"`, sin movimiento de caja. Categorías iniciales de Masterplay: `scripts/seed-masterplay-categories.ts`.
+- **`seed-admin.ts` corregido**: creaba el hash con bcrypt y Better Auth valida scrypt → el admin nunca podía entrar. Ahora usa `auth.api.signUpEmail` y verifica el login.
 - **Tablero "Créditos del día"** (`/layaways`): botón en el encabezado con contador (cuotas de hoy + mora, punto rojo si hay mora) que abre un Sheet con pestañas Hoy / Mora / Próximos (3 días) / Cobrados. La unidad es el **crédito**, no la cuota: `buildCreditBoard` (`src/lib/credit/daily-board.ts`) agrupa lo exigible (vencido + hoy) descontando `paid_amount`. Los días se cuentan en calendario **America/Bogota** (el digest de correo sigue en UTC). Cada renglón trae WhatsApp con mensaje sugerido, llamar y "Registrar pago" (reusa `CreditPaymentDialog`). Servicio: `getDailyCreditBoard`.
 
 ### Septiembre 2026

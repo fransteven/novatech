@@ -20,11 +20,24 @@ export class GeminiProvider implements LLMProvider {
     this.model = process.env.LLM_MODEL ?? "gemini-3-flash-preview";
   }
 
-  async generate({ system, prompt, maxTokens = 1024 }: LLMGenerateOptions): Promise<string> {
+  async generate({ system, prompt, maxTokens = 1024, images, json }: LLMGenerateOptions): Promise<string> {
     const response = await this.client.models.generateContent({
       model: this.model,
-      contents: prompt,
+      contents: images?.length
+        ? [
+            {
+              role: "user",
+              parts: [
+                ...images.map((image) => ({
+                  inlineData: { mimeType: image.mimeType, data: image.data },
+                })),
+                { text: prompt },
+              ],
+            },
+          ]
+        : prompt,
       config: {
+        ...(json ? { responseMimeType: "application/json" } : {}),
         systemInstruction:
           system ??
           "Eres un asistente de ventas experto en estrategias de marketing y negociación para comercio de tecnología en Colombia.",

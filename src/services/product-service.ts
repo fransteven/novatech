@@ -8,6 +8,21 @@ import {
 } from "@/db/schema";
 import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { ProductInput } from "@/lib/validators/product-validator";
+import { generateBaseSKU } from "@/lib/utils";
+import type { DbExecutor } from "@/services/inventory-service";
+
+/** SKU interno autogenerado: base legible + sufijo aleatorio de 8 caracteres. */
+export const generateProductSku = (
+  categoryName: string,
+  productName: string,
+  attributes?: Record<string, unknown>,
+): string => {
+  const suffix = (
+    Math.random().toString(36).substring(2, 10).toUpperCase() +
+    Math.random().toString(36).substring(2, 4).toUpperCase()
+  ).substring(0, 8);
+  return `${generateBaseSKU(categoryName, productName, attributes)}-${suffix}`;
+};
 
 export type ProductWithStock = Awaited<ReturnType<typeof getProducts>>[number];
 
@@ -70,10 +85,13 @@ export const getProductById = async (id: string) => {
   return result[0];
 };
 
-export const createProduct = async (data: ProductInput & { sku?: string }) => {
+export const createProduct = async (
+  data: ProductInput & { sku?: string },
+  executor: DbExecutor = db,
+) => {
   const attrsJson = data.attributes ? JSON.stringify(data.attributes) : null;
 
-  const existingProduct = await db
+  const existingProduct = await executor
     .select()
     .from(products)
     .where(
@@ -92,7 +110,7 @@ export const createProduct = async (data: ProductInput & { sku?: string }) => {
     );
   }
 
-  const result = await db.insert(products).values(data).returning();
+  const result = await executor.insert(products).values(data).returning();
   return result[0];
 };
 

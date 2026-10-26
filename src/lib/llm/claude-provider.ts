@@ -20,13 +20,30 @@ export class ClaudeProvider implements LLMProvider {
     this.model = process.env.LLM_MODEL ?? "claude-opus-4-8";
   }
 
-  async generate({ system, prompt, maxTokens = 1024 }: LLMGenerateOptions): Promise<string> {
+  async generate({ system, prompt, maxTokens = 1024, images }: LLMGenerateOptions): Promise<string> {
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: maxTokens,
       thinking: { type: "adaptive" },
       system: system ?? "Eres un asistente de ventas experto en estrategias de marketing y negociación para comercio de tecnología en Colombia.",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "user",
+          content: images?.length
+            ? [
+                ...images.map((image) => ({
+                  type: "image" as const,
+                  source: {
+                    type: "base64" as const,
+                    media_type: image.mimeType,
+                    data: image.data,
+                  },
+                })),
+                { type: "text" as const, text: prompt },
+              ]
+            : prompt,
+        },
+      ],
     });
 
     const textBlock = response.content.find((b) => b.type === "text");

@@ -4,11 +4,12 @@
  */
 import { normalizeSerial } from "@/lib/serials";
 
-export type BarcodeKind = "serial" | "upc";
+export type BarcodeKind = "serial" | "upc" | "internal";
 
 export const BARCODE_KIND_LABELS: Record<BarcodeKind, string> = {
   serial: "Serial",
   upc: "UPC/EAN",
+  internal: "Interno",
 };
 
 /** Misma forma canónica que los seriales: sin espacios y en mayúsculas. */

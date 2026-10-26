@@ -10,7 +10,8 @@ import {
   searchInventoryStock,
 } from "@/services/inventory-service";
 import { revalidatePath } from "next/cache";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ScanLine } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/ui/page-shell";
 
@@ -50,6 +51,12 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                 Sincronizar
               </Button>
             </form>
+            <Button asChild variant="outline" size="sm" className="h-[38px] px-[14px] text-[13.5px] font-medium">
+              <Link href="/inventory/count">
+                <ScanLine className="h-3.5 w-3.5 mr-2" />
+                Toma de inventario
+              </Link>
+            </Button>
             <AddStockSheet products={products} />
           </>
         }

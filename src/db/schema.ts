@@ -15,3 +15,4 @@ export * from "./schema/audit";
 export * from "./schema/warranties";
 export * from "./schema/income";
 export * from "./schema/loans";
+export * from "./schema/stock-counts";
