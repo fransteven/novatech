@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/config/brand";
 import { useState } from "react";
 import {
   CalendarClock,
@@ -94,12 +95,12 @@ function reminderMessage(entry: DailyCreditBoardEntry): string {
   const amount = formatCurrency(entry.amountDue);
   const cuota = installmentsLabel(entry.installments).toLowerCase();
   if (entry.bucket === "mora") {
-    return `Hola ${firstName}, te escribimos de NovaTech. Tu crédito tiene ${dueHint(entry)} (${cuota}) por ${amount}. ¿Nos confirmas cuándo puedes realizar el pago?`;
+    return `Hola ${firstName}, te escribimos de ${BRAND.name}. Tu crédito tiene ${dueHint(entry)} (${cuota}) por ${amount}. ¿Nos confirmas cuándo puedes realizar el pago?`;
   }
   if (entry.bucket === "hoy") {
-    return `Hola ${firstName}, te recordamos de NovaTech que hoy vence tu ${cuota} por ${amount}. ¡Gracias por tu puntualidad!`;
+    return `Hola ${firstName}, te recordamos de ${BRAND.name} que hoy vence tu ${cuota} por ${amount}. ¡Gracias por tu puntualidad!`;
   }
-  return `Hola ${firstName}, te recordamos de NovaTech que tu ${cuota} por ${amount} vence el ${shortDate.format(new Date(entry.dueDate))}.`;
+  return `Hola ${firstName}, te recordamos de ${BRAND.name} que tu ${cuota} por ${amount} vence el ${shortDate.format(new Date(entry.dueDate))}.`;
 }
 
 const sum = (rows: { amountDue: number }[]) => rows.reduce((s, r) => s + r.amountDue, 0);

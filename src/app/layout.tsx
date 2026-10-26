@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import type { Metadata } from "next";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -13,7 +14,7 @@ const archivo = Archivo({
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500", "600"] });
 
 export const metadata: Metadata = {
-  title: { default: "NovaTech", template: "%s · NovaTech" },
+  title: { default: BRAND.name, template: `%s · ${BRAND.name}` },
   description: "Operación, inventario y caja para comercio tecnológico.",
 };
 

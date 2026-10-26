@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import {
   getShareholdersAction,
   getDistributionsAction,
@@ -54,7 +55,7 @@ export default async function AccionistasPage() {
     <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Accionistas"
-        description="Gestión de repartos anuales 50/50 entre los socios de NovaTech."
+        description={`Gestión de repartos anuales 50/50 entre los socios de ${BRAND.name}.`}
         icon={Users}
         actions={
           <div className="flex gap-2">

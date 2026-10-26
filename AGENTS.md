@@ -132,6 +132,23 @@ Para respetar las restricciones `UNIQUE` de la base de datos (`customers.documen
 
 ---
 
+## 🔁 Proyecto derivado: Masterplay (sincronización obligatoria)
+
+`/Users/fransteven/Desktop/masterplay` es un clon git de este repo para el negocio **Masterplay** (BD Neon propia, puerto 3001). Su remote `upstream` apunta a este repo local. Este AGENTS.md es la **fuente de verdad** de ambos proyectos.
+
+- **Nunca hardcodear el nombre del negocio.** Todo texto visible (títulos, sidebar, mensajes de WhatsApp, correos, prompts LLM, id de Inngest) usa `BRAND` de [`src/config/brand.ts`](file:///Users/fransteven/Desktop/novatech/src/config/brand.ts). Es el único archivo de código que difiere entre ambos proyectos.
+- **Todo cambio se hace aquí (novatech)**, nunca directamente en masterplay. Tras commitear en novatech, replicar:
+  ```bash
+  cd /Users/fransteven/Desktop/masterplay
+  git pull upstream main     # trae los commits de novatech
+  npm install                # si cambiaron dependencias
+  npx drizzle-kit push       # si cambió el schema (aplica a la BD de Masterplay)
+  npm run test:run
+  ```
+- Scripts one-off con datos de clientes de NovaTech (`scripts/create-*`, `fix-*`, `lookup-*`) no aplican a Masterplay: no ejecutarlos allá.
+
+---
+
 ## 🛠️ Code Conventions & Standards
 
 - **TypeScript**: Strict mode enabled. The use of `any` is strictly prohibited. Use precise typings.

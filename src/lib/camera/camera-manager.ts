@@ -1,5 +1,5 @@
 /**
- * Central Camera Manager for NovaTech.
+ * Central Camera Manager.
  *
  * Provides:
  * - Mutual exclusion across camera acquisitions.

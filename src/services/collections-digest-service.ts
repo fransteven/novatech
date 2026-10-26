@@ -6,6 +6,7 @@
  * y lo envía a todos los usuarios de la app (no a los clientes).
  */
 
+import { BRAND } from "@/config/brand";
 import { db } from "@/db";
 import {
   layaways,
@@ -246,7 +247,7 @@ export async function generateDigestNarrative(
 
   const prompt =
     `Redacta un resumen ejecutivo de máximo 3 frases (sin saludo ni despedida) ` +
-    `para el equipo de cobros de NovaTech, una tienda de electrónica en Colombia, ` +
+    `para el equipo de cobros de ${BRAND.name}, una tienda de electrónica en Colombia, ` +
     `sobre la jornada de cobros del ${fechaFmt}. Datos: ${vencenHoy.length} cobros ` +
     `vencen hoy por ${formatCurrency(totalHoy)}; ${enMora.length} están en mora por ` +
     `${formatCurrency(totalMora)} en total (el caso más antiguo lleva ${peorMora} días); ` +
@@ -271,7 +272,7 @@ export async function generateMoraMessages(enMora: CollectionRow[]): Promise<Map
       const prompt =
         `Escribe un mensaje corto de WhatsApp (máximo 3 líneas, sin emojis) ` +
         `recordándole a ${row.clienteNombre} que tiene ${row.diasMora} días de mora ` +
-        `en su ${tipoLabel} por ${formatCurrency(row.monto)} con NovaTech. Tono cordial ` +
+        `en su ${tipoLabel} por ${formatCurrency(row.monto)} con ${BRAND.name}. Tono cordial ` +
         `pero firme, sin amenazas, en español de Colombia.`;
       const text = await safeLLMGenerate(prompt, 150);
       if (text) messages.set(rowKey(row), text);

@@ -1,5 +1,5 @@
 /**
- * Luhn algorithm and IMEI extraction utilities for NovaTech.
+ * Luhn algorithm and IMEI extraction utilities.
  *
  * Standard IMEI has 15 digits (14 digits + 1 check digit verified with Luhn).
  */

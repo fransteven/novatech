@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -60,7 +61,7 @@ export default async function AuthLayout({
             <OperationsMark />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-[-0.02em] text-white">NovaTech</p>
+            <p className="text-sm font-semibold tracking-[-0.02em] text-white">{BRAND.name}</p>
             <p className="mono mt-0.5 text-[0.625rem] font-medium uppercase tracking-[0.14em] text-white/50">
               Operaciones comerciales
             </p>
@@ -106,7 +107,7 @@ export default async function AuthLayout({
             <OperationsMark />
           </div>
           <div>
-            <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">NovaTech</p>
+            <p className="text-sm font-semibold tracking-[-0.02em] text-foreground">{BRAND.name}</p>
             <p className="mono mt-0.5 text-[0.625rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Operaciones comerciales
             </p>

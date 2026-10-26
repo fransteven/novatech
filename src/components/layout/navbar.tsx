@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/config/brand";
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Moon, Sun, Search, ChevronRight, LogOut, Menu } from "lucide-react";
@@ -96,11 +97,11 @@ export function Navbar() {
         <div className="flex items-center gap-2 text-[13px] text-[color:var(--tf-fg-muted)] min-w-0">
           {/* Mobile: only page label */}
           <b className="text-foreground font-semibold truncate sm:hidden">
-            {pageLabel || "NovaTech"}
+            {pageLabel || BRAND.name}
           </b>
 
           {/* Desktop: full breadcrumb */}
-          <span className="hidden sm:inline">NovaTech</span>
+          <span className="hidden sm:inline">{BRAND.name}</span>
           {sectionLabel && (
             <>
               <ChevronRight className="hidden sm:inline h-3.5 w-3.5 text-[color:var(--tf-fg-subtle)] shrink-0" />

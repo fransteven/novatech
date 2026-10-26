@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/config/brand";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -73,7 +74,7 @@ export default function SignUpPage() {
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">Crear Cuenta</CardTitle>
         <CardDescription>
-          Ingresa tus datos para registrarte en NovaTech
+          Ingresa tus datos para registrarte en {BRAND.name}
         </CardDescription>
       </CardHeader>
       <CardContent>

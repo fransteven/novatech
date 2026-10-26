@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import { Metadata } from "next";
 import { ShoppingCart, Wallet, CalendarDays, Receipt } from "lucide-react";
 
@@ -17,7 +18,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { formatCurrency } from "@/lib/formatters";
 
 export const metadata: Metadata = {
-  title: "Compras | NovaTech",
+  title: `Compras | ${BRAND.name}`,
 };
 
 interface PurchasesPageProps {

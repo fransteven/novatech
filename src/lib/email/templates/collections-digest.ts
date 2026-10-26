@@ -3,6 +3,7 @@
  * Un solo correo consolidado con 3 tablas: vencen hoy, en mora, por vencer.
  */
 
+import { BRAND } from "@/config/brand";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { rowKey, type CollectionRow, type DailyCollections } from "@/services/collections-digest-service";
@@ -91,6 +92,6 @@ export function renderCollectionsDigestEmail(
       ${renderTable("En mora", enMora, "#b91c1c", true, moraMessages)}
       ${renderTable(`Por vencer (próximos días)`, porVencer, "#1d4ed8", false)}
       ${total === 0 ? `<p style="color:#6b7280;">No hay cobros pendientes hoy.</p>` : ""}
-      <p style="color:#9ca3af;font-size:11px;margin-top:32px;">Digest automático de NovaTech. No responder a este correo.</p>
+      <p style="color:#9ca3af;font-size:11px;margin-top:32px;">Digest automático de ${BRAND.name}. No responder a este correo.</p>
     </div>`;
 }

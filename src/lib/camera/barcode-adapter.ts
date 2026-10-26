@@ -1,5 +1,5 @@
 /**
- * Barcode and QR Code recognition adapter for NovaTech.
+ * Barcode and QR Code recognition adapter.
  *
  * Checks native BarcodeDetector API for supported formats;
  * falls back to loading the WASM polyfill (barcode-detector) on-demand.

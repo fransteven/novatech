@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/config/brand";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -197,7 +198,7 @@ function NavBrand({ collapsed, children }: { collapsed?: boolean; children?: Rea
       </div>
       {!collapsed && (
         <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-semibold tracking-[-0.02em] whitespace-nowrap">NovaTech</div>
+          <div className="text-[15px] font-semibold tracking-[-0.02em] whitespace-nowrap">{BRAND.name}</div>
           <div className="text-[11px] text-[color:var(--tf-fg-subtle)] font-medium whitespace-nowrap">
             Suite de Comercio · v3.4
           </div>

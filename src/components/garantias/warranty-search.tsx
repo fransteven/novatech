@@ -1,5 +1,6 @@
 "use client";
 
+import { BRAND } from "@/config/brand";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Loader2, ShieldQuestion, ShieldAlert, PackageSearch } from "lucide-react";
@@ -201,7 +202,7 @@ export function WarrantySearch({ canAdjust }: WarrantySearchProps) {
             {result.serialUnknown ? (
               <EmptyState
                 icon={ShieldQuestion}
-                headline={`"${query.trim()}" no está registrado en NovaTech`}
+                headline={`"${query.trim()}" no está registrado en ${BRAND.name}`}
                 description="Ningún equipo vendido por nosotros tiene ese serial/IMEI. Verifica que el equipo presentado sea el mismo que se vendió — posible sustitución."
               />
             ) : result.serialInInventoryWithoutDelivery ? (

@@ -1,3 +1,4 @@
+import { BRAND } from "@/config/brand";
 import { getProfitsDataAction, getMonthlyProfitsAction } from "@/app/actions/profits-actions";
 import { ProfitsKPIs } from "@/components/profits/profits-kpis";
 import { MonthlyProfitsTable } from "@/components/profits/monthly-profits-table";
@@ -46,7 +47,7 @@ export default async function ProfitsPage({ searchParams }: ProfitsPageProps) {
     <PageShell width="standard" className="space-y-6">
       <PageHeader
         title="Ganancias"
-        description="Utilidad neta de NovaTech — desglose mensual."
+        description={`Utilidad neta de ${BRAND.name} — desglose mensual.`}
         icon={PiggyBank}
         actions={<YearPicker year={year} />}
       />
