@@ -253,3 +253,195 @@ describe("applyAbonoCapital — tasa pactada", () => {
     expect(at4.newInstallmentAmount).toBeLessThan(at5.newInstallmentAmount);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Auditoría de modalidades de abono a capital
+// ---------------------------------------------------------------------------
+
+describe("applyAbonoCapital — auditoría reduce_term (misma cuota, menos plazo)", () => {
+  const cases: Array<[number, number, number]> = [
+    // [capital, plazo, abono] — abonos que dan un plazo no entero (caso del bug)
+    [1_000_000, 12, 200_000],
+    [1_000_000, 12, 137_500],
+    [2_350_000, 18, 410_000],
+    [3_000_000, 24, 999_999],
+    [800_000, 6, 50_000],
+    [800_000, 6, 5_000],
+  ];
+
+  it.each(cases)(
+    "capital %i a %i meses, abono %i: la cuota NO baja",
+    (principal, months, abono) => {
+      const schedule = makeSchedule(principal, months);
+      const cuota = schedule[0].totalAmount;
+      const r = applyAbonoCapital(
+        { schedule, outstandingPrincipal: principal },
+        abono,
+        "reduce_term",
+        0.05,
+        BASE
+      );
+
+      expect(r.newInstallmentAmount).toBe(cuota);
+      const regular = r.newSchedule.slice(0, -1);
+      for (const c of regular) expect(c.totalAmount).toBe(cuota);
+      const last = r.newSchedule[r.newSchedule.length - 1];
+      expect(last.totalAmount).toBeLessThanOrEqual(cuota);
+      expect(last.totalAmount).toBeGreaterThan(0);
+      expect(last.remainingBalance).toBe(0);
+      // Abono pequeño puede no eliminar una cuota entera: solo achica la última
+      expect(r.newSchedule.length).toBeLessThanOrEqual(months);
+      const total = (xs: ScheduleEntry[]) => xs.reduce((a, c) => a + c.totalAmount, 0);
+      expect(total(r.newSchedule)).toBeLessThan(total(schedule) - abono);
+
+      const sumCap = r.newSchedule.reduce((a, c) => a + c.principal, 0);
+      expect(sumCap).toBe(principal - abono);
+      for (const c of r.newSchedule) {
+        expect(c.principal + c.interest).toBe(c.totalAmount);
+      }
+    }
+  );
+
+  it("conserva cuotas pagadas, numeración y fechas originales", () => {
+    let schedule = makeSchedule(1_000_000, 12);
+    schedule = applyCuota(schedule, 1).schedule;
+    schedule = applyCuota(schedule, 2).schedule;
+    const outstanding = schedule[1].remainingBalance;
+    const cuota = schedule[2].totalAmount;
+
+    const r = applyAbonoCapital(
+      { schedule, outstandingPrincipal: outstanding },
+      150_000,
+      "reduce_term",
+      0.05,
+      BASE
+    );
+
+    expect(r.newSchedule.slice(0, 2)).toEqual(schedule.slice(0, 2));
+    expect(r.newPendingEntries[0].number).toBe(3);
+    r.newPendingEntries.forEach((c, idx) => {
+      expect(c.number).toBe(3 + idx);
+      expect(c.dueDate).toEqual(schedule[2 + idx].dueDate);
+      expect(c.status).toBe("pendiente");
+    });
+    expect(r.newPendingEntries[0].totalAmount).toBe(cuota);
+    expect(r.newSchedule.length).toBeLessThan(12);
+  });
+
+  it("primer interés se calcula sobre el saldo después del abono", () => {
+    const r = applyAbonoCapital(
+      { schedule: makeSchedule(1_000_000, 12), outstandingPrincipal: 1_000_000 },
+      200_000,
+      "reduce_term",
+      0.05,
+      BASE
+    );
+    expect(r.newSchedule[0].interest).toBe(40_000);
+  });
+
+  it("con una sola cuota pendiente la liquida con el nuevo saldo", () => {
+    let schedule = makeSchedule(1_000_000, 3);
+    schedule = applyCuota(schedule, 1).schedule;
+    schedule = applyCuota(schedule, 2).schedule;
+    const outstanding = schedule[1].remainingBalance;
+    const r = applyAbonoCapital(
+      { schedule, outstandingPrincipal: outstanding },
+      100_000,
+      "reduce_term",
+      0.05,
+      BASE
+    );
+    expect(r.newPendingEntries).toHaveLength(1);
+    expect(r.newPendingEntries[0].principal).toBe(outstanding - 100_000);
+    expect(r.newPendingEntries[0].dueDate).toEqual(schedule[2].dueDate);
+  });
+});
+
+describe("applyAbonoCapital — auditoría reduce_installment (mismo plazo, cuota menor)", () => {
+  it("mismo número de cuotas pendientes, cuota menor, fechas preservadas", () => {
+    let schedule = makeSchedule(1_000_000, 12);
+    schedule = applyCuota(schedule, 1).schedule;
+    const outstanding = schedule[0].remainingBalance;
+    const cuota = schedule[1].totalAmount;
+
+    const r = applyAbonoCapital(
+      { schedule, outstandingPrincipal: outstanding },
+      200_000,
+      "reduce_installment",
+      0.05,
+      BASE
+    );
+
+    expect(r.newSchedule).toHaveLength(12);
+    expect(r.newPendingEntries).toHaveLength(11);
+    expect(r.newInstallmentAmount).toBeLessThan(cuota);
+    r.newPendingEntries.forEach((c, idx) => {
+      expect(c.number).toBe(2 + idx);
+      expect(c.dueDate).toEqual(schedule[1 + idx].dueDate);
+    });
+    const sumCap = r.newPendingEntries.reduce((a, c) => a + c.principal, 0);
+    expect(sumCap).toBe(outstanding - 200_000);
+    expect(r.newSchedule[0]).toEqual(schedule[0]);
+  });
+});
+
+describe("applyAbonoCapital — comparación de modalidades", () => {
+  it("reducir plazo paga menos interés total que reducir cuota", () => {
+    const state = { schedule: makeSchedule(1_000_000, 12), outstandingPrincipal: 1_000_000 };
+    const term = applyAbonoCapital(state, 300_000, "reduce_term", 0.05, BASE);
+    const inst = applyAbonoCapital(state, 300_000, "reduce_installment", 0.05, BASE);
+    const interest = (s: ScheduleEntry[]) => s.reduce((a, c) => a + c.interest, 0);
+    expect(interest(term.newSchedule)).toBeLessThan(interest(inst.newSchedule));
+    expect(term.newInstallmentAmount).toBeGreaterThan(inst.newInstallmentAmount);
+  });
+
+  it("no modifica el cronograma recibido (función pura)", () => {
+    const schedule = makeSchedule(1_000_000, 12);
+    const copy = structuredClone(schedule);
+    applyAbonoCapital({ schedule, outstandingPrincipal: 1_000_000 }, 200_000, "reduce_term", 0.05, BASE);
+    expect(schedule).toEqual(copy);
+  });
+});
+
+describe("applyAbonoCapital — validaciones", () => {
+  const state = () => ({ schedule: makeSchedule(1_000_000, 12), outstandingPrincipal: 1_000_000 });
+
+  it.each(["reduce_term", "reduce_installment"] as const)(
+    "%s: rechaza si hay cuotas vencidas (no borra la mora)",
+    (strategy) => {
+      // Cuota 1 vence 2026-03-01; abono el 2026-03-10
+      expect(() =>
+        applyAbonoCapital(state(), 200_000, strategy, 0.05, new Date("2026-03-10T15:00:00Z"))
+      ).toThrow(/vencida/);
+    }
+  );
+
+  it("permite abonar el mismo día del vencimiento (aún no está en mora)", () => {
+    const s = state();
+    // Mismo día calendario en Bogotá, unas horas después del vencimiento
+    const dueDay = new Date(s.schedule[0].dueDate.getTime() + 2 * 3_600_000);
+    expect(() => applyAbonoCapital(s, 200_000, "reduce_term", 0.05, dueDay)).not.toThrow();
+  });
+
+  it("rechaza cuota marcada 'vencida' aunque la fecha sea futura", () => {
+    const s = state();
+    s.schedule[0] = { ...s.schedule[0], status: "vencida" };
+    expect(() => applyAbonoCapital(s, 200_000, "reduce_term", 0.05, BASE)).toThrow(/vencida/);
+  });
+
+  it("rechaza si una cuota pendiente tiene abono parcial", () => {
+    const s = state();
+    s.schedule = applyAbonoCuota(s.schedule, 1, 10_000).schedule;
+    expect(() => applyAbonoCapital(s, 200_000, "reduce_term", 0.05, BASE)).toThrow(/abono parcial/);
+  });
+
+  it("rechaza monto <= 0", () => {
+    expect(() => applyAbonoCapital(state(), 0, "reduce_term", 0.05, BASE)).toThrow();
+    expect(() => applyAbonoCapital(state(), -5, "reduce_installment", 0.05, BASE)).toThrow();
+  });
+
+  it("rechaza monto >= saldo insoluto", () => {
+    expect(() => applyAbonoCapital(state(), 1_000_000, "reduce_term", 0.05, BASE)).toThrow();
+    expect(() => applyAbonoCapital(state(), 1_200_000, "reduce_term", 0.05, BASE)).toThrow();
+  });
+});

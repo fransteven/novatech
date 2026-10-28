@@ -5,7 +5,8 @@
 
 import { money, roundCOP } from "@/lib/money";
 import type { ScheduleEntry } from "./amortization";
-import { generateSchedule } from "./amortization";
+import { generateSchedule, generateFixedInstallmentSchedule } from "./amortization";
+import { bogotaDayDiff } from "./daily-board";
 
 export interface CreditState {
   schedule: ScheduleEntry[];
@@ -166,76 +167,172 @@ export function applySoloInteres(
 export type CapitalStrategy = "reduce_term" | "reduce_installment";
 
 export interface AbonoCapitalResult {
+  /** Cronograma completo: cuotas pagadas intactas + cuotas pendientes regeneradas. */
   newSchedule: ScheduleEntry[];
+  /** Solo las cuotas pendientes regeneradas (las que el servicio reemplaza en DB). */
+  newPendingEntries: ScheduleEntry[];
   newOutstandingPrincipal: number;
   newInstallmentAmount: number;
 }
 
 /**
- * Abono a capital: reduce el saldo insoluto y regenera el cronograma.
+ * Abono a capital: reduce el saldo insoluto y regenera SOLO las cuotas pendientes.
+ *
+ * - "reduce_term": la cuota se conserva exacta; se eliminan cuotas del final y
+ *   la última absorbe el residuo (≤ cuota).
+ * - "reduce_installment": mismo número de cuotas pendientes, cuota menor.
+ *
+ * Reglas:
+ * - Las cuotas pagadas no se tocan (historial).
+ * - Las cuotas regeneradas heredan número y fecha de vencimiento de las
+ *   pendientes originales, en orden: el calendario pactado no se corre.
+ * - Se rechaza si hay cuotas vencidas (el abono borraría la mora) o cuotas
+ *   pendientes con abono parcial (su interés ya cobrado se cobraría dos veces).
  *
  * @param state          Estado actual (cronograma + saldo insoluto)
  * @param monto          Monto del abono
- * @param strategy       "reduce_term" = misma cuota, menos cuotas
- *                       "reduce_installment" = mismo plazo, cuota menor
- * @param monthlyRate    Tasa mensual vigente
- * @param startDate      Fecha de referencia para las nuevas fechas de vencimiento
+ * @param strategy       Estrategia de recálculo
+ * @param monthlyRate    Tasa mensual pactada
+ * @param today          Fecha del abono (para detectar mora, calendario Bogotá)
  */
 export function applyAbonoCapital(
   state: CreditState,
   monto: number,
   strategy: CapitalStrategy,
   monthlyRate: number,
-  startDate: Date
+  today: Date
 ): AbonoCapitalResult {
+  if (monto <= 0) {
+    throw new Error("El monto del abono debe ser positivo");
+  }
   if (monto >= state.outstandingPrincipal) {
     throw new Error(
       "El abono a capital no puede ser igual o mayor al saldo insoluto. " +
         "Para saldar el crédito usa una cuota normal."
     );
   }
-  if (monto <= 0) {
-    throw new Error("El monto del abono debe ser positivo");
+
+  const paid = state.schedule.filter((c) => c.status === "pagada");
+  const pending = state.schedule
+    .filter((c) => c.status !== "pagada")
+    .sort((a, b) => a.number - b.number);
+  if (pending.length === 0) {
+    throw new Error("El crédito no tiene cuotas pendientes");
+  }
+
+  const overdue = pending.filter(
+    (c) => c.status === "vencida" || bogotaDayDiff(c.dueDate, today) > 0
+  );
+  if (overdue.length > 0) {
+    throw new Error(
+      `El crédito tiene ${overdue.length} cuota(s) vencida(s) ` +
+        `(#${overdue.map((c) => c.number).join(", #")}). ` +
+        "Ponte al día antes de abonar a capital."
+    );
+  }
+
+  const partial = pending.find((c) => (c.paidAmount ?? 0) > 0);
+  if (partial) {
+    throw new Error(
+      `La cuota #${partial.number} tiene un abono parcial. ` +
+        "Complétala antes de abonar a capital."
+    );
   }
 
   const newPrincipal = roundCOP(money(state.outstandingPrincipal).minus(monto)).toNumber();
 
-  const pendingCount = state.schedule.filter((c) => c.status !== "pagada").length;
-  const originalInstallment = state.schedule.find((c) => c.status !== "pagada")?.totalAmount ?? 0;
-
-  let newTermMonths: number;
-
-  if (strategy === "reduce_term") {
-    // Misma cuota → calcular cuántos meses se necesitan para pagar newPrincipal
-    // n = −ln(1 − P·i/cuota) / ln(1+i)   [despejando n de la fórmula francesa]
-    const i = money(monthlyRate);
-    const C = money(originalInstallment);
-    const P = money(newPrincipal);
-    const ratio = P.times(i).dividedBy(C); // P·i/C
-    if (ratio.gte(1)) {
-      // La cuota no alcanza a cubrir interés; usar misma cantidad de cuotas
-      newTermMonths = pendingCount;
-    } else {
-      const raw = money(-1)
-        .times(Math.log(1 - ratio.toNumber()))
-        .dividedBy(Math.log(1 + monthlyRate));
-      newTermMonths = Math.max(1, Math.ceil(raw.toNumber()));
-    }
+  let regenerated: ScheduleEntry[];
+  if (strategy === "reduce_term" && pending.length > 1) {
+    // La cuota vigente es la de una pendiente regular (no la última, que lleva residuo)
+    const installment = pending[0].totalAmount;
+    regenerated = generateFixedInstallmentSchedule({
+      principal: newPrincipal,
+      monthlyRate,
+      installment,
+      maxTerm: pending.length,
+    });
   } else {
-    // Mismo plazo → misma cantidad de cuotas pendientes
-    newTermMonths = pendingCount;
+    regenerated = generateSchedule({
+      principal: newPrincipal,
+      monthlyRate,
+      termMonths: pending.length,
+      startDate: today, // fechas se reemplazan abajo
+    });
   }
 
-  const newSchedule = generateSchedule({
-    principal: newPrincipal,
-    monthlyRate,
-    termMonths: newTermMonths,
-    startDate,
-  });
+  // Heredar número y fecha de las pendientes originales
+  const newPendingEntries = regenerated.map((e, idx) => ({
+    ...e,
+    number: pending[idx].number,
+    dueDate: pending[idx].dueDate,
+  }));
+
+  const newSchedule = [...paid, ...newPendingEntries].sort((a, b) => a.number - b.number);
 
   return {
     newSchedule,
+    newPendingEntries,
     newOutstandingPrincipal: newPrincipal,
-    newInstallmentAmount: newSchedule[0]?.totalAmount ?? 0,
+    newInstallmentAmount: newPendingEntries[0].totalAmount,
   };
+}
+
+// ---------------------------------------------------------------------------
+// previewAbonoCapital (para la UI)
+// ---------------------------------------------------------------------------
+
+export interface ScheduleRowLike {
+  number: number;
+  dueDate: Date | string;
+  principal: number | string;
+  interest: number | string;
+  totalAmount: number | string;
+  remainingBalance?: number | string;
+  paidAmount?: number | string | null;
+  status: string;
+}
+
+export type AbonoCapitalPreview =
+  | { ok: true; installment: number; pendingCount: number; lastDueDate: Date; totalInterest: number }
+  | { ok: false; error: string };
+
+/** Simula el abono a capital con filas tal como llegan de la DB/acciones. */
+export function previewAbonoCapital(
+  rows: ScheduleRowLike[],
+  outstandingPrincipal: number,
+  monto: number,
+  strategy: CapitalStrategy,
+  monthlyRate: number,
+  today: Date = new Date()
+): AbonoCapitalPreview {
+  const schedule: ScheduleEntry[] = rows.map((r) => ({
+    number: r.number,
+    dueDate: new Date(r.dueDate),
+    principal: Number(r.principal),
+    interest: Number(r.interest),
+    totalAmount: Number(r.totalAmount),
+    remainingBalance: Number(r.remainingBalance ?? 0),
+    status: r.status as ScheduleEntry["status"],
+    paidAt: null,
+    paidAmount: Number(r.paidAmount ?? 0),
+  }));
+  try {
+    const res = applyAbonoCapital(
+      { schedule, outstandingPrincipal },
+      monto,
+      strategy,
+      monthlyRate,
+      today
+    );
+    const pending = res.newPendingEntries;
+    return {
+      ok: true,
+      installment: res.newInstallmentAmount,
+      pendingCount: pending.length,
+      lastDueDate: pending[pending.length - 1].dueDate,
+      totalInterest: pending.reduce((a, c) => a + c.interest, 0),
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "No se pudo simular el abono" };
+  }
 }

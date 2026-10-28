@@ -22,13 +22,13 @@ import {
   saleDetails,
   otherIncome,
 } from "@/db/schema";
-import { eq, desc, sql, and, asc, inArray, lt, gte } from "drizzle-orm";
+import { eq, desc, sql, and, asc, inArray, lt, gte, ne } from "drizzle-orm";
 import type {
   CreateLayawayInput,
   AddLayawayPaymentInput,
   RegisterCreditPaymentInput,
 } from "@/lib/validators/layaway-validator";
-import { generateSchedule } from "@/lib/credit/amortization";
+import { generateSchedule, type ScheduleEntry } from "@/lib/credit/amortization";
 import { applyCuota, applySoloInteres, applyAbonoCapital, applyAbonoCuota } from "@/lib/credit/payments";
 import { computeRiskScore } from "@/lib/credit/risk";
 import { DEFAULT_RISK_CONFIG } from "@/lib/credit/risk-config";
@@ -720,6 +720,8 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
     let newOutstandingPrincipal = Number(lay.outstandingPrincipal ?? lay.totalAmount);
     // Solo cambia con abono a capital (estrategia reduce_installment)
     let newInstallmentAmount: number | null = null;
+    // Cuotas pendientes regeneradas por un abono a capital
+    let regeneratedEntries: ScheduleEntry[] = [];
 
     // 5. Aplicar tipo de pago
     if (data.type === "cuota") {
@@ -766,6 +768,7 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
       );
       principalPortion = data.amount;
       newScheduleEntries = result.newSchedule;
+      regeneratedEntries = result.newPendingEntries;
       newOutstandingPrincipal = result.newOutstandingPrincipal;
       newInstallmentAmount = result.newInstallmentAmount;
     }
@@ -835,12 +838,17 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
           );
       }
     } else if (data.type === "abono_capital") {
-      // Regenerar todo el cronograma
+      // Solo se reemplazan las cuotas pendientes; las pagadas son historial
       await tx
         .delete(layawaySchedule)
-        .where(eq(layawaySchedule.layawayId, data.layawayId));
+        .where(
+          and(
+            eq(layawaySchedule.layawayId, data.layawayId),
+            ne(layawaySchedule.status, "pagada")
+          )
+        );
       await tx.insert(layawaySchedule).values(
-        newScheduleEntries.map((e) => ({
+        regeneratedEntries.map((e) => ({
           layawayId: data.layawayId,
           number: e.number,
           dueDate: e.dueDate,
@@ -850,6 +858,7 @@ export const registerCreditPayment = async (data: RegisterCreditPaymentInput) =>
           remainingBalance: toDbString(e.remainingBalance),
           status: e.status,
           paidAt: e.paidAt,
+          paidAmount: toDbString(e.paidAmount),
         }))
       );
     }

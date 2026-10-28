@@ -1,0 +1,21 @@
+#!/bin/sh
+# Bloquea commits que filtren credenciales locales.
+# Los valores secretos se leen de AGENTS.local.md (ignorado), nunca se escriben aquí.
+# Activar una vez por clon: git config core.hooksPath .githooks
+
+if git diff --cached --name-only | grep -qE '(^|/)AGENTS\.local\.md$|\.local\.md$'; then
+  echo "pre-commit: AGENTS.local.md (o *.local.md) no se puede commitear." >&2
+  exit 1
+fi
+
+SECRETS_FILE="AGENTS.local.md"
+[ -f "$SECRETS_FILE" ] || exit 0
+
+# Valores de las líneas '- **Clave**: valor'
+sed -n 's/^- \*\*[^*]*\*\*: *//p' "$SECRETS_FILE" | while IFS= read -r value; do
+  [ -n "$value" ] || continue
+  if git diff --cached -U0 | grep '^+' | grep -qF -- "$value"; then
+    echo "pre-commit: el cambio contiene una credencial de $SECRETS_FILE. Commit bloqueado." >&2
+    exit 1
+  fi
+done || exit 1

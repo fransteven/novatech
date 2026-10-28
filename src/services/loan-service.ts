@@ -12,7 +12,7 @@ import {
   expenseCategories,
   riskHistory,
 } from "@/db/schema";
-import { eq, sql, and, desc, asc, or, ilike } from "drizzle-orm";
+import { eq, sql, and, desc, asc, or, ilike, ne } from "drizzle-orm";
 import { generateSchedule, type ScheduleEntry } from "@/lib/credit/amortization";
 import {
   applyCuota,
@@ -242,6 +242,8 @@ export const registerLoanPayment = async (data: RegisterLoanPaymentInput) => {
     let newScheduleEntries = schedEntries;
     let newOutstandingPrincipal = Number(loan.outstandingPrincipal);
     let newInstallmentAmount: number | null = null;
+    // Cuotas pendientes regeneradas por un abono a capital
+    let regeneratedEntries: ScheduleEntry[] = [];
 
     // 4. Aplicar tipo de pago
     if (data.type === "cuota") {
@@ -287,6 +289,7 @@ export const registerLoanPayment = async (data: RegisterLoanPaymentInput) => {
       );
       principalPortion = data.amount;
       newScheduleEntries = result.newSchedule;
+      regeneratedEntries = result.newPendingEntries;
       newOutstandingPrincipal = result.newOutstandingPrincipal;
       newInstallmentAmount = result.newInstallmentAmount;
     }
@@ -354,11 +357,17 @@ export const registerLoanPayment = async (data: RegisterLoanPaymentInput) => {
           );
       }
     } else if (data.type === "abono_capital") {
+      // Solo se reemplazan las cuotas pendientes; las pagadas son historial
       await tx
         .delete(loanSchedule)
-        .where(eq(loanSchedule.loanId, data.loanId));
+        .where(
+          and(
+            eq(loanSchedule.loanId, data.loanId),
+            ne(loanSchedule.status, "pagada")
+          )
+        );
       await tx.insert(loanSchedule).values(
-        newScheduleEntries.map((e) => ({
+        regeneratedEntries.map((e) => ({
           loanId: data.loanId,
           number: e.number,
           dueDate: e.dueDate,

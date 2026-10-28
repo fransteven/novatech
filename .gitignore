@@ -49,3 +49,7 @@ test-results/
 .claude/*.local.json
 .cursor/workspace.json
 
+
+# Credenciales locales de agentes (ver .githooks/pre-commit)
+AGENTS.local.md
+*.local.md

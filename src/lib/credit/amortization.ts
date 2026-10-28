@@ -27,6 +27,13 @@ export interface GenerateScheduleParams {
   startDate: Date;
 }
 
+/** startDate + k meses (UTC-safe). */
+export function addMonthsUTC(date: Date, months: number): Date {
+  const d = new Date(date);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d;
+}
+
 /**
  * Genera la tabla de amortización francesa completa.
  * La última cuota absorbe el centavo residual para que saldo cierre en 0.
@@ -74,9 +81,7 @@ export function generateSchedule({
 
     const newBalance = roundCOP(sub(balance, capitalDec));
 
-    // Fecha de vencimiento: startDate + k meses (UTC-safe)
-    const dueDate = new Date(startDate);
-    dueDate.setUTCMonth(dueDate.getUTCMonth() + k);
+    const dueDate = addMonthsUTC(startDate, k);
 
     schedule.push({
       number: k,
@@ -91,6 +96,63 @@ export function generateSchedule({
     });
 
     balance = isLast ? new Decimal(0) : newBalance;
+  }
+
+  return schedule;
+}
+
+export interface FixedInstallmentParams {
+  principal: number;
+  monthlyRate: number;
+  /** Cuota fija que se conserva (abono a capital con reducción de plazo). */
+  installment: number;
+  /** Tope de cuotas; si la cuota no amortiza el saldo dentro de él, lanza error. */
+  maxTerm: number;
+}
+
+/**
+ * Cronograma con una cuota fija dada: todas las cuotas valen `installment`
+ * excepto la última, que paga el saldo restante + su interés (≤ `installment`).
+ * Devuelve cuotas numeradas 1..n sin fechas definitivas (las asigna quien llama).
+ */
+export function generateFixedInstallmentSchedule({
+  principal,
+  monthlyRate,
+  installment,
+  maxTerm,
+}: FixedInstallmentParams): ScheduleEntry[] {
+  if (principal <= 0) throw new Error("El capital debe ser positivo");
+  if (monthlyRate <= 0) throw new Error("La tasa debe ser positiva");
+
+  const i = money(monthlyRate);
+  const C = money(installment);
+  const schedule: ScheduleEntry[] = [];
+  let balance = money(principal);
+
+  for (let k = 1; balance.gt(0); k++) {
+    if (k > maxTerm) {
+      throw new Error("La cuota actual no alcanza a pagar el saldo dentro del plazo pactado");
+    }
+    const interestDec = roundCOP(balance.times(i));
+    const isLast = add(balance, interestDec).lte(C);
+    const capitalDec = isLast ? balance : roundCOP(sub(C, interestDec));
+    if (capitalDec.lte(0)) {
+      throw new Error("La cuota actual no cubre el interés del saldo");
+    }
+    const newBalance = isLast ? new Decimal(0) : roundCOP(sub(balance, capitalDec));
+
+    schedule.push({
+      number: k,
+      dueDate: new Date(0),
+      principal: capitalDec.toNumber(),
+      interest: interestDec.toNumber(),
+      totalAmount: add(capitalDec, interestDec).toNumber(),
+      remainingBalance: newBalance.toNumber(),
+      status: "pendiente",
+      paidAt: null,
+      paidAmount: 0,
+    });
+    balance = newBalance;
   }
 
   return schedule;

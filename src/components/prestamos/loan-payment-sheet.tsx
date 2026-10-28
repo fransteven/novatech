@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatCurrency } from "@/lib/formatters";
 import { registerLoanPaymentAction, getLoanDetailAction } from "@/app/actions/loan-actions";
 import { toast } from "sonner";
 import { DollarSign, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { previewAbonoCapital } from "@/lib/credit/payments";
+import { CapitalPaymentPreview } from "@/components/layaways/capital-payment-preview";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -40,6 +42,7 @@ interface LoanPaymentSheetProps {
 
 interface ScheduleRow {
   number: number;
+  dueDate: string | Date;
   totalAmount: number;
   paidAmount: number;
   principal: number;
@@ -66,6 +69,7 @@ export function LoanPaymentSheet({
   // Cronograma cargado
   const [schedule, setSchedule] = useState<ScheduleRow[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [interestRate, setInterestRate] = useState(0);
 
   // Cuota normal
   const [scheduleNumber, setScheduleNumber] = useState<number | "">("");
@@ -102,6 +106,7 @@ export function LoanPaymentSheet({
       if (res.success && res.data) {
         const rows = (res.data.schedule ?? []) as ScheduleRow[];
         setSchedule(rows);
+        setInterestRate(Number(res.data.interestRate ?? 0));
 
         // Preseleccionar cuota sugerida
         const targetNumber =
@@ -129,6 +134,15 @@ export function LoanPaymentSheet({
   const abonoCuotaTotal = selectedAbonoCuota ? selectedAbonoCuota.totalAmount : 0;
   const abonoCuotaPaid = selectedAbonoCuota ? selectedAbonoCuota.paidAmount : 0;
   const abonoCuotaRemaining = Math.max(abonoCuotaTotal - abonoCuotaPaid, 0);
+
+  const pendingCount = schedule.filter((r) => r.status !== "pagada").length;
+  const capitalPreview = useMemo(
+    () =>
+      typeof capitalAmount === "number" && capitalAmount > 0 && schedule.length > 0 && interestRate > 0
+        ? previewAbonoCapital(schedule, outstandingPrincipal, capitalAmount, capitalStrategy, interestRate)
+        : null,
+    [schedule, outstandingPrincipal, capitalAmount, capitalStrategy, interestRate]
+  );
 
   const handleSubmit = async () => {
     if (!loanId) return;
@@ -388,7 +402,7 @@ export function LoanPaymentSheet({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="reduce_term">
-                      Reducir plazo (mantener cuota similar, terminar antes)
+                      Reducir plazo (misma cuota, terminar antes)
                     </SelectItem>
                     <SelectItem value="reduce_installment">
                       Reducir cuota (mismo plazo, pagar cuota mensual más baja)
@@ -396,6 +410,11 @@ export function LoanPaymentSheet({
                   </SelectContent>
                 </Select>
               </div>
+              <CapitalPaymentPreview
+                preview={capitalPreview}
+                currentInstallment={installmentAmount}
+                currentPendingCount={pendingCount}
+              />
             </TabsContent>
 
             {/* TAB 4: ABONO A CUOTA */}

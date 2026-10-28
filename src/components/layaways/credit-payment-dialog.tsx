@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { formatCurrency } from "@/lib/formatters";
 import { registerCreditPaymentAction, getLayawayDetailsAction } from "@/app/actions/layaway-actions";
 import { toast } from "sonner";
 import { Info } from "lucide-react";
+import { previewAbonoCapital } from "@/lib/credit/payments";
+import { CapitalPaymentPreview } from "@/components/layaways/capital-payment-preview";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +43,9 @@ interface CreditPaymentDialogProps {
 
 interface ScheduleRow {
   number: number;
+  dueDate: string | Date;
+  principal: string | number;
+  interest: string | number;
   totalAmount: string | number;
   paidAmount: string | number;
   status: string;
@@ -73,6 +78,7 @@ export function CreditPaymentDialog({
   const [schedule, setSchedule] = useState<ScheduleRow[]>([]);
   const [abonoCuotaNum, setAbonoCuotaNum] = useState<number | "">("");
   const [abonoCuotaAmount, setAbonoCuotaAmount] = useState<number | "">("");
+  const [interestRate, setInterestRate] = useState(0);
 
   // Comunes
   const [method, setMethod] = useState("cash");
@@ -92,15 +98,16 @@ export function CreditPaymentDialog({
     setReferenceCode("");
   };
 
-  // Al abrir el diálogo o entrar a la tab "Abono cuota", carga el cronograma
-  // y sugiere por defecto la primera cuota pendiente (la "siguiente cuota").
+  // Al abrir el diálogo o entrar a "Abono cuota"/"Abono capital", carga el
+  // cronograma y sugiere por defecto la primera cuota pendiente.
   useEffect(() => {
-    if (!open || !layawayId || tab !== "abono_cuota") return;
+    if (!open || !layawayId || (tab !== "abono_cuota" && tab !== "abono_capital")) return;
     let active = true;
     getLayawayDetailsAction(layawayId).then((res) => {
       if (!active || !res.success || !res.data) return;
       const rows = (res.data.schedule ?? []) as ScheduleRow[];
       setSchedule(rows);
+      setInterestRate(Number(res.data.layaway?.interestRate ?? 0));
       const nextPending = rows.find((r) => r.status !== "pagada");
       if (nextPending && !abonoCuotaNum) setAbonoCuotaNum(nextPending.number);
     });
@@ -113,6 +120,15 @@ export function CreditPaymentDialog({
   const cuotaPaid = selectedCuota ? Number(selectedCuota.paidAmount) : 0;
   const cuotaRemaining = Math.max(cuotaTotal - cuotaPaid, 0);
   const cuotaAfterAbono = Math.max(cuotaRemaining - Number(abonoCuotaAmount || 0), 0);
+
+  const pendingCount = schedule.filter((r) => r.status !== "pagada").length;
+  const capitalPreview = useMemo(
+    () =>
+      typeof capitalAmount === "number" && capitalAmount > 0 && schedule.length > 0 && interestRate > 0
+        ? previewAbonoCapital(schedule, outstandingPrincipal, capitalAmount, capitalStrategy, interestRate)
+        : null,
+    [schedule, outstandingPrincipal, capitalAmount, capitalStrategy, interestRate]
+  );
 
   const handleSubmit = async () => {
     if (!layawayId) return;
@@ -335,6 +351,11 @@ export function CreditPaymentDialog({
                 </SelectContent>
               </Select>
             </div>
+            <CapitalPaymentPreview
+              preview={capitalPreview}
+              currentInstallment={installmentAmount}
+              currentPendingCount={pendingCount}
+            />
           </TabsContent>
         </Tabs>
 
