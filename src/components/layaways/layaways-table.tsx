@@ -40,6 +40,32 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type TypeFilter = "all" | "credito" | "sin_interes";
+type StatusFilter = "all" | "active" | "inactive";
+
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "Todas las modalidades" },
+  { value: "credito", label: "Solo créditos" },
+  { value: "sin_interes", label: "Solo apartados" },
+];
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "Todos los estados" },
+  { value: "active", label: "Activos" },
+  { value: "inactive", label: "Inactivos / completados" },
+];
+
+// Vencidos y en mora siguen abiertos (hay saldo por cobrar), así que cuentan como activos.
+const ACTIVE_STATUSES = new Set(["active", "overdue"]);
 
 interface Layaway {
   id: string;
@@ -90,6 +116,8 @@ const RISK_BADGE: Record<string, { label: string; className: string }> = {
 
 export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
   const [globalFilter, setGlobalFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [creditPaymentOpen, setCreditPaymentOpen] = useState(false);
@@ -100,6 +128,11 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
   const [deviceRecovered, setDeviceRecovered] = useState<boolean | null>(null);
 
   const isCancellingCredit = selectedLayaway?.type === "credito";
+
+  const openDetails = (layaway: Layaway) => {
+    setSelectedLayaway(layaway);
+    setDetailsOpen(true);
+  };
 
   const handleCancel = async () => {
     if (!selectedLayaway) return;
@@ -156,12 +189,20 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
         cell: ({ row }) => {
           const devices = row.original.devices;
           if (!devices) return <span className="text-muted-foreground text-xs">—</span>;
+          const list = devices.split(" | ");
           return (
-            <div className="text-xs">
-              {devices.split(" | ").map((d) => (
-                <div key={d} className="font-mono">{d}</div>
-              ))}
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="line-clamp-2 max-w-[220px] whitespace-normal break-words text-xs leading-snug">
+                  {list.join(", ")}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="start" className="max-w-sm text-left">
+                {list.map((d, i) => (
+                  <div key={`${d}-${i}`} className="font-mono">{d}</div>
+                ))}
+              </TooltipContent>
+            </Tooltip>
           );
         },
       },
@@ -245,7 +286,12 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
           const layaway = row.original;
           const canPay = layaway.status === "active" && layaway.balance > 0;
           return (
-            <div className="flex items-center justify-center gap-2">
+            // Los botones tienen su propio diálogo: no deben abrir el detalle de la fila.
+            <div
+              className="flex items-center justify-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
               <Button
                 variant="outline"
                 size="sm"
@@ -327,8 +373,29 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
     []
   );
 
+  const hasSelectFilters = typeFilter !== "all" || statusFilter !== "all";
+  const isFiltering = hasSelectFilters || Boolean(globalFilter);
+
+  const filteredData = useMemo(() => {
+    if (!hasSelectFilters) return data;
+    return data.filter((l) => {
+      if (typeFilter !== "all" && l.type !== typeFilter) return false;
+      if (statusFilter !== "all") {
+        const isActive = ACTIVE_STATUSES.has(getEffectiveStatus(l));
+        if (statusFilter === "active" ? !isActive : isActive) return false;
+      }
+      return true;
+    });
+  }, [data, typeFilter, statusFilter, hasSelectFilters]);
+
+  const clearFilters = () => {
+    setGlobalFilter("");
+    setTypeFilter("all");
+    setStatusFilter("all");
+  };
+
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -366,8 +433,37 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
               </button>
             )}
           </div>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as TypeFilter)}>
+            <SelectTrigger className="h-9 w-[180px]" aria-label="Filtrar por modalidad">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="h-9 w-[200px]" aria-label="Filtrar por estado">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isFiltering && (
+            <Button variant="ghost" size="sm" className="h-9" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" /> Limpiar filtros
+            </Button>
+          )}
           <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {globalFilter
+            {isFiltering
               ? `${filteredCount} de ${totalCount} resultados`
               : `${totalCount} registros`}
           </span>
@@ -391,7 +487,23 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
             <TableBody>
               {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    tabIndex={0}
+                    className="cursor-pointer focus-visible:outline-none focus-visible:bg-muted/55"
+                    data-state={
+                      detailsOpen && selectedLayaway?.id === row.original.id
+                        ? "selected"
+                        : undefined
+                    }
+                    onClick={() => openDetails(row.original)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openDetails(row.original);
+                      }
+                    }}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
@@ -408,12 +520,12 @@ export function LayawaysTable({ data, accounts }: LayawaysTableProps) {
                     <EmptyState
                       icon={Clock}
                       headline={
-                        globalFilter
+                        isFiltering
                           ? "No se encontraron registros con ese filtro"
                           : "No hay apartados ni créditos registrados"
                       }
                       description={
-                        globalFilter
+                        isFiltering
                           ? "Intenta con un término diferente"
                           : "Los apartados y créditos aparecerán aquí cuando se creen"
                       }
