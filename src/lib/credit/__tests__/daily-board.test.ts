@@ -4,8 +4,8 @@ import { buildCreditBoard, bogotaDayDiff, whatsappLink, type OpenInstallment } f
 // 2026-10-01 10:00 en Bogotá
 const NOW = new Date("2026-10-01T15:00:00Z");
 
-const inst = (layawayId: string, number: number, dueIso: string, total = 100, paid = 0): OpenInstallment => ({
-  layawayId,
+const inst = (creditId: string, number: number, dueIso: string, total = 100, paid = 0): OpenInstallment => ({
+  creditId,
   number,
   dueDate: new Date(dueIso),
   totalAmount: total,
@@ -32,7 +32,7 @@ describe("buildCreditBoard", () => {
       ],
       NOW,
     );
-    const byId = Object.fromEntries(board.map((e) => [e.layawayId, e]));
+    const byId = Object.fromEntries(board.map((e) => [e.creditId, e]));
     expect(byId.hoy.bucket).toBe("hoy");
     expect(byId.mora.bucket).toBe("mora");
     expect(byId.mora.daysLate).toBe(11);
@@ -67,7 +67,7 @@ describe("buildCreditBoard", () => {
       [inst("a", 1, "2026-09-28T15:00:00Z"), inst("b", 1, "2026-09-01T15:00:00Z")],
       NOW,
     );
-    expect(board.map((e) => e.layawayId)).toEqual(["b", "a"]);
+    expect(board.map((e) => e.creditId)).toEqual(["b", "a"]);
   });
 });
 

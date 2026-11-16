@@ -8,6 +8,7 @@ import {
   registerLoanPayment,
   getLoans,
   getLoanDetail,
+  getLoanDailyBoard,
   writeOffLoan,
   cancelLoan,
   type GetLoansFilter,
@@ -28,6 +29,16 @@ export async function getLoansAction(filter?: GetLoansFilter) {
   } catch (error) {
     console.error("Error al obtener préstamos:", error);
     return { success: false, error: "Error al cargar la lista de préstamos" };
+  }
+}
+
+export async function getLoanDailyBoardAction() {
+  try {
+    const data = await getLoanDailyBoard();
+    return { success: true as const, data };
+  } catch (error) {
+    console.error("Error al obtener el calendario de préstamos:", error);
+    return { success: false as const, error: "Error al cargar el calendario de cobro" };
   }
 }
 

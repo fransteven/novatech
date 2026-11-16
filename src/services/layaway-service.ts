@@ -38,7 +38,10 @@ import {
   buildCreditBoard,
   bogotaDateKey,
   UPCOMING_DAYS,
-  type BoardCreditEntry,
+  splitBoard,
+  type CreditBoard,
+  type CreditBoardPayment,
+  type CreditBoardRow,
 } from "@/lib/credit/daily-board";
 import type { LayawayStatus } from "@/lib/credit/state-machine";
 import { money, roundCOP, toDbString, sub } from "@/lib/money";
@@ -1093,33 +1096,9 @@ export const cancelLayaway = async (
 // getDailyCreditBoard — tablero de cobro del día
 // ---------------------------------------------------------------------------
 
-export type DailyCreditBoardEntry = BoardCreditEntry & {
-  customerName: string;
-  customerPhone: string | null;
-  customerDocument: string | null;
-  devices: string;
-  riskLevel: string | null;
-  outstandingPrincipal: number;
-  installmentAmount: number;
-};
-
-export type DailyCreditPayment = {
-  id: string;
-  layawayId: string;
-  customerName: string;
-  type: string;
-  amount: number;
-  scheduleNumber: number | null;
-  createdAt: Date;
-};
-
-export type DailyCreditBoard = {
-  dateKey: string;
-  overdue: DailyCreditBoardEntry[];
-  dueToday: DailyCreditBoardEntry[];
-  upcoming: DailyCreditBoardEntry[];
-  paidToday: DailyCreditPayment[];
-};
+export type DailyCreditBoardEntry = CreditBoardRow;
+export type DailyCreditPayment = CreditBoardPayment;
+export type DailyCreditBoard = CreditBoard;
 
 export const getDailyCreditBoard = async (now: Date = new Date()): Promise<DailyCreditBoard> => {
   const dateKey = bogotaDateKey(now);
@@ -1131,7 +1110,7 @@ export const getDailyCreditBoard = async (now: Date = new Date()): Promise<Daily
   const [openInstallments, paidToday] = await Promise.all([
     db
       .select({
-        layawayId: layawaySchedule.layawayId,
+        creditId: layawaySchedule.layawayId,
         number: layawaySchedule.number,
         dueDate: layawaySchedule.dueDate,
         totalAmount: layawaySchedule.totalAmount,
@@ -1150,7 +1129,7 @@ export const getDailyCreditBoard = async (now: Date = new Date()): Promise<Daily
     db
       .select({
         id: layawayPayments.id,
-        layawayId: layawayPayments.layawayId,
+        creditId: layawayPayments.layawayId,
         customerName: customers.name,
         type: layawayPayments.type,
         amount: layawayPayments.amount,
@@ -1173,7 +1152,7 @@ export const getDailyCreditBoard = async (now: Date = new Date()): Promise<Daily
     now,
   );
 
-  const ids = entries.map((e) => e.layawayId);
+  const ids = entries.map((e) => e.creditId);
   const meta = ids.length
     ? await db
         .select({
@@ -1201,11 +1180,11 @@ export const getDailyCreditBoard = async (now: Date = new Date()): Promise<Daily
     : [];
   const metaById = new Map(meta.map((m) => [m.id, m]));
 
-  const board: DailyCreditBoard = { dateKey, overdue: [], dueToday: [], upcoming: [], paidToday: [] };
+  const rows: CreditBoardRow[] = [];
   for (const entry of entries) {
-    const m = metaById.get(entry.layawayId);
+    const m = metaById.get(entry.creditId);
     if (!m) continue;
-    const row: DailyCreditBoardEntry = {
+    rows.push({
       ...entry,
       customerName: m.customerName,
       customerPhone: m.customerPhone,
@@ -1214,12 +1193,13 @@ export const getDailyCreditBoard = async (now: Date = new Date()): Promise<Daily
       riskLevel: m.riskLevel,
       outstandingPrincipal: Number(m.outstandingPrincipal ?? 0),
       installmentAmount: Number(m.installmentAmount ?? 0),
-    };
-    if (entry.bucket === "mora") board.overdue.push(row);
-    else if (entry.bucket === "hoy") board.dueToday.push(row);
-    else board.upcoming.push(row);
+    });
   }
 
-  board.paidToday = paidToday.map((p) => ({ ...p, amount: Number(p.amount) }));
-  return board;
+  return splitBoard(
+    rows,
+    paidToday.map((p) => ({ ...p, amount: Number(p.amount) })),
+    dateKey,
+    UPCOMING_DAYS,
+  );
 };

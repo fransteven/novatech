@@ -1,7 +1,8 @@
-import { getLoansAction } from "@/app/actions/loan-actions";
+import { getLoansAction, getLoanDailyBoardAction } from "@/app/actions/loan-actions";
 import { getCashAccountsWithBalanceAction } from "@/app/actions/cash-actions";
 import { LoansTable, type LoanItem } from "@/components/prestamos/loans-table";
 import { NewLoanSheet } from "@/components/prestamos/new-loan-sheet";
+import { DailyLoansBoard } from "@/components/prestamos/daily-loans-board";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -19,9 +20,10 @@ import { formatCurrency } from "@/lib/formatters";
 export const dynamic = "force-dynamic";
 
 export default async function PrestamosPage() {
-  const [loansRes, accountsRes] = await Promise.all([
+  const [loansRes, accountsRes, boardRes] = await Promise.all([
     getLoansAction(),
     getCashAccountsWithBalanceAction(),
+    getLoanDailyBoardAction(),
   ]);
 
   if (!loansRes.success) {
@@ -62,7 +64,12 @@ export default async function PrestamosPage() {
         title="Préstamos de Dinero"
         description="Gestiona colocaciones de crédito en efectivo. Controla cuotas fijas bajo amortización francesa, semáforo de riesgo y recaudos."
         icon={Landmark}
-        actions={<NewLoanSheet accounts={accounts} />}
+        actions={
+          <>
+            {boardRes.success && <DailyLoansBoard board={boardRes.data} accounts={accounts} />}
+            <NewLoanSheet accounts={accounts} />
+          </>
+        }
       />
 
       {/* Grid de KPIs responsive: 2 cols en móvil, 4 en desktop */}

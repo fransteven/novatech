@@ -12,7 +12,14 @@ import {
   expenseCategories,
   riskHistory,
 } from "@/db/schema";
-import { eq, sql, and, desc, asc, or, ilike, ne } from "drizzle-orm";
+import { eq, sql, and, desc, asc, or, ilike, ne, inArray, lt, gte } from "drizzle-orm";
+import {
+  buildCreditBoard,
+  bogotaDateKey,
+  splitBoard,
+  type CreditBoard,
+  type CreditBoardRow,
+} from "@/lib/credit/daily-board";
 import { generateSchedule, type ScheduleEntry } from "@/lib/credit/amortization";
 import {
   applyCuota,
@@ -645,6 +652,108 @@ export const getLoans = async (filter?: GetLoansFilter) => {
   }
 
   return filtered;
+};
+
+// ---------------------------------------------------------------------------
+// getLoanDailyBoard — calendario de cobro de préstamos
+// ---------------------------------------------------------------------------
+
+/** Préstamos son mensuales: se avisa con una semana de anticipación. */
+export const LOAN_UPCOMING_DAYS = 7;
+
+export const getLoanDailyBoard = async (now: Date = new Date()): Promise<CreditBoard> => {
+  const dateKey = bogotaDateKey(now);
+  // Colombia no tiene horario de verano: el día empieza siempre a las 05:00 UTC.
+  const startOfDay = new Date(`${dateKey}T00:00:00-05:00`);
+  // Margen de un día extra: el corte fino por calendario lo hace buildCreditBoard.
+  const horizon = new Date(startOfDay.getTime() + (LOAN_UPCOMING_DAYS + 2) * 86_400_000);
+
+  const [openInstallments, paidToday] = await Promise.all([
+    db
+      .select({
+        creditId: loanSchedule.loanId,
+        number: loanSchedule.number,
+        dueDate: loanSchedule.dueDate,
+        totalAmount: loanSchedule.totalAmount,
+        paidAmount: loanSchedule.paidAmount,
+      })
+      .from(loanSchedule)
+      .innerJoin(loans, eq(loanSchedule.loanId, loans.id))
+      .where(
+        and(
+          eq(loans.status, "active"),
+          inArray(loanSchedule.status, ["pendiente", "vencida"]),
+          lt(loanSchedule.dueDate, horizon),
+        ),
+      ),
+    db
+      .select({
+        id: loanPayments.id,
+        creditId: loanPayments.loanId,
+        customerName: customers.name,
+        type: loanPayments.type,
+        amount: loanPayments.amount,
+        scheduleNumber: loanPayments.scheduleNumber,
+        createdAt: loanPayments.createdAt,
+      })
+      .from(loanPayments)
+      .innerJoin(loans, eq(loanPayments.loanId, loans.id))
+      .innerJoin(customers, eq(loans.customerId, customers.id))
+      .where(gte(loanPayments.createdAt, startOfDay))
+      .orderBy(desc(loanPayments.createdAt)),
+  ]);
+
+  const entries = buildCreditBoard(
+    openInstallments.map((i) => ({
+      ...i,
+      totalAmount: Number(i.totalAmount),
+      paidAmount: Number(i.paidAmount),
+    })),
+    now,
+    LOAN_UPCOMING_DAYS,
+  );
+
+  const ids = entries.map((e) => e.creditId);
+  const meta = ids.length
+    ? await db
+        .select({
+          id: loans.id,
+          riskLevel: loans.riskLevel,
+          outstandingPrincipal: loans.outstandingPrincipal,
+          installmentAmount: loans.installmentAmount,
+          collateral: loans.collateral,
+          customerName: customers.name,
+          customerPhone: customers.phone,
+          customerDocument: customers.documentId,
+        })
+        .from(loans)
+        .innerJoin(customers, eq(loans.customerId, customers.id))
+        .where(inArray(loans.id, ids))
+    : [];
+  const metaById = new Map(meta.map((m) => [m.id, m]));
+
+  const rows: CreditBoardRow[] = [];
+  for (const entry of entries) {
+    const m = metaById.get(entry.creditId);
+    if (!m) continue;
+    rows.push({
+      ...entry,
+      customerName: m.customerName,
+      customerPhone: m.customerPhone,
+      customerDocument: m.customerDocument,
+      devices: m.collateral ?? "",
+      riskLevel: m.riskLevel,
+      outstandingPrincipal: Number(m.outstandingPrincipal),
+      installmentAmount: Number(m.installmentAmount),
+    });
+  }
+
+  return splitBoard(
+    rows,
+    paidToday.map((p) => ({ ...p, amount: Number(p.amount) })),
+    dateKey,
+    LOAN_UPCOMING_DAYS,
+  );
 };
 
 // ---------------------------------------------------------------------------

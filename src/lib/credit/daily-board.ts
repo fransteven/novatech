@@ -37,7 +37,7 @@ export function bogotaDayDiff(from: Date, to: Date): number {
 export type BoardBucket = "mora" | "hoy" | "proximos";
 
 export interface OpenInstallment {
-  layawayId: string;
+  creditId: string;
   number: number;
   dueDate: Date;
   totalAmount: number;
@@ -45,7 +45,7 @@ export interface OpenInstallment {
 }
 
 export interface BoardCreditEntry {
-  layawayId: string;
+  creditId: string;
   bucket: BoardBucket;
   /** Saldo exigible: cuotas vencidas + la de hoy (o la próxima, en "proximos"). */
   amountDue: number;
@@ -57,6 +57,55 @@ export interface BoardCreditEntry {
   dueDate: Date;
   /** Días hasta esa fecha (negativo = vencida). */
   daysToDue: number;
+}
+
+/** Renglón del tablero ya enriquecido con datos del cliente. */
+export interface CreditBoardRow extends BoardCreditEntry {
+  customerName: string;
+  customerPhone: string | null;
+  customerDocument: string | null;
+  /** Detalle del crédito (equipos, garantía…); vacío si no aplica. */
+  devices: string;
+  riskLevel: string | null;
+  outstandingPrincipal: number;
+  installmentAmount: number;
+}
+
+export interface CreditBoardPayment {
+  id: string;
+  creditId: string;
+  customerName: string;
+  type: string;
+  amount: number;
+  scheduleNumber: number | null;
+  createdAt: Date;
+}
+
+export interface CreditBoard {
+  dateKey: string;
+  /** Ventana de "próximos" en días. */
+  upcomingDays: number;
+  overdue: CreditBoardRow[];
+  dueToday: CreditBoardRow[];
+  upcoming: CreditBoardRow[];
+  paidToday: CreditBoardPayment[];
+}
+
+/** Distribuye renglones enriquecidos en los baldes del tablero. */
+export function splitBoard(
+  rows: CreditBoardRow[],
+  paidToday: CreditBoardPayment[],
+  dateKey: string,
+  upcomingDays: number,
+): CreditBoard {
+  return {
+    dateKey,
+    upcomingDays,
+    overdue: rows.filter((r) => r.bucket === "mora"),
+    dueToday: rows.filter((r) => r.bucket === "hoy"),
+    upcoming: rows.filter((r) => r.bucket === "proximos"),
+    paidToday,
+  };
 }
 
 const remaining = (i: OpenInstallment) => Math.max(0, i.totalAmount - i.paidAmount);
@@ -73,13 +122,13 @@ export function buildCreditBoard(
   const byCredit = new Map<string, OpenInstallment[]>();
   for (const inst of installments) {
     if (remaining(inst) <= 0) continue;
-    const list = byCredit.get(inst.layawayId) ?? [];
+    const list = byCredit.get(inst.creditId) ?? [];
     list.push(inst);
-    byCredit.set(inst.layawayId, list);
+    byCredit.set(inst.creditId, list);
   }
 
   const entries: BoardCreditEntry[] = [];
-  for (const [layawayId, list] of byCredit) {
+  for (const [creditId, list] of byCredit) {
     list.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
     const withDays = list.map((i) => ({ ...i, days: bogotaDayDiff(now, i.dueDate) }));
 
@@ -89,7 +138,7 @@ export function buildCreditBoard(
       const oldest = exigible[0];
       const isLate = oldest.days < 0;
       entries.push({
-        layawayId,
+        creditId,
         bucket: isLate ? "mora" : "hoy",
         amountDue: exigible.reduce((s, i) => s + remaining(i), 0),
         installments: exigible.map((i) => i.number),
@@ -103,7 +152,7 @@ export function buildCreditBoard(
     const next = withDays[0];
     if (next.days <= upcomingDays) {
       entries.push({
-        layawayId,
+        creditId,
         bucket: "proximos",
         amountDue: remaining(next),
         installments: [next.number],
